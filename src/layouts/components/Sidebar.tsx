@@ -1,10 +1,10 @@
-import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Users, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, X } from 'lucide-react';
 import { useGetMe } from '@/features/auth/api';
+import { useSidebarStore } from '@/stores/useSidebarStore';
 
 export const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isMobileOpen, setMobileOpen, isCollapsed, toggleCollapsed } = useSidebarStore();
   const { data: user } = useGetMe();
 
   const menuItems = [
@@ -12,6 +12,12 @@ export const Sidebar = () => {
       icon: LayoutDashboard,
       label: 'Dashboard',
       path: '/dashboard',
+      roles: ['free', 'full', 'admin'],
+    },
+    {
+      icon: Smartphone,
+      label: 'Instancias WhatsApp',
+      path: '/phones',
       roles: ['free', 'full', 'admin'],
     },
     {
@@ -28,11 +34,22 @@ export const Sidebar = () => {
   );
 
   return (
-    <aside
-      className={`fixed left-0 top-0 h-screen bg-bg-secondary border-r border-border-primary transition-all duration-300 z-40 ${
-        isCollapsed ? 'w-16' : 'w-60'
-      }`}
-    >
+    <>
+      {/* Mobile backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed left-0 top-0 h-screen bg-bg-secondary border-r border-border-primary transition-all duration-300 z-40
+          ${isCollapsed ? 'w-16' : 'w-60'}
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
       {/* Sidebar Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border-primary">
         {!isCollapsed && (
@@ -40,9 +57,20 @@ export const Sidebar = () => {
             Admin Panel
           </h1>
         )}
+
+        {/* Mobile close button */}
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors ml-auto"
+          onClick={() => setMobileOpen(false)}
+          className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors md:hidden"
+          title="Cerrar"
+        >
+          <X size={20} className="text-text-secondary" />
+        </button>
+
+        {/* Desktop collapse button */}
+        <button
+          onClick={toggleCollapsed}
+          className="hidden md:block p-1.5 rounded-md hover:bg-bg-tertiary transition-colors ml-auto"
           title={isCollapsed ? 'Expandir' : 'Colapsar'}
         >
           {isCollapsed ? (
@@ -61,6 +89,7 @@ export const Sidebar = () => {
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={() => setMobileOpen(false)} // Close mobile menu on nav
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-md transition-all group ${
                   isActive
@@ -92,5 +121,6 @@ export const Sidebar = () => {
         </div>
       )}
     </aside>
+    </>
   );
 };

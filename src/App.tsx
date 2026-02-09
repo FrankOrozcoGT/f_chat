@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { LoginPage } from './features/auth/components/LoginPage';
-import { DashboardPage } from './features/dashboard/components/DashboardPage';
-import { UsersPage } from './features/users/components/UsersPage';
-import { ProtectedRoute } from './shared/components/ProtectedRoute';
+import { LoginPage } from '@/features/auth/components/LoginPage';
+import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
+import { UsersPage } from '@/features/users/components/UsersPage';
+import { PhonesPage } from '@/features/phones/components/PhonesPage';
+import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 
 function App() {
   return (
@@ -27,6 +28,16 @@ function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <UsersPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Phones routes */}
+        <Route
+          path="/phones"
+          element={
+            <ProtectedRoute>
+              <PhonesPage />
             </ProtectedRoute>
           }
         />
