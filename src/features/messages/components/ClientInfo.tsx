@@ -14,18 +14,23 @@ interface ClientInfoProps {
 
 export const ClientInfo = ({ client }: ClientInfoProps) => {
   // Get initials for avatar fallback
-  const initials = client.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = client?.name
+    ? client.name
+        .split(' ')
+        .filter(n => n.length > 0)
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : '?';
 
   // Format last contact date
-  const lastContactFormatted = formatDistanceToNow(new Date(client.lastContactAt), {
-    addSuffix: true,
-    locale: es,
-  });
+  const lastContactFormatted = client?.lastContactAt
+    ? formatDistanceToNow(new Date(client.lastContactAt), {
+        addSuffix: true,
+        locale: es,
+      })
+    : 'Desconocido';
 
   return (
     <Card variant="default" className="p-4 md:p-6">

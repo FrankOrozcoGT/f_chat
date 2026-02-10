@@ -2,17 +2,20 @@
 // Header + Messages body + Input footer
 // WebSocket integration for real-time updates
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
 import { messageKeys } from '../api/messageKeys';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
+import { ClientInfo } from './ClientInfo';
+import { ConversationSummary } from './ConversationSummary';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
+import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { socket } from '@/lib/websocket';
 import type { Message } from '../types';
 
@@ -24,6 +27,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { setSelectedConversationId } = useConversationsStore();
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
 
   // Fetch messages and conversation detail (includes client data)
   const { data: messages = [], isLoading: isLoadingMessages } = useGetMessages(conversationId);
@@ -109,11 +113,20 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
             {conversationDetail.conversation.isActive ? 'Activa' : 'Cerrada'}
           </Badge>
         )}
+
+        {/* Info button (mobile only) - opens bottom sheet */}
+        <button
+          onClick={() => setIsBottomSheetOpen(true)}
+          className="lg:hidden min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-accent-blue/10 hover:bg-accent-blue/20 transition-colors"
+          aria-label="Ver información del cliente"
+        >
+          <Info className="w-5 h-5 text-accent-blue" />
+        </button>
       </header>
 
       {/* Messages body */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3">
-        {isLoadingMessages ? (
+        {isLoadingMessages && messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3">
               <div className="w-10 h-10 border-4 border-border-primary border-t-accent-blue rounded-full animate-spin" />
@@ -141,6 +154,20 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
 
       {/* Footer with input */}
       <MessageInput />
+
+      {/* Bottom Sheet for mobile - shows client info + conversation summary */}
+      <BottomSheet
+        isOpen={isBottomSheetOpen}
+        onClose={() => setIsBottomSheetOpen(false)}
+        title="Información del Cliente"
+      >
+        {client && (
+          <div className="space-y-4">
+            <ClientInfo client={client} />
+            <ConversationSummary summaries={[]} />
+          </div>
+        )}
+      </BottomSheet>
     </div>
   );
 };

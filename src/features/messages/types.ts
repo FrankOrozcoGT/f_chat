@@ -43,9 +43,9 @@ export interface BackendClient {
   id: string;
   phoneNumber: string;
   name: string;
-  lastContactAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  metadata: any | null;
+  firstContactAt: string;
+  lastContactAt: string;
 }
 
 // Frontend client structure (transformed)
@@ -113,6 +113,6 @@ export const mapBackendClient = (client: BackendClient): Client => ({
   id: client.id,
   phone: client.phoneNumber,
   name: client.name,
-  lastContactAt: new Date(client.lastContactAt).toISOString(),
-  createdAt: new Date(client.createdAt).toISOString(),
+  lastContactAt: client.lastContactAt,
+  createdAt: client.firstContactAt,
 });
