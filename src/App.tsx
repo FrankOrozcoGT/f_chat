@@ -4,6 +4,7 @@ import { LoginPage } from '@/features/auth/components/LoginPage';
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
 import { UsersPage } from '@/features/users/components/UsersPage';
 import { PhonesPage } from '@/features/phones/components/PhonesPage';
+import { ConversationsPage } from '@/features/conversations/components/ConversationsPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { ToastContainer } from '@/shared/ui/Toast';
 import { socket } from '@/lib/websocket';
@@ -76,8 +77,18 @@ function App() {
             }
           />
 
+          {/* Conversations routes */}
+          <Route
+            path="/conversations"
+            element={
+              <ProtectedRoute>
+                <ConversationsPage />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/conversations" replace />} />
         </Routes>
       </BrowserRouter>
 
