@@ -1,9 +1,9 @@
 {
   "normal": {
     "id": "normal",
-    "pid": 30637,
+    "pid": 21561,
     "command": "persistent-shell",
     "type": "normal",
-    "startedAt": "2026-02-09T21:57:43.581Z"
+    "startedAt": "2026-02-10T15:36:16.066Z"
   }
 }

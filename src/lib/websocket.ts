@@ -1,69 +1,77 @@
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
-
-class WebSocketClient {
-  private socket: Socket | null = null;
-
-  connect(token?: string) {
-    if (this.socket?.connected) {
-      return this.socket;
-    }
-
-    this.socket = io(WS_URL, {
-      auth: {
-        token: token || localStorage.getItem('auth_token'),
-      },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-    });
-
-    this.socket.on('connect', () => {
-      console.log('[WebSocket] Connected:', this.socket?.id);
-    });
-
-    this.socket.on('disconnect', (reason) => {
-      console.log('[WebSocket] Disconnected:', reason);
-    });
-
-    this.socket.on('connect_error', (error) => {
-      console.error('[WebSocket] Connection error:', error);
-    });
-
-    return this.socket;
-  }
-
-  disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-    }
-  }
-
-  getSocket() {
-    return this.socket;
-  }
-
-  emit(event: string, data?: unknown) {
-    if (this.socket?.connected) {
-      this.socket.emit(event, data);
-    } else {
-      console.warn('[WebSocket] Not connected, cannot emit:', event);
-    }
-  }
-
-  on(event: string, handler: (...args: unknown[]) => void) {
-    if (this.socket) {
-      this.socket.on(event, handler);
-    }
-  }
-
-  off(event: string, handler?: (...args: unknown[]) => void) {
-    if (this.socket) {
-      this.socket.off(event, handler);
-    }
-  }
+// Event payload types
+export interface MessageIncomingPayload {
+  id: string;
+  phoneId: string;
+  conversationId: string;
+  fromNumber: string;
+  body: string;
+  timestamp: string;
+  isFromMe: boolean;
 }
 
-export const wsClient = new WebSocketClient();
+export interface MessageSentPayload {
+  id: string;
+  phoneId: string;
+  conversationId: string;
+  body: string;
+  timestamp: string;
+}
+
+export interface MessageErrorPayload {
+  phoneId: string;
+  conversationId: string;
+  error: string;
+}
+
+export interface PhoneStatusChangedPayload {
+  phoneId: string;
+  status: 'pending' | 'connected' | 'disconnected';
+}
+
+export interface PhoneQRUpdatedPayload {
+  phoneId: string;
+  qrCode: string;
+}
+
+export interface ConversationCreatedPayload {
+  id: string;
+  phoneId: string;
+  contactNumber: string;
+  contactName?: string;
+}
+
+// Patrón Socket.IO oficial: crear instancia a nivel de módulo
+// Referencia: https://socket.io/how-to/use-with-react
+const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
+
+export const socket = io(WS_URL, {
+  autoConnect: false, // No conectar automáticamente
+  withCredentials: true, // Enviar cookies HttpOnly
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionAttempts: 5,
+});
+
+// Helper types para listeners
+export type EventCallback<T> = (data: T) => void;
+
+// Helpers para rooms (agent:join_room / agent:leave_room)
+export const joinPhoneRoom = (phoneId: string): void => {
+  if (!socket.connected) {
+    console.error('[WebSocket] Cannot join room, not connected');
+    return;
+  }
+  socket.emit('agent:join_room', { phoneId });
+  console.log(`[WebSocket] Joined room for phone: ${phoneId}`);
+};
+
+export const leavePhoneRoom = (phoneId: string): void => {
+  if (!socket.connected) {
+    console.error('[WebSocket] Cannot leave room, not connected');
+    return;
+  }
+  socket.emit('agent:leave_room', { phoneId });
+  console.log(`[WebSocket] Left room for phone: ${phoneId}`);
+};
