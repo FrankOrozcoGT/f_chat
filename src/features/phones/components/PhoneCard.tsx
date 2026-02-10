@@ -1,12 +1,52 @@
-import { Smartphone, Circle, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Smartphone, Circle, Clock, Trash2 } from 'lucide-react';
 import { Card, CardBody } from '@/shared/ui/Card';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { useDeletePhone } from '@/features/phones/api/useDeletePhone';
+import { useToast } from '@/shared/hooks/useToast';
+import { socket } from '@/lib/websocket';
 import type { Phone, PhoneStatus } from '@/features/phones/types';
+import type { PhoneStatusChangedPayload } from '@/lib/websocket';
 
 interface PhoneCardProps {
   phone: Phone;
 }
 
 export const PhoneCard = ({ phone }: PhoneCardProps) => {
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<PhoneStatus>(phone.status);
+  const deletePhone = useDeletePhone();
+  const { showToast } = useToast();
+
+  // WebSocket listener para actualizaciones de estado en tiempo real
+  useEffect(() => {
+    const handleStatusChange = (data: PhoneStatusChangedPayload) => {
+      if (data.phoneId === phone.id) {
+        console.log('[PhoneCard] Status cambiado:', data.phoneId, data.status);
+        setCurrentStatus(data.status);
+      }
+    };
+
+    socket.on('phone:status_changed', handleStatusChange);
+
+    return () => {
+      socket.off('phone:status_changed', handleStatusChange);
+    };
+  }, [phone.id]);
+
+  const handleConfirmDelete = () => {
+    deletePhone.mutate(phone.id, {
+      onSuccess: () => {
+        showToast('Instancia eliminada correctamente', 'success');
+        setShowConfirmDelete(false);
+      },
+      onError: (error: Error) => {
+        showToast(error.message || 'Error al eliminar la instancia', 'error');
+        setShowConfirmDelete(false);
+      },
+    });
+  };
+
   const getStatusColor = (status: PhoneStatus) => {
     switch (status) {
       case 'connected':
@@ -58,9 +98,10 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
   };
 
   return (
-    <Card variant="elevated">
-      <CardBody>
-        <div className="flex flex-col gap-3">
+    <>
+      <Card variant="elevated">
+        <CardBody>
+          <div className="flex flex-col gap-3">
           {/* Header con ícono y estado */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -77,15 +118,27 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
               </div>
             </div>
 
-            {/* Badge de estado */}
-            <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${getStatusColor(
-                phone.status
-              )}`}
-            >
-              <Circle size={8} className={`fill-current ${getStatusDotColor(phone.status)}`} />
-              {getStatusLabel(phone.status)}
-            </span>
+            <div className="flex items-center gap-2">
+              {/* Badge de estado */}
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${getStatusColor(
+                  currentStatus
+                )}`}
+              >
+                <Circle size={8} className={`fill-current ${getStatusDotColor(currentStatus)}`} />
+                {getStatusLabel(currentStatus)}
+              </span>
+
+              {/* Botón de delete */}
+              <button
+                onClick={() => setShowConfirmDelete(true)}
+                disabled={deletePhone.isPending}
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-text-secondary hover:text-accent-red hover:bg-accent-red/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Eliminar instancia"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
           </div>
 
           {/* Información adicional */}
@@ -93,14 +146,28 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
             <div className="flex items-center gap-2 text-text-secondary">
               <Clock size={14} className="text-text-tertiary flex-shrink-0" />
               <span className="truncate">
-                {phone.status === 'connected' && phone.lastConnected
+                {currentStatus === 'connected' && phone.lastConnected
                   ? `Conectado: ${formatDate(phone.lastConnected)}`
                   : `Creado: ${formatDate(phone.createdAt)}`}
               </span>
             </div>
           </div>
-        </div>
-      </CardBody>
-    </Card>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Modal de confirmación */}
+      <ConfirmModal
+        isOpen={showConfirmDelete}
+        onClose={() => setShowConfirmDelete(false)}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar instancia"
+        message={`¿Estás seguro de que deseas eliminar la instancia "${phone.instanceName}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={deletePhone.isPending}
+      />
+    </>
   );
 };

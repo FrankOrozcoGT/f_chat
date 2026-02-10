@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QrCode, Loader2 } from 'lucide-react';
 import QRCodeLib from 'qrcode';
+import { socket } from '@/lib/websocket';
 import type { PhoneStatus } from '@/features/phones/types';
 
 interface QRCodeDisplayProps {
@@ -11,10 +12,10 @@ interface QRCodeDisplayProps {
 }
 
 export const QRCodeDisplay = ({
-  phoneId: _phoneId, // Se usará en Task 2 para WebSocket
+  phoneId,
   initialQR,
   status,
-  onStatusChange: _onStatusChange, // Se usará en Task 2 para WebSocket
+  onStatusChange,
 }: QRCodeDisplayProps) => {
   const [qrCodeImage, setQrCodeImage] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(true);
@@ -58,34 +59,36 @@ export const QRCodeDisplay = ({
     }
   }, [initialQR]);
 
-  // TODO (Task 2): Implementar WebSocket listener para 'phone:qr_updated'
-  // useEffect(() => {
-  //   const handleQRUpdate = async (data: { phoneId: string; qrCode: string }) => {
-  //     if (data.phoneId === _phoneId) {
-  //       // Generar nueva imagen QR del string actualizado
-  //       const qrDataURL = await QRCodeLib.toDataURL(data.qrCode, {
-  //         width: 400,
-  //         margin: 2,
-  //         errorCorrectionLevel: 'M',
-  //       });
-  //       setQrCodeImage(qrDataURL);
-  //     }
-  //   };
-  //
-  //   const handleStatusChange = (data: { phoneId: string; status: typeof status }) => {
-  //     if (data.phoneId === _phoneId && _onStatusChange) {
-  //       _onStatusChange(data.status);
-  //     }
-  //   };
-  //
-  //   socket.on('phone:qr_updated', handleQRUpdate);
-  //   socket.on('phone:status_changed', handleStatusChange);
-  //
-  //   return () => {
-  //     socket.off('phone:qr_updated', handleQRUpdate);
-  //     socket.off('phone:status_changed', handleStatusChange);
-  //   };
-  // }, [_phoneId, _onStatusChange]);
+  // WebSocket listener para actualizaciones en tiempo real
+  useEffect(() => {
+    const handleQRUpdate = async (data: { phoneId: string; qrCode: string }) => {
+      if (data.phoneId === phoneId) {
+        console.log('[QRCodeDisplay] QR actualizado:', data.phoneId);
+        // Generar nueva imagen QR del string actualizado
+        const qrDataURL = await QRCodeLib.toDataURL(data.qrCode, {
+          width: 400,
+          margin: 2,
+          errorCorrectionLevel: 'M',
+        });
+        setQrCodeImage(qrDataURL);
+      }
+    };
+
+    const handleStatusChange = (data: { phoneId: string; status: typeof status }) => {
+      if (data.phoneId === phoneId && onStatusChange) {
+        console.log('[QRCodeDisplay] Status cambiado:', data.phoneId, data.status);
+        onStatusChange(data.status);
+      }
+    };
+
+    socket.on('phone:qr_updated', handleQRUpdate);
+    socket.on('phone:status_changed', handleStatusChange);
+
+    return () => {
+      socket.off('phone:qr_updated', handleQRUpdate);
+      socket.off('phone:status_changed', handleStatusChange);
+    };
+  }, [phoneId, onStatusChange]);
 
   if (status === 'connected') {
     return (
