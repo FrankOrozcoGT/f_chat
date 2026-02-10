@@ -1,0 +1,26 @@
+// TanStack Query hook for fetching messages of a conversation
+// Endpoint: GET /api/messages?conversationId=<uuid>
+
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api';
+import { messageKeys } from './messageKeys';
+import type { BackendMessage, Message } from '../types';
+import { mapBackendMessage } from '../types';
+
+export const useGetMessages = (conversationId: string) => {
+  return useQuery({
+    queryKey: messageKeys.list(conversationId),
+    queryFn: async () => {
+      const response = await apiClient.get<BackendMessage[]>(
+        `/api/messages`,
+        { params: { conversationId } }
+      );
+      // Transform backend messages to frontend structure
+      const messages: Message[] = response.data.map(mapBackendMessage);
+      return messages;
+    },
+    enabled: !!conversationId,
+    staleTime: 30 * 1000, // 30 seconds
+    refetchOnWindowFocus: true,
+  });
+};
