@@ -16,6 +16,7 @@ import { ConversationSummary } from './ConversationSummary';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
+import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
 import type { Message } from '../types';
 
@@ -28,6 +29,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { setSelectedConversationId } = useConversationsStore();
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const { showToast } = useToast();
 
   // Fetch messages and conversation detail (includes client data)
   const { data: messages = [], isLoading: isLoadingMessages } = useGetMessages(conversationId);
@@ -52,12 +54,72 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       }
     };
 
+    const handleMessageSent = (data: { conversationId: string; tempId: string; message: Message }) => {
+      // Only update if message belongs to current conversation
+      if (data.conversationId === conversationId) {
+        // Replace temporary message with real message from server
+        queryClient.setQueryData<Message[]>(
+          messageKeys.list(conversationId),
+          (oldMessages = []) => {
+            return oldMessages.map((msg) =>
+              msg.id === data.tempId ? data.message : msg
+            );
+          }
+        );
+      }
+    };
+
+    const handleMessageStatusUpdated = (data: { messageId: string; conversationId: string; status: string }) => {
+      // Only update if message belongs to current conversation
+      if (data.conversationId === conversationId) {
+        // Update message status in cache
+        queryClient.setQueryData<Message[]>(
+          messageKeys.list(conversationId),
+          (oldMessages = []) => {
+            return oldMessages.map((msg) =>
+              msg.id === data.messageId
+                ? { ...msg, status: data.status as Message['status'] }
+                : msg
+            );
+          }
+        );
+      }
+    };
+
+    const handleMessageError = (data: { conversationId: string; error: string; tempId?: string }) => {
+      // Only handle if error belongs to current conversation
+      if (data.conversationId === conversationId) {
+        // Show error toast
+        showToast(data.error || 'Error al enviar el mensaje', 'error');
+
+        // If we have a tempId, mark that message as failed
+        if (data.tempId) {
+          queryClient.setQueryData<Message[]>(
+            messageKeys.list(conversationId),
+            (oldMessages = []) => {
+              return oldMessages.map((msg) =>
+                msg.id === data.tempId
+                  ? { ...msg, status: 'failed' as Message['status'] }
+                  : msg
+              );
+            }
+          );
+        }
+      }
+    };
+
     socket.on('message:incoming', handleMessageIncoming);
+    socket.on('message:sent', handleMessageSent);
+    socket.on('message:status_updated', handleMessageStatusUpdated);
+    socket.on('message:error', handleMessageError);
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
+      socket.off('message:sent', handleMessageSent);
+      socket.off('message:status_updated', handleMessageStatusUpdated);
+      socket.off('message:error', handleMessageError);
     };
-  }, [conversationId, queryClient]);
+  }, [conversationId, queryClient, showToast]);
 
   // Back button handler (mobile)
   const handleBack = () => {
@@ -78,10 +140,10 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
     <div className="flex-1 flex flex-col h-full bg-bg-primary">
       {/* Header */}
       <header className="flex items-center gap-3 p-4 border-b border-border-primary bg-bg-secondary shrink-0">
-        {/* Back button (mobile only) */}
+        {/* Back button (mobile + medium screens when conversations list is hidden) */}
         <button
           onClick={handleBack}
-          className="md:hidden min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-bg-tertiary transition-colors"
+          className="xl:hidden min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-bg-tertiary transition-colors"
           aria-label="Volver a lista"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -153,7 +215,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       </div>
 
       {/* Footer with input */}
-      <MessageInput />
+      <MessageInput conversationId={conversationId} />
 
       {/* Bottom Sheet for mobile - shows client info + conversation summary */}
       <BottomSheet

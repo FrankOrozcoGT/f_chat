@@ -40,13 +40,13 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
     if (!isIncoming) {
       switch (message.status) {
         case 'pending':
-          return <Clock className="w-3 h-3 text-gray-400" />;
+          return <Clock className="w-3 h-3 text-text-tertiary" />;
         case 'sent':
-          return <Check className="w-3 h-3 text-gray-400" />;
+          return <Check className="w-3 h-3 text-text-tertiary" />;
         case 'delivered':
-          return <CheckCheck className="w-3 h-3 text-gray-400" />;
+          return <CheckCheck className="w-3 h-3 text-text-tertiary" />;
         case 'read':
-          return <CheckCheck className="w-3 h-3 text-blue-500" />;
+          return <CheckCheck className="w-3 h-3 text-accent-blue" />;
         case 'failed':
           return <XCircle className="w-3 h-3 text-accent-red" />;
         default:
@@ -84,7 +84,11 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
           className={cn(
             'px-3 py-2 rounded-2xl break-words',
             isIncoming
-              ? 'bg-gray-100 dark:bg-gray-700 text-text-primary rounded-bl-sm'
+              ? 'bg-bg-secondary text-text-primary rounded-bl-sm'
+              : message.status === 'pending'
+              ? 'bg-bg-tertiary text-text-secondary rounded-br-sm opacity-70'
+              : message.status === 'failed'
+              ? 'bg-toast-error-bg text-accent-red rounded-br-sm border border-accent-red'
               : 'bg-accent-blue text-white rounded-br-sm'
           )}
         >
@@ -95,7 +99,7 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
 
           {/* Voice message */}
           {message.type === 'voice' && message.mediaUrl && (
-            <div className="flex flex-col gap-2 min-w-[250px]">
+            <div className="flex flex-col gap-2 min-w-62.5">
               <audio
                 src={message.mediaUrl}
                 controls
