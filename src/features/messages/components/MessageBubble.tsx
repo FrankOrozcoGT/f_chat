@@ -154,20 +154,18 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
 
           {/* Document */}
           {message.type === 'document' && message.mediaUrl && (
-            <div className="space-y-1">
-              <p className="text-sm font-medium">
-                {message.fileName || message.content || 'Documento'}
-              </p>
-              {message.content && message.fileName && message.content !== message.fileName && (
-                <p className="text-xs opacity-80">{message.content}</p>
+            <div className="space-y-2">
+              {message.content && (
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               )}
               <a
                 href={message.mediaUrl}
+                download
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs underline hover:no-underline"
+                className="text-sm underline hover:no-underline inline-flex items-center gap-1"
               >
-                Descargar
+                📄 {message.fileName || 'Documento'}
               </a>
             </div>
           )}
