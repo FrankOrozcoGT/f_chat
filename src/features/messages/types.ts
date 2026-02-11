@@ -18,9 +18,13 @@ export interface BackendMessage {
   type: BackendMessageType;
   content: string;
   mediaUrl: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  mimeType?: string | null;
   direction: BackendMessageDirection;
   senderType: BackendSenderType;
   status: BackendMessageStatus;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +35,9 @@ export interface Message {
   conversationId: string;
   content: string;
   mediaUrl: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  mimeType?: string | null;
   type: MessageType;
   direction: MessageDirection;
   senderType: BackendSenderType;
@@ -102,6 +109,9 @@ export const mapBackendMessage = (msg: BackendMessage): Message => ({
   conversationId: msg.conversationId,
   content: msg.content,
   mediaUrl: msg.mediaUrl,
+  fileName: msg.fileName,
+  fileSize: msg.fileSize,
+  mimeType: msg.mimeType,
   type: mapBackendMessageType(msg.type),
   direction: mapBackendDirection(msg.direction),
   senderType: msg.senderType,

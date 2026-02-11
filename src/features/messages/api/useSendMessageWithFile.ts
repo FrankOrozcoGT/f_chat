@@ -90,8 +90,9 @@ export const useSendMessageWithFile = (
       const optimisticMessage: Message = {
         id: tempId,
         conversationId,
-        content: contenido || (file instanceof File ? file.name : 'Archivo'),
+        content: contenido || '',
         mediaUrl: previewUrl, // Temporary preview URL
+        fileName: file instanceof File ? file.name : null,
         type: frontendType as Message['type'],
         direction: 'outgoing',
         senderType: 'agent',
@@ -148,6 +149,9 @@ export const useSendMessageWithFile = (
                 conversationId: data.conversationId,
                 content: data.content,
                 mediaUrl: data.mediaUrl,
+                fileName: data.fileName,
+                fileSize: data.fileSize,
+                mimeType: data.mimeType,
                 type: (data.type === 'audio' ? 'voice' : data.type) as Message['type'],
                 direction: data.direction as Message['direction'],
                 senderType: data.senderType as Message['senderType'],

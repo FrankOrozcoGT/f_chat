@@ -100,6 +100,9 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
           {/* Voice message */}
           {message.type === 'voice' && message.mediaUrl && (
             <div className="flex flex-col gap-2 min-w-62.5">
+              {message.fileName && (
+                <p className="text-xs text-current opacity-80">{message.fileName}</p>
+              )}
               <audio
                 src={message.mediaUrl}
                 controls
@@ -153,8 +156,11 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
           {message.type === 'document' && message.mediaUrl && (
             <div className="space-y-1">
               <p className="text-sm font-medium">
-                {message.content || 'Documento'}
+                {message.fileName || message.content || 'Documento'}
               </p>
+              {message.content && message.fileName && message.content !== message.fileName && (
+                <p className="text-xs opacity-80">{message.content}</p>
+              )}
               <a
                 href={message.mediaUrl}
                 target="_blank"
