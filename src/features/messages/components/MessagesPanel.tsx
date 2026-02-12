@@ -36,7 +36,6 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
   const { data: conversationDetail } = useGetConversationDetail(conversationId);
 
   const client = conversationDetail?.client;
-  const summary = conversationDetail?.summary;
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {

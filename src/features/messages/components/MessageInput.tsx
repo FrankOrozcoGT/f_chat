@@ -6,7 +6,7 @@
 
 import { useState, useRef } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
-import { Send, Image, Paperclip, Mic, X, Trash2, Play, Pause, Square } from 'lucide-react';
+import { Send, Image, Paperclip, Mic, X, Trash2, Square } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { useToast } from '@/shared/hooks/useToast';
 import { useSendMessage } from '../api/useSendMessage';
@@ -24,7 +24,6 @@ export const MessageInput = ({ conversationId }: MessageInputProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
-  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -269,27 +268,6 @@ export const MessageInput = ({ conversationId }: MessageInputProps) => {
     }
   };
 
-  const toggleAudioPreview = () => {
-    if (!recordedAudio) return;
-
-    if (!audioPreviewRef.current) {
-      const audioUrl = URL.createObjectURL(recordedAudio);
-      const audio = new Audio(audioUrl);
-      audioPreviewRef.current = audio;
-
-      audio.onended = () => {
-        setIsPlayingPreview(false);
-      };
-    }
-
-    if (isPlayingPreview) {
-      audioPreviewRef.current.pause();
-      setIsPlayingPreview(false);
-    } else {
-      audioPreviewRef.current.play();
-      setIsPlayingPreview(true);
-    }
-  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
