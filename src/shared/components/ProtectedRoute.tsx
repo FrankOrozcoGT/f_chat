@@ -4,15 +4,18 @@ import { useGetMe } from '@/features/auth/api';
 import { ComingSoonPage } from '@/features/dashboard/components/ComingSoonPage';
 import { ForbiddenPage } from '@/features/dashboard/components/ForbiddenPage';
 
+type AppRole = 'free' | 'full' | 'admin';
+
+const ROLE_LEVEL: Record<AppRole, number> = { free: 0, full: 1, admin: 2 };
+
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRole?: 'admin' | 'full' | 'free';
+  requiredRole?: AppRole;
 }
 
-export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children, requiredRole = 'free' }: ProtectedRouteProps) => {
   const { data: user, isLoading, isError } = useGetMe();
 
-  // Mientras carga, mostrar loading (evita flicker a login)
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-primary">
@@ -24,21 +27,16 @@ export const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) 
     );
   }
 
-  // Si hay error o no hay usuario, redirigir a login
   if (isError || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Si es usuario free, mostrar página "Próximamente"
-  if (user.role === 'free' && requiredRole !== 'free') {
-    return <ComingSoonPage />;
+  const userLevel = ROLE_LEVEL[user.role as AppRole] ?? 0;
+  const requiredLevel = ROLE_LEVEL[requiredRole];
+
+  if (userLevel < requiredLevel) {
+    return requiredLevel === ROLE_LEVEL.admin ? <ForbiddenPage /> : <ComingSoonPage />;
   }
 
-  // Si requiere rol admin pero el usuario es full, mostrar 403
-  if (requiredRole === 'admin' && user.role !== 'admin') {
-    return <ForbiddenPage />;
-  }
-
-  // Usuario tiene el rol necesario, permitir acceso
   return <>{children}</>;
 };
