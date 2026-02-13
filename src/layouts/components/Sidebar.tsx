@@ -18,13 +18,13 @@ export const Sidebar = () => {
       icon: Smartphone,
       label: 'Instancias WhatsApp',
       path: '/phones',
-      roles: ['free', 'full', 'admin'],
+      roles: ['full', 'admin'],
     },
     {
       icon: MessageSquare,
       label: 'Conversaciones',
       path: '/conversations',
-      roles: ['free', 'full', 'admin'],
+      roles: ['full', 'admin'],
     },
     {
       icon: Users,

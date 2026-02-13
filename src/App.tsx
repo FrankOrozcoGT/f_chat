@@ -8,6 +8,17 @@ import { ConversationsPage } from '@/features/conversations/components/Conversat
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { ToastContainer } from '@/shared/ui/Toast';
 import { socket } from '@/lib/websocket';
+import { useGetMe } from '@/features/auth/api';
+
+/** Redirige según el rol del usuario autenticado */
+const DefaultRedirect = () => {
+  const { data: user, isLoading } = useGetMe();
+
+  if (isLoading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'free') return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/conversations" replace />;
+};
 
 // Module-level guard: inicializar WebSocket solo una vez por app load
 // Referencia: https://react.dev/learn/you-might-not-need-an-effect#initializing-the-application
@@ -51,7 +62,7 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="free">
                 <DashboardPage />
               </ProtectedRoute>
             }
@@ -71,7 +82,7 @@ function App() {
           <Route
             path="/phones"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="full">
                 <PhonesPage />
               </ProtectedRoute>
             }
@@ -81,14 +92,14 @@ function App() {
           <Route
             path="/conversations"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="full">
                 <ConversationsPage />
               </ProtectedRoute>
             }
           />
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/conversations" replace />} />
+          {/* Default redirect según rol */}
+          <Route path="/" element={<DefaultRedirect />} />
         </Routes>
       </BrowserRouter>
 
