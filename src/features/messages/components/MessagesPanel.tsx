@@ -18,6 +18,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
+import type { MessageIncomingPayload, MessageSentPayload } from '@/lib/websocket';
 import type { Message } from '../types';
 
 interface MessagesPanelProps {
@@ -47,25 +48,24 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
 
   // WebSocket integration for real-time message updates
   useEffect(() => {
-    const handleMessageIncoming = (data: { message: Message }) => {
-      // Only update if message belongs to current conversation
-      if (data.message.conversationId === conversationId) {
+    // message:incoming — mensaje entrante del cliente WhatsApp (broadcast)
+    const handleMessageIncoming = (data: MessageIncomingPayload) => {
+      if (data.conversationId === conversationId) {
         queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
       }
     };
 
-    const handleMessageSent = (data: { conversationId: string; tempId: string; message: Message }) => {
-      // Only update if message belongs to current conversation
+    // message:new — mensaje enviado desde el backend/bot (broadcast)
+    const handleMessageNew = (data: { conversationId: string }) => {
       if (data.conversationId === conversationId) {
-        // Replace temporary message with real message from server
-        queryClient.setQueryData<Message[]>(
-          messageKeys.list(conversationId),
-          (oldMessages = []) => {
-            return oldMessages.map((msg) =>
-              msg.id === data.tempId ? data.message : msg
-            );
-          }
-        );
+        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
+      }
+    };
+
+    // message:sent — mensaje enviado desde WhatsApp Web, no desde el sistema (broadcast)
+    const handleMessageSent = (data: MessageSentPayload) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
       }
     };
 
@@ -115,6 +115,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
     };
 
     socket.on('message:incoming', handleMessageIncoming);
+    socket.on('message:new', handleMessageNew);
     socket.on('message:sent', handleMessageSent);
     socket.on('message:status_updated', handleMessageStatusUpdated);
     socket.on('message:error', handleMessageError);
@@ -122,6 +123,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
+      socket.off('message:new', handleMessageNew);
       socket.off('message:sent', handleMessageSent);
       socket.off('message:status_updated', handleMessageStatusUpdated);
       socket.off('message:error', handleMessageError);

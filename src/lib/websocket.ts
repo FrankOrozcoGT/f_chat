@@ -19,6 +19,14 @@ export interface MessageSentPayload {
   timestamp: string;
 }
 
+export interface MessageNewPayload {
+  id: string;
+  phoneId: string;
+  conversationId: string;
+  body: string;
+  timestamp: string;
+}
+
 export interface MessageErrorPayload {
   phoneId: string;
   conversationId: string;
