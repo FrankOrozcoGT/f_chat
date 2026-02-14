@@ -29,22 +29,23 @@ ENV VITE_GOOGLE_AUTH_URL=$VITE_GOOGLE_AUTH_URL
 RUN npm run build
 
 # ========================================
-# Stage 2: Production Runtime with Nginx
+# Stage 2: Production Runtime
 # ========================================
-FROM nginx:alpine
+FROM node:24-alpine
+
+RUN npm i -g serve
+
+WORKDIR /app
 
 # Copiar build desde stage anterior
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copiar configuración personalizada de nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist ./dist
 
 # Exponer puerto
 EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
 
-# Comando de inicio
-CMD ["nginx", "-g", "daemon off;"]
+# Comando de inicio (-s = SPA mode, redirige todas las rutas a index.html)
+CMD ["serve", "-s", "dist", "-l", "80"]

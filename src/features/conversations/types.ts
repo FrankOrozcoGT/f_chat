@@ -1,6 +1,7 @@
 // Conversation types for f_chat
 
 export type ConversationStatus = 'active' | 'closed' | 'waiting';
+export type ConversationMode = 'AI' | 'HITL';
 
 export interface Conversation {
   id: string;
@@ -12,6 +13,7 @@ export interface Conversation {
   lastMessageAt?: string;
   unreadCount: number;
   status: ConversationStatus;
+  mode: ConversationMode;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +27,7 @@ export interface ConversationPreview {
   lastMessageAt?: string;
   unreadCount: number;
   status: ConversationStatus;
+  mode: ConversationMode;
 }
 
 export interface PaginatedConversations {

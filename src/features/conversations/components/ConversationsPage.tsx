@@ -31,12 +31,18 @@ export const ConversationsPage = () => {
       queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
     };
 
+    const handleModeChanged = () => {
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+    };
+
     socket.on('message:incoming', handleMessageIncoming);
     socket.on('conversation:created', handleConversationCreated);
+    socket.on('conversation:mode_changed', handleModeChanged);
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
       socket.off('conversation:created', handleConversationCreated);
+      socket.off('conversation:mode_changed', handleModeChanged);
     };
   }, [queryClient]);
 

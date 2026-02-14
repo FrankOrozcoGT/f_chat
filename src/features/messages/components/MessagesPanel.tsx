@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Bot, Info } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
@@ -36,6 +36,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
   const { data: conversationDetail } = useGetConversationDetail(conversationId);
 
   const client = conversationDetail?.client;
+  const conversationMode = conversationDetail?.conversation?.mode;
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -107,16 +108,24 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       }
     };
 
+    const handleModeChanged = (data: { conversationId: string; mode: 'AI' | 'HITL' }) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      }
+    };
+
     socket.on('message:incoming', handleMessageIncoming);
     socket.on('message:sent', handleMessageSent);
     socket.on('message:status_updated', handleMessageStatusUpdated);
     socket.on('message:error', handleMessageError);
+    socket.on('conversation:mode_changed', handleModeChanged);
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
       socket.off('message:sent', handleMessageSent);
       socket.off('message:status_updated', handleMessageStatusUpdated);
       socket.off('message:error', handleMessageError);
+      socket.off('conversation:mode_changed', handleModeChanged);
     };
   }, [conversationId, queryClient, showToast]);
 
@@ -164,6 +173,14 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
             {client?.phone || ''}
           </p>
         </div>
+
+        {/* Mode badge (AI) */}
+        {conversationMode === 'AI' && (
+          <Badge variant="default" size="sm" className="bg-accent-purple/20 text-accent-purple border-accent-purple/30">
+            <Bot className="w-3 h-3" />
+            IA
+          </Badge>
+        )}
 
         {/* Status badge (based on conversation isActive) */}
         {conversationDetail?.conversation && (
@@ -214,7 +231,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       </div>
 
       {/* Footer with input */}
-      <MessageInput conversationId={conversationId} />
+      <MessageInput conversationId={conversationId} disabled={conversationMode === 'AI'} />
 
       {/* Bottom Sheet for mobile - shows client info + conversation summary */}
       <BottomSheet

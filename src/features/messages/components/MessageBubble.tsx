@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Check, CheckCheck, Clock, XCircle } from 'lucide-react';
+import { Check, CheckCheck, Clock, XCircle, Bot, Cog, User } from 'lucide-react';
 import { Avatar } from '@/shared/ui/Avatar';
 import { ImageModal } from '@/shared/ui/ImageModal';
 import type { Message } from '../types';
@@ -17,6 +17,8 @@ interface MessageBubbleProps {
 
 export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
   const isIncoming = message.direction === 'incoming';
+  const isBot = message.senderType === 'bot';
+  const isSystem = message.senderType === 'system';
   const [showImageModal, setShowImageModal] = useState(false);
 
   // Format timestamp
@@ -65,12 +67,22 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
     >
       {/* Avatar for incoming messages */}
       {isIncoming && (
-        <Avatar
-          alt={clientName}
-          initials={initials}
-          size="sm"
-          className="shrink-0"
-        />
+        isBot ? (
+          <div className="w-8 h-8 rounded-full bg-accent-purple/20 flex items-center justify-center shrink-0">
+            <Bot className="w-4 h-4 text-accent-purple" />
+          </div>
+        ) : isSystem ? (
+          <div className="w-8 h-8 rounded-full bg-accent-orange/20 flex items-center justify-center shrink-0">
+            <Cog className="w-4 h-4 text-accent-orange" />
+          </div>
+        ) : (
+          <Avatar
+            alt={clientName}
+            initials={initials}
+            size="sm"
+            className="shrink-0"
+          />
+        )
       )}
 
       <div
@@ -84,7 +96,15 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
           className={cn(
             'px-3 py-2 rounded-2xl break-words',
             isIncoming
-              ? 'bg-bg-secondary text-text-primary rounded-bl-sm'
+              ? isBot
+                ? 'bg-accent-purple/10 text-text-primary rounded-bl-sm border border-accent-purple/30'
+                : isSystem
+                ? 'bg-accent-orange/10 text-text-primary rounded-bl-sm border border-accent-orange/30'
+                : 'bg-bg-secondary text-text-primary rounded-bl-sm'
+              : isBot
+              ? 'bg-accent-purple text-white rounded-br-sm'
+              : isSystem
+              ? 'bg-accent-orange text-white rounded-br-sm'
               : message.status === 'pending'
               ? 'bg-bg-tertiary text-text-secondary rounded-br-sm opacity-70'
               : message.status === 'failed'
@@ -177,6 +197,23 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
           <StatusIcon />
         </div>
       </div>
+
+      {/* Avatar for outgoing messages */}
+      {!isIncoming && (
+        isBot ? (
+          <div className="w-8 h-8 rounded-full bg-accent-purple/20 flex items-center justify-center shrink-0">
+            <Bot className="w-4 h-4 text-accent-purple" />
+          </div>
+        ) : isSystem ? (
+          <div className="w-8 h-8 rounded-full bg-accent-orange/20 flex items-center justify-center shrink-0">
+            <Cog className="w-4 h-4 text-accent-orange" />
+          </div>
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-accent-blue/20 flex items-center justify-center shrink-0">
+            <User className="w-4 h-4 text-accent-blue" />
+          </div>
+        )
+      )}
     </div>
   );
 };

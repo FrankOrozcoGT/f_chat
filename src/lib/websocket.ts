@@ -42,6 +42,11 @@ export interface ConversationCreatedPayload {
   contactName?: string;
 }
 
+export interface ConversationModeChangedPayload {
+  conversationId: string;
+  mode: 'AI' | 'HITL';
+}
+
 // Patrón Socket.IO oficial: crear instancia a nivel de módulo
 // Referencia: https://socket.io/how-to/use-with-react
 const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
