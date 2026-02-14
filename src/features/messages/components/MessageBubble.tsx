@@ -94,7 +94,7 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
         {/* Message content bubble */}
         <div
           className={cn(
-            'px-3 py-2 rounded-2xl break-words',
+            'px-3 py-2 rounded-2xl wrap-break-word',
             isIncoming
               ? isBot
                 ? 'bg-accent-purple/10 text-text-primary rounded-bl-sm border border-accent-purple/30'
