@@ -20,7 +20,7 @@ export const useGetMessages = (conversationId: string) => {
       return messages;
     },
     enabled: !!conversationId,
-    staleTime: 30 * 1000, // 30 seconds
-    refetchOnWindowFocus: true,
+    staleTime: Infinity, // Messages update via WebSocket invalidation only
+    refetchOnWindowFocus: false,
   });
 };
