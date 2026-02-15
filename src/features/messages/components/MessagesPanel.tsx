@@ -108,7 +108,22 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       }
     };
 
-    const handleModeChanged = (data: { conversationId: string; mode: 'AI' | 'HITL' }) => {
+    // conversation:hitl — cliente solicita hablar con humano, refetch detail para actualizar mode
+    const handleHitl = (data: { conversationId: string }) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      }
+    };
+
+    // conversation:taken — agente toma la conversación
+    const handleTaken = (data: { conversationId: string }) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      }
+    };
+
+    // conversation:returned — conversación devuelta a IA
+    const handleReturned = (data: { conversationId: string }) => {
       if (data.conversationId === conversationId) {
         queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
       }
@@ -119,7 +134,9 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
     socket.on('message:sent', handleMessageSent);
     socket.on('message:status_updated', handleMessageStatusUpdated);
     socket.on('message:error', handleMessageError);
-    socket.on('conversation:mode_changed', handleModeChanged);
+    socket.on('conversation:hitl', handleHitl);
+    socket.on('conversation:taken', handleTaken);
+    socket.on('conversation:returned', handleReturned);
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
@@ -127,7 +144,9 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       socket.off('message:sent', handleMessageSent);
       socket.off('message:status_updated', handleMessageStatusUpdated);
       socket.off('message:error', handleMessageError);
-      socket.off('conversation:mode_changed', handleModeChanged);
+      socket.off('conversation:hitl', handleHitl);
+      socket.off('conversation:taken', handleTaken);
+      socket.off('conversation:returned', handleReturned);
     };
   }, [conversationId, queryClient, showToast]);
 
