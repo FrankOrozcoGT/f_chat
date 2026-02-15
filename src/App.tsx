@@ -1,13 +1,18 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { LoginPage } from '@/features/auth/components/LoginPage';
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
 import { UsersPage } from '@/features/users/components/UsersPage';
 import { PhonesPage } from '@/features/phones/components/PhonesPage';
 import { ConversationsPage } from '@/features/conversations/components/ConversationsPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
-import { ToastContainer } from '@/shared/ui/Toast';
+import { Toast, ToastContainer } from '@/shared/ui/Toast';
+import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
+import type { ConversationHitlPayload } from '@/lib/websocket';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
+import { messageKeys } from '@/features/messages/api/messageKeys';
 import { useGetMe } from '@/features/auth/api';
 
 /** Redirige según el rol del usuario autenticado */
@@ -25,6 +30,9 @@ const DefaultRedirect = () => {
 let didInitWebSocket = false;
 
 function App() {
+  const queryClient = useQueryClient();
+  const { toasts, showToast, removeToast } = useToast();
+
   useEffect(() => {
     // Inicializar solo UNA VEZ por app load (no por component mount)
     if (didInitWebSocket) return;
@@ -50,6 +58,31 @@ function App() {
     socket.on('disconnect', onDisconnect);
     socket.on('connect_error', onConnectError);
   }, []);
+
+  // Global HITL notification listener
+  useEffect(() => {
+    const handleHitl = (data: ConversationHitlPayload) => {
+      console.log('[HITL] Event received:', data);
+      // Reproducir sonido de notificación
+      const audio = new Audio('/sounds/hitl-notification.wav');
+      audio.play().catch(() => {
+        console.warn('[HITL] Could not play notification sound');
+      });
+
+      // Invalidar queries para que la UI refleje el cambio de mode
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: messageKeys.detail(data.conversationId) });
+
+      // Mostrar toast global
+      showToast(`Cliente ${data.clientPhone} solicita hablar con un humano`, 'info');
+    };
+
+    socket.on('conversation:hitl', handleHitl);
+
+    return () => {
+      socket.off('conversation:hitl', handleHitl);
+    };
+  }, [queryClient, showToast]);
 
   return (
     <>
@@ -102,6 +135,17 @@ function App() {
           <Route path="/" element={<DefaultRedirect />} />
         </Routes>
       </BrowserRouter>
+
+      {/* HITL notification toasts (global) */}
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          duration={10000}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
 
       {/* Toast notifications */}
       <ToastContainer />
