@@ -50,9 +50,22 @@ export interface ConversationCreatedPayload {
   contactName?: string;
 }
 
-export interface ConversationModeChangedPayload {
+export interface ConversationHitlPayload {
   conversationId: string;
-  mode: 'AI' | 'HITL';
+  clientPhone: string;
+  timestamp: string;
+}
+
+export interface ConversationTakenPayload {
+  conversationId: string;
+  userId: string;
+  userName: string;
+  timestamp: string;
+}
+
+export interface ConversationReturnedPayload {
+  conversationId: string;
+  timestamp: string;
 }
 
 // Patrón Socket.IO oficial: crear instancia a nivel de módulo
