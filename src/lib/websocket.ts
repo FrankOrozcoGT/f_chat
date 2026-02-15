@@ -19,6 +19,14 @@ export interface MessageSentPayload {
   timestamp: string;
 }
 
+export interface MessageNewPayload {
+  id: string;
+  phoneId: string;
+  conversationId: string;
+  body: string;
+  timestamp: string;
+}
+
 export interface MessageErrorPayload {
   phoneId: string;
   conversationId: string;
@@ -40,6 +48,24 @@ export interface ConversationCreatedPayload {
   phoneId: string;
   contactNumber: string;
   contactName?: string;
+}
+
+export interface ConversationHitlPayload {
+  conversationId: string;
+  clientPhone: string;
+  timestamp: string;
+}
+
+export interface ConversationTakenPayload {
+  conversationId: string;
+  userId: string;
+  userName: string;
+  timestamp: string;
+}
+
+export interface ConversationReturnedPayload {
+  conversationId: string;
+  timestamp: string;
 }
 
 // Patrón Socket.IO oficial: crear instancia a nivel de módulo

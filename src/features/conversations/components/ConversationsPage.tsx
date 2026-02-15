@@ -11,6 +11,7 @@ import { ConversationsList } from './ConversationsList';
 import { conversationKeys } from '../api/conversationKeys';
 import { useConversationsStore } from '../store';
 import { socket } from '@/lib/websocket';
+import { messageKeys } from '@/features/messages/api/messageKeys';
 import { MessagesPanel } from '@/features/messages/components/MessagesPanel';
 import { HITLPanel } from '@/features/messages/components/HITLPanel';
 
@@ -31,14 +32,46 @@ export const ConversationsPage = () => {
       queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
     };
 
+    // Listen for messages sent from backend/bot
+    const handleMessageNew = () => {
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+    };
+
+    // conversation:hitl — refrescar lista para mostrar indicador
+    const handleHitl = () => {
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+    };
+
+    const handleConversationTaken = () => {
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      if (selectedConversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(selectedConversationId) });
+      }
+    };
+
+    const handleConversationReturned = () => {
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+      if (selectedConversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(selectedConversationId) });
+      }
+    };
+
     socket.on('message:incoming', handleMessageIncoming);
+    socket.on('message:new', handleMessageNew);
     socket.on('conversation:created', handleConversationCreated);
+    socket.on('conversation:hitl', handleHitl);
+    socket.on('conversation:taken', handleConversationTaken);
+    socket.on('conversation:returned', handleConversationReturned);
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
+      socket.off('message:new', handleMessageNew);
       socket.off('conversation:created', handleConversationCreated);
+      socket.off('conversation:hitl', handleHitl);
+      socket.off('conversation:taken', handleConversationTaken);
+      socket.off('conversation:returned', handleConversationReturned);
     };
-  }, [queryClient]);
+  }, [queryClient, selectedConversationId]);
 
   return (
     <div className="min-h-screen bg-bg-primary">

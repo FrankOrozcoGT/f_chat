@@ -14,6 +14,7 @@ interface BackendConversation {
   lastMessageAt: string;
   lastMessagePreview: string;
   isActive: boolean;
+  mode?: 'AI' | 'HITL';
   summary: string | null;
   createdAt: string;
   updatedAt: string;
@@ -61,6 +62,7 @@ export const useGetConversations = (params: GetConversationsParams = {}) => {
         lastMessageAt: conv.lastMessageAt,
         unreadCount: 0, // TODO: Backend should provide this
         status: conv.isActive ? ('active' as const) : ('closed' as const),
+        mode: conv.mode || 'HITL',
         createdAt: conv.createdAt,
         updatedAt: conv.updatedAt,
       }));

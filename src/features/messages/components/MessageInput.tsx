@@ -6,8 +6,9 @@
 
 import { useState, useRef } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
-import { Send, Image, Paperclip, Mic, X, Trash2, Play, Pause, Square } from 'lucide-react';
+import { Send, Image, Paperclip, Mic, X, Trash2, Square } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
+import { InfoBanner } from '@/shared/ui/InfoBanner';
 import { useToast } from '@/shared/hooks/useToast';
 import { useSendMessage } from '../api/useSendMessage';
 import { useSendMessageWithFile } from '../api/useSendMessageWithFile';
@@ -15,16 +16,16 @@ import type { BackendMessageType } from '../types';
 
 interface MessageInputProps {
   conversationId: string;
+  disabled?: boolean;
 }
 
-export const MessageInput = ({ conversationId }: MessageInputProps) => {
+export const MessageInput = ({ conversationId, disabled }: MessageInputProps) => {
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
-  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -269,27 +270,6 @@ export const MessageInput = ({ conversationId }: MessageInputProps) => {
     }
   };
 
-  const toggleAudioPreview = () => {
-    if (!recordedAudio) return;
-
-    if (!audioPreviewRef.current) {
-      const audioUrl = URL.createObjectURL(recordedAudio);
-      const audio = new Audio(audioUrl);
-      audioPreviewRef.current = audio;
-
-      audio.onended = () => {
-        setIsPlayingPreview(false);
-      };
-    }
-
-    if (isPlayingPreview) {
-      audioPreviewRef.current.pause();
-      setIsPlayingPreview(false);
-    } else {
-      audioPreviewRef.current.play();
-      setIsPlayingPreview(true);
-    }
-  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -305,7 +285,18 @@ export const MessageInput = ({ conversationId }: MessageInputProps) => {
     }
   };
 
-  const isDisabled = sendMessageMutation.isPending || sendMessageWithFileMutation.isPending;
+  const isDisabled = disabled || sendMessageMutation.isPending || sendMessageWithFileMutation.isPending;
+
+  // AI mode: show info banner instead of input
+  if (disabled) {
+    return (
+      <div className="p-3 md:p-4 border-t border-border-primary bg-bg-secondary">
+        <InfoBanner variant="ai">
+          Esta conversación está siendo atendida por IA. El envío de mensajes está deshabilitado.
+        </InfoBanner>
+      </div>
+    );
+  }
 
   // Recording mode: full width voice UI
   if (isRecording) {
