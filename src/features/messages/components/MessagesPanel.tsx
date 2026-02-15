@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Bot, Info } from 'lucide-react';
+import { ArrowLeft, Bot, Hand, Info } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
@@ -15,7 +15,10 @@ import { ClientInfo } from './ClientInfo';
 import { ConversationSummary } from './ConversationSummary';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
+import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
+import { useTakeControl } from '../api/useTakeControl';
+import { useReturnToAi } from '../api/useReturnToAi';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
 import type { MessageIncomingPayload, MessageSentPayload } from '@/lib/websocket';
@@ -38,6 +41,20 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
 
   const client = conversationDetail?.client;
   const conversationMode = conversationDetail?.conversation?.mode;
+
+  // HITL mutation hooks
+  const takeControl = useTakeControl({
+    onError: (error) => {
+      const msg = (error as any)?.response?.data?.message || 'Error al tomar control';
+      showToast(msg, 'error');
+    },
+  });
+  const returnToAi = useReturnToAi({
+    onError: (error) => {
+      const msg = (error as any)?.response?.data?.message || 'Error al devolver a IA';
+      showToast(msg, 'error');
+    },
+  });
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -195,13 +212,28 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
           </p>
         </div>
 
-        {/* Mode badge (AI) */}
-        {conversationMode === 'AI' && (
-          <Badge variant="default" size="sm" className="bg-accent-purple/20 text-accent-purple border-accent-purple/30">
-            <Bot className="w-3 h-3" />
-            IA
-          </Badge>
-        )}
+        {/* HITL action button */}
+        {conversationMode === 'AI' ? (
+          <Button
+            variant="primary"
+            size="sm"
+            isLoading={takeControl.isPending}
+            onClick={() => takeControl.mutate({ conversationId })}
+          >
+            <Hand className="w-4 h-4" />
+            <span className="hidden sm:inline">Tomar Control</span>
+          </Button>
+        ) : conversationMode === 'HITL' ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            isLoading={returnToAi.isPending}
+            onClick={() => returnToAi.mutate({ conversationId })}
+          >
+            <Bot className="w-4 h-4" />
+            <span className="hidden sm:inline">Devolver a IA</span>
+          </Button>
+        ) : null}
 
         {/* Status badge (based on conversation isActive) */}
         {conversationDetail?.conversation && (
