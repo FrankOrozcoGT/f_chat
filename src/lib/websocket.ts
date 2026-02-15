@@ -68,6 +68,26 @@ export interface ConversationReturnedPayload {
   timestamp: string;
 }
 
+export const ApiName = {
+  EVOLUTION: 'evolution',
+  QWEN_STT: 'qwen_stt',
+  QWEN_TTS: 'qwen_tts',
+  KIMI: 'kimi',
+} as const;
+
+export type ApiName = typeof ApiName[keyof typeof ApiName];
+
+export interface ApiDownPayload {
+  apiName: ApiName;
+  error: string;
+  timestamp: string;
+}
+
+export interface ApiUpPayload {
+  apiName: ApiName;
+  timestamp: string;
+}
+
 // Patrón Socket.IO oficial: crear instancia a nivel de módulo
 // Referencia: https://socket.io/how-to/use-with-react
 const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
