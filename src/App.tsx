@@ -10,7 +10,7 @@ import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { Toast, ToastContainer } from '@/shared/ui/Toast';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
-import type { ConversationHitlPayload } from '@/lib/websocket';
+import type { ConversationHitlPayload, ApiDownPayload, ApiUpPayload } from '@/lib/websocket';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { messageKeys } from '@/features/messages/api/messageKeys';
 import { useGetMe } from '@/features/auth/api';
@@ -83,6 +83,27 @@ function App() {
       socket.off('conversation:hitl', handleHitl);
     };
   }, [queryClient, showToast]);
+
+  // Global Health alerts listener
+  useEffect(() => {
+    const handleApiDown = (data: ApiDownPayload) => {
+      console.log('[Health] API down:', data);
+      showToast(`${data.apiName} no está disponible: ${data.error}`, 'error');
+    };
+
+    const handleApiUp = (data: ApiUpPayload) => {
+      console.log('[Health] API recovered:', data);
+      showToast(`${data.apiName} recuperada`, 'success');
+    };
+
+    socket.on('api:down', handleApiDown);
+    socket.on('api:up', handleApiUp);
+
+    return () => {
+      socket.off('api:down', handleApiDown);
+      socket.off('api:up', handleApiUp);
+    };
+  }, [showToast]);
 
   return (
     <>
