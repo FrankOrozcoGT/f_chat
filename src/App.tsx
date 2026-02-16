@@ -6,6 +6,7 @@ import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
 import { UsersPage } from '@/features/users/components/UsersPage';
 import { PhonesPage } from '@/features/phones/components/PhonesPage';
 import { ConversationsPage } from '@/features/conversations/components/ConversationsPage';
+import { HealthPage } from '@/features/health/components/HealthPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { Toast, ToastContainer } from '@/shared/ui/Toast';
 import { useToast } from '@/shared/hooks/useToast';
@@ -128,6 +129,16 @@ function App() {
             element={
               <ProtectedRoute requiredRole="admin">
                 <UsersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Health routes - accesible para todos los usuarios autenticados */}
+          <Route
+            path="/admin/health"
+            element={
+              <ProtectedRoute requiredRole="free">
+                <HealthPage />
               </ProtectedRoute>
             }
           />
