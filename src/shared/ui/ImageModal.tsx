@@ -36,7 +36,7 @@ export const ImageModal = ({ src, alt = 'Imagen', onClose }: ImageModalProps) =>
     <Portal>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/90 z-[1400] flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/90 z-1400 flex items-center justify-center p-4"
         onClick={onClose}
       >
         {/* Close button */}

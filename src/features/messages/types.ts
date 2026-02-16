@@ -3,7 +3,7 @@
 // Backend types (lowercase as returned by API)
 export type BackendMessageType = 'text' | 'image' | 'video' | 'audio' | 'document';
 export type BackendMessageDirection = 'incoming' | 'outgoing';
-export type BackendSenderType = 'client' | 'agent' | 'bot';
+export type BackendSenderType = 'client' | 'agent' | 'bot' | 'system';
 export type BackendMessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
 
 // Frontend types (mapped)
@@ -71,6 +71,7 @@ export interface BackendConversationDetail {
     phoneId: string;
     clientId: string;
     isActive: boolean;
+    mode: 'AI' | 'HITL';
     lastMessageAt: Date;
     lastMessagePreview: string;
     createdAt: Date;

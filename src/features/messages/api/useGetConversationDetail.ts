@@ -16,6 +16,7 @@ interface BackendConversationDetailResponse {
     lastMessageAt: string;
     lastMessagePreview: string;
     isActive: boolean;
+    mode: 'AI' | 'HITL';
     summary: any;
     createdAt: string;
     updatedAt: string;

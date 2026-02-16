@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Bot, Hand, Info } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
@@ -15,9 +15,13 @@ import { ClientInfo } from './ClientInfo';
 import { ConversationSummary } from './ConversationSummary';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
+import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
+import { useTakeControl } from '../api/useTakeControl';
+import { useReturnToAi } from '../api/useReturnToAi';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
+import type { MessageIncomingPayload, MessageSentPayload } from '@/lib/websocket';
 import type { Message } from '../types';
 
 interface MessagesPanelProps {
@@ -36,7 +40,21 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
   const { data: conversationDetail } = useGetConversationDetail(conversationId);
 
   const client = conversationDetail?.client;
-  const summary = conversationDetail?.summary;
+  const conversationMode = conversationDetail?.conversation?.mode;
+
+  // HITL mutation hooks
+  const takeControl = useTakeControl({
+    onError: (error) => {
+      const msg = (error as any)?.response?.data?.message || 'Error al tomar control';
+      showToast(msg, 'error');
+    },
+  });
+  const returnToAi = useReturnToAi({
+    onError: (error) => {
+      const msg = (error as any)?.response?.data?.message || 'Error al devolver a IA';
+      showToast(msg, 'error');
+    },
+  });
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -47,25 +65,24 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
 
   // WebSocket integration for real-time message updates
   useEffect(() => {
-    const handleMessageIncoming = (data: { message: Message }) => {
-      // Only update if message belongs to current conversation
-      if (data.message.conversationId === conversationId) {
+    // message:incoming — mensaje entrante del cliente WhatsApp (broadcast)
+    const handleMessageIncoming = (data: MessageIncomingPayload) => {
+      if (data.conversationId === conversationId) {
         queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
       }
     };
 
-    const handleMessageSent = (data: { conversationId: string; tempId: string; message: Message }) => {
-      // Only update if message belongs to current conversation
+    // message:new — mensaje enviado desde el backend/bot (broadcast)
+    const handleMessageNew = (data: { conversationId: string }) => {
       if (data.conversationId === conversationId) {
-        // Replace temporary message with real message from server
-        queryClient.setQueryData<Message[]>(
-          messageKeys.list(conversationId),
-          (oldMessages = []) => {
-            return oldMessages.map((msg) =>
-              msg.id === data.tempId ? data.message : msg
-            );
-          }
-        );
+        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
+      }
+    };
+
+    // message:sent — mensaje enviado desde WhatsApp Web, no desde el sistema (broadcast)
+    const handleMessageSent = (data: MessageSentPayload) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
       }
     };
 
@@ -108,16 +125,45 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       }
     };
 
+    // conversation:hitl — cliente solicita hablar con humano, refetch detail para actualizar mode
+    const handleHitl = (data: { conversationId: string }) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      }
+    };
+
+    // conversation:taken — agente toma la conversación
+    const handleTaken = (data: { conversationId: string }) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      }
+    };
+
+    // conversation:returned — conversación devuelta a IA
+    const handleReturned = (data: { conversationId: string }) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      }
+    };
+
     socket.on('message:incoming', handleMessageIncoming);
+    socket.on('message:new', handleMessageNew);
     socket.on('message:sent', handleMessageSent);
     socket.on('message:status_updated', handleMessageStatusUpdated);
     socket.on('message:error', handleMessageError);
+    socket.on('conversation:hitl', handleHitl);
+    socket.on('conversation:taken', handleTaken);
+    socket.on('conversation:returned', handleReturned);
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
+      socket.off('message:new', handleMessageNew);
       socket.off('message:sent', handleMessageSent);
       socket.off('message:status_updated', handleMessageStatusUpdated);
       socket.off('message:error', handleMessageError);
+      socket.off('conversation:hitl', handleHitl);
+      socket.off('conversation:taken', handleTaken);
+      socket.off('conversation:returned', handleReturned);
     };
   }, [conversationId, queryClient, showToast]);
 
@@ -165,6 +211,29 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
             {client?.phone || ''}
           </p>
         </div>
+
+        {/* HITL action button */}
+        {conversationMode === 'AI' ? (
+          <Button
+            variant="primary"
+            size="sm"
+            isLoading={takeControl.isPending}
+            onClick={() => takeControl.mutate({ conversationId })}
+          >
+            <Hand className="w-4 h-4" />
+            <span className="hidden sm:inline">Tomar Control</span>
+          </Button>
+        ) : conversationMode === 'HITL' ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            isLoading={returnToAi.isPending}
+            onClick={() => returnToAi.mutate({ conversationId })}
+          >
+            <Bot className="w-4 h-4" />
+            <span className="hidden sm:inline">Devolver a IA</span>
+          </Button>
+        ) : null}
 
         {/* Status badge (based on conversation isActive) */}
         {conversationDetail?.conversation && (
@@ -215,7 +284,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       </div>
 
       {/* Footer with input */}
-      <MessageInput conversationId={conversationId} />
+      <MessageInput conversationId={conversationId} disabled={conversationMode === 'AI'} />
 
       {/* Bottom Sheet for mobile - shows client info + conversation summary */}
       <BottomSheet
