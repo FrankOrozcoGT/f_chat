@@ -4,17 +4,23 @@ import { MainLayout } from '@/layouts/MainLayout';
 import { Card, CardBody } from '@/shared/ui/Card';
 import { Select, type SelectOption } from '@/shared/ui/Select';
 import { useGetCosts } from '../api/useGetCosts';
-import type { Period } from '../types';
+import { Period, type Period as PeriodType } from '../types';
 
 export const CostsPage = () => {
-  const [period, setPeriod] = useState<Period>('month');
+  const [period, setPeriod] = useState<PeriodType>(Period.MONTH);
   const { data: costs, isLoading, isError, error } = useGetCosts(period);
 
-  const periodOptions: SelectOption<Period>[] = [
-    { value: 'day', label: 'Día' },
-    { value: 'week', label: 'Semana' },
-    { value: 'month', label: 'Mes' },
+  const periodOptions: SelectOption<PeriodType>[] = [
+    { value: Period.DAY, label: 'Día' },
+    { value: Period.WEEK, label: 'Semana' },
+    { value: Period.MONTH, label: 'Mes' },
   ];
+
+  const handlePeriodChange = (newPeriod: PeriodType) => {
+    console.log('🔵 CostsPage - Period change requested:', { from: period, to: newPeriod });
+    setPeriod(newPeriod);
+    console.log('🔵 CostsPage - setPeriod called with:', newPeriod);
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-ES', {
@@ -28,7 +34,7 @@ export const CostsPage = () => {
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center justify-center min-h-100">
           <div className="flex flex-col items-center gap-3">
             <Loader2 size={32} className="text-accent-blue animate-spin" />
             <p className="text-text-secondary">Cargando costos...</p>
@@ -41,7 +47,7 @@ export const CostsPage = () => {
   if (isError) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center justify-center min-h-100">
           <div className="flex flex-col items-center gap-3 text-center">
             <AlertCircle size={48} className="text-accent-red" />
             <h2 className="text-xl font-semibold text-text-primary">Error al cargar costos</h2>
@@ -70,10 +76,10 @@ export const CostsPage = () => {
           </div>
 
           {/* Period filter */}
-          <Select
+          <Select<PeriodType>
             value={period}
             options={periodOptions}
-            onChange={setPeriod}
+            onChange={handlePeriodChange}
             variant="default"
             size="md"
           />

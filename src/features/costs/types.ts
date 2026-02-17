@@ -1,4 +1,10 @@
-export type Period = 'day' | 'week' | 'month';
+export const Period = {
+  DAY: 'day',
+  WEEK: 'week',
+  MONTH: 'month',
+} as const;
+
+export type Period = typeof Period[keyof typeof Period];
 
 export interface CostsSummary {
   totalSTT: number;
