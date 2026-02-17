@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Bot, Info } from 'lucide-react';
+import { ArrowLeft, Bot, Hand, Info } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
@@ -15,11 +15,15 @@ import { ClientInfo } from './ClientInfo';
 import { ConversationSummary } from './ConversationSummary';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
+import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
+import { useTakeControl } from '../api/useTakeControl';
+import { useReturnToAi } from '../api/useReturnToAi';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
-import type { MessageIncomingPayload, MessageSentPayload } from '@/lib/websocket';
+import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload } from '@/lib/websocket';
 import type { Message } from '../types';
+import { authKeys } from '@/features/auth/api/useGetMe';
 
 interface MessagesPanelProps {
   conversationId: string;
@@ -38,6 +42,20 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
 
   const client = conversationDetail?.client;
   const conversationMode = conversationDetail?.conversation?.mode;
+
+  // HITL mutation hooks
+  const takeControl = useTakeControl({
+    onError: (error) => {
+      const msg = (error as any)?.response?.data?.message || 'Error al tomar control';
+      showToast(msg, 'error');
+    },
+  });
+  const returnToAi = useReturnToAi({
+    onError: (error) => {
+      const msg = (error as any)?.response?.data?.message || 'Error al devolver a IA';
+      showToast(msg, 'error');
+    },
+  });
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -108,9 +126,43 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       }
     };
 
-    const handleModeChanged = (data: { conversationId: string; mode: 'AI' | 'HITL' }) => {
+    // conversation:hitl — cliente solicita hablar con humano, refetch detail para actualizar mode
+    const handleHitl = (data: { conversationId: string }) => {
       if (data.conversationId === conversationId) {
         queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      }
+    };
+
+    // conversation:taken — agente toma la conversación
+    const handleTaken = (data: { conversationId: string }) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      }
+    };
+
+    // conversation:returned — conversación devuelta a IA
+    const handleReturned = (data: { conversationId: string }) => {
+      if (data.conversationId === conversationId) {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      }
+    };
+
+    // credits:exhausted — créditos agotados, conversación movida a HITL
+    const handleCreditsExhausted = (data: CreditsExhaustedPayload) => {
+      if (data.conversationId === conversationId) {
+        // Show toast notification
+        const usedFormatted = data.creditsUsed.toFixed(2);
+        const limitFormatted = data.creditsLimit.toFixed(0);
+        showToast(
+          `⚠️ Créditos agotados. Usado: ${usedFormatted} / ${limitFormatted}. La conversación se movió a modo manual (HITL).`,
+          'error'
+        );
+
+        // Refresh conversation detail to update mode to HITL
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+
+        // Refresh user data to update creditsUsed
+        queryClient.invalidateQueries({ queryKey: authKeys.me() });
       }
     };
 
@@ -119,7 +171,10 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
     socket.on('message:sent', handleMessageSent);
     socket.on('message:status_updated', handleMessageStatusUpdated);
     socket.on('message:error', handleMessageError);
-    socket.on('conversation:mode_changed', handleModeChanged);
+    socket.on('conversation:hitl', handleHitl);
+    socket.on('conversation:taken', handleTaken);
+    socket.on('conversation:returned', handleReturned);
+    socket.on('credits:exhausted', handleCreditsExhausted);
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
@@ -127,7 +182,10 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       socket.off('message:sent', handleMessageSent);
       socket.off('message:status_updated', handleMessageStatusUpdated);
       socket.off('message:error', handleMessageError);
-      socket.off('conversation:mode_changed', handleModeChanged);
+      socket.off('conversation:hitl', handleHitl);
+      socket.off('conversation:taken', handleTaken);
+      socket.off('conversation:returned', handleReturned);
+      socket.off('credits:exhausted', handleCreditsExhausted);
     };
   }, [conversationId, queryClient, showToast]);
 
@@ -176,13 +234,28 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
           </p>
         </div>
 
-        {/* Mode badge (AI) */}
-        {conversationMode === 'AI' && (
-          <Badge variant="default" size="sm" className="bg-accent-purple/20 text-accent-purple border-accent-purple/30">
-            <Bot className="w-3 h-3" />
-            IA
-          </Badge>
-        )}
+        {/* HITL action button */}
+        {conversationMode === 'AI' ? (
+          <Button
+            variant="primary"
+            size="sm"
+            isLoading={takeControl.isPending}
+            onClick={() => takeControl.mutate({ conversationId })}
+          >
+            <Hand className="w-4 h-4" />
+            <span className="hidden sm:inline">Tomar Control</span>
+          </Button>
+        ) : conversationMode === 'HITL' ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            isLoading={returnToAi.isPending}
+            onClick={() => returnToAi.mutate({ conversationId })}
+          >
+            <Bot className="w-4 h-4" />
+            <span className="hidden sm:inline">Devolver a IA</span>
+          </Button>
+        ) : null}
 
         {/* Status badge (based on conversation isActive) */}
         {conversationDetail?.conversation && (

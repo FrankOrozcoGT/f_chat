@@ -56,13 +56,13 @@ export const Modal = ({
     <Portal>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-[1300] cursor-pointer"
+        className="fixed inset-0 bg-black/50 z-1300 cursor-pointer"
         onClick={closeOnBackdrop ? onClose : undefined}
         aria-hidden="true"
       />
 
       {/* Modal Container */}
-      <div className="fixed inset-0 md:inset-4 flex items-end md:items-center justify-center z-[1400] pointer-events-none">
+      <div className="fixed inset-0 md:inset-4 flex items-end md:items-center justify-center z-1400 pointer-events-none">
         {/* Modal Content */}
         <div
           className={cn(

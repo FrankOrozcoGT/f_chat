@@ -5,6 +5,7 @@ import { useToast } from '@/shared/hooks/useToast';
 import { Toast } from '@/shared/ui/Toast';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { PlanSelector } from './PlanSelector';
+import { LimitsCell } from './LimitsCell';
 import type { User as UserType } from '../types';
 
 export const UsersPage = () => {
@@ -58,6 +59,17 @@ export const UsersPage = () => {
       header: 'Plan',
       render: (user) => (
         <PlanSelector
+          user={user}
+          onSuccess={(msg) => showToast(msg, 'success')}
+          onError={(msg) => showToast(msg, 'error')}
+        />
+      ),
+    },
+    {
+      key: 'limits',
+      header: 'Límites',
+      render: (user) => (
+        <LimitsCell
           user={user}
           onSuccess={(msg) => showToast(msg, 'success')}
           onError={(msg) => showToast(msg, 'error')}

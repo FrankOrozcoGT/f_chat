@@ -50,9 +50,50 @@ export interface ConversationCreatedPayload {
   contactName?: string;
 }
 
-export interface ConversationModeChangedPayload {
+export interface ConversationHitlPayload {
   conversationId: string;
-  mode: 'AI' | 'HITL';
+  clientPhone: string;
+  timestamp: string;
+}
+
+export interface ConversationTakenPayload {
+  conversationId: string;
+  userId: string;
+  userName: string;
+  timestamp: string;
+}
+
+export interface ConversationReturnedPayload {
+  conversationId: string;
+  timestamp: string;
+}
+
+export interface CreditsExhaustedPayload {
+  userId: string;
+  conversationId: string;
+  creditsUsed: number;
+  creditsLimit: number;
+  timestamp: string;
+}
+
+export const ApiName = {
+  EVOLUTION: 'evolution',
+  QWEN_STT: 'qwen_stt',
+  QWEN_TTS: 'qwen_tts',
+  KIMI: 'kimi',
+} as const;
+
+export type ApiName = typeof ApiName[keyof typeof ApiName];
+
+export interface ApiDownPayload {
+  apiName: ApiName;
+  error: string;
+  timestamp: string;
+}
+
+export interface ApiUpPayload {
+  apiName: ApiName;
+  timestamp: string;
 }
 
 // Patrón Socket.IO oficial: crear instancia a nivel de módulo

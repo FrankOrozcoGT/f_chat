@@ -1,7 +1,7 @@
 // Individual conversation item component
 // Shows avatar, name, preview, timestamp, and unread badge
 
-import { Bot } from 'lucide-react';
+import { Bot, Hand } from 'lucide-react';
 import type { Conversation } from '../types';
 import { useConversationsStore } from '../store';
 import { formatDistanceToNow } from 'date-fns';
@@ -85,9 +85,11 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
             {isGroup ? `Grupo · ${cleanPhone}` : cleanPhone}
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
-            {conversation.mode === 'AI' && (
+            {conversation.mode === 'AI' ? (
               <span title="Modo IA"><Bot className="w-3.5 h-3.5 text-accent-purple" /></span>
-            )}
+            ) : conversation.mode === 'HITL' ? (
+              <span title="Modo HITL - Atendido por humano"><Hand className="w-3.5 h-3.5 text-accent-orange" /></span>
+            ) : null}
             {formattedTime && (
               <span className="text-gray-400 dark:text-gray-500">
                 {formattedTime}

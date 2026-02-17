@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, X } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, X } from 'lucide-react';
 import { useGetMe } from '@/features/auth/api';
 import { useSidebarStore } from '@/stores/useSidebarStore';
 
@@ -25,6 +25,18 @@ export const Sidebar = () => {
       label: 'Conversaciones',
       path: '/conversations',
       roles: ['full', 'admin'],
+    },
+    {
+      icon: DollarSign,
+      label: 'Costos',
+      path: '/admin/costs',
+      roles: ['admin'],
+    },
+    {
+      icon: Activity,
+      label: 'Health Status',
+      path: '/admin/health',
+      roles: ['free', 'full', 'admin'],
     },
     {
       icon: Users,
