@@ -5,17 +5,20 @@ export interface CostsSummary {
   totalLLM: number;
   totalTTS: number;
   total: number;
-  byClient: CostsByClient[];
+  byUser: CostsByUser[];
   byDay: CostsByDay[];
 }
 
-export interface CostsByClient {
-  clientPhone: string;
-  totalCost: number;
-  messageCount: number;
+export interface CostsByUser {
+  userId: string;
+  userName: string;
+  email: string;
+  total: number;
+  totalConversations: number;
+  avgCostPerConversation: number;
 }
 
 export interface CostsByDay {
   date: string;
-  totalCost: number;
+  total: number;
 }

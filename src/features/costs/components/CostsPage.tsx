@@ -134,25 +134,28 @@ export const CostsPage = () => {
           </Card>
         </div>
 
-        {/* Costs by Client - Basic List */}
-        {costs?.byClient && costs.byClient.length > 0 && (
+        {/* Costs by User - Basic List */}
+        {costs?.byUser && costs.byUser.length > 0 && (
           <Card>
             <CardBody>
               <h3 className="text-base md:text-lg font-semibold text-text-primary mb-4">
-                Costos por Cliente
+                Costos por Usuario
               </h3>
               <div className="space-y-2">
-                {costs.byClient.map((client) => (
+                {costs.byUser.map((user) => (
                   <div
-                    key={client.clientPhone}
+                    key={user.userId}
                     className="flex items-center justify-between p-3 bg-bg-primary rounded-md border border-border-primary"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">{client.clientPhone}</p>
-                      <p className="text-xs text-text-secondary">{client.messageCount} mensajes</p>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-text-primary">{user.userName}</p>
+                      <p className="text-xs text-text-secondary">{user.email}</p>
+                      <p className="text-xs text-text-tertiary mt-1">
+                        {user.totalConversations} conversaciones • Promedio: {formatCurrency(user.avgCostPerConversation)}
+                      </p>
                     </div>
                     <p className="text-sm font-semibold text-text-primary">
-                      {formatCurrency(client.totalCost)}
+                      {formatCurrency(user.total)}
                     </p>
                   </div>
                 ))}
@@ -183,7 +186,7 @@ export const CostsPage = () => {
                       })}
                     </p>
                     <p className="text-sm font-semibold text-text-primary">
-                      {formatCurrency(day.totalCost)}
+                      {formatCurrency(day.total)}
                     </p>
                   </div>
                 ))}
