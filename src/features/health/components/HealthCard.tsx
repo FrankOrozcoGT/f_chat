@@ -82,7 +82,7 @@ export const HealthCard = ({ health }: HealthCardProps) => {
           {!isUp && health.lastError && (
             <div className="mt-3 pt-3 border-t border-border-primary">
               <span className="text-text-secondary block mb-1">Error:</span>
-              <p className="text-red-600 dark:text-red-400 text-xs font-mono break-words">
+              <p className="text-red-600 dark:text-red-400 text-xs font-mono wrap-break-words">
                 {health.lastError}
               </p>
             </div>
