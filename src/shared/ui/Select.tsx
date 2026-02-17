@@ -36,6 +36,7 @@ export const Select = <T extends string = string>({
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const selectRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -52,7 +53,11 @@ export const Select = <T extends string = string>({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isOutsideSelect = selectRef.current && !selectRef.current.contains(target);
+      const isOutsideDropdown = dropdownRef.current && !dropdownRef.current.contains(target);
+
+      if (isOutsideSelect && isOutsideDropdown) {
         setIsOpen(false);
       }
     };
@@ -67,9 +72,14 @@ export const Select = <T extends string = string>({
   }, [isOpen]);
 
   const handleSelect = (optionValue: T) => {
+    console.log('🟢 Select - handleSelect called with:', optionValue, 'disabled:', disabled);
     if (!disabled) {
+      console.log('🟢 Select - Calling onChange with:', optionValue);
       onChange(optionValue);
+      console.log('🟢 Select - onChange called, closing dropdown');
       setIsOpen(false);
+    } else {
+      console.log('🔴 Select - Skipped onChange because disabled is true');
     }
   };
 
@@ -106,6 +116,7 @@ export const Select = <T extends string = string>({
       {isOpen && !disabled && (
         <Portal>
           <div
+            ref={dropdownRef}
             style={{
               position: 'absolute',
               top: `${dropdownPosition.top}px`,
