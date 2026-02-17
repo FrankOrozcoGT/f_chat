@@ -32,7 +32,7 @@ interface SendMessageWithFileResponse {
 }
 
 interface UseSendMessageWithFileOptions {
-  onError?: (error: Error) => void;
+  onError?: (error: Error, errorType?: 'credits_limit' | 'generic') => void;
 }
 
 export const useSendMessageWithFile = (
@@ -124,9 +124,31 @@ export const useSendMessageWithFile = (
         URL.revokeObjectURL(context.previewUrl);
       }
 
+      // Detect error type
+      let errorType: 'credits_limit' | 'generic' = 'generic';
+
+      // Check if it's a 403 error with credits limit message
+      if (
+        error &&
+        typeof error === 'object' &&
+        'response' in error &&
+        error.response &&
+        typeof error.response === 'object' &&
+        'status' in error.response &&
+        error.response.status === 403 &&
+        'data' in error.response &&
+        error.response.data &&
+        typeof error.response.data === 'object' &&
+        'message' in error.response.data &&
+        typeof error.response.data.message === 'string' &&
+        error.response.data.message.includes('Credits limit')
+      ) {
+        errorType = 'credits_limit';
+      }
+
       // Call external error handler if provided
       if (options?.onError) {
-        options.onError(error as Error);
+        options.onError(error as Error, errorType);
       }
     },
 

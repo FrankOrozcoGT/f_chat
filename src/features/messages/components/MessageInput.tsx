@@ -35,13 +35,21 @@ export const MessageInput = ({ conversationId, disabled }: MessageInputProps) =>
   const isCancelledRef = useRef(false);
   const { showToast } = useToast();
   const sendMessageMutation = useSendMessage(conversationId, {
-    onError: () => {
-      showToast('Error al enviar el mensaje. Intenta nuevamente.', 'error');
+    onError: (_error, errorType) => {
+      if (errorType === 'credits_limit') {
+        showToast('Sin créditos disponibles. Has alcanzado el límite de tu plan.', 'error');
+      } else {
+        showToast('Error al enviar el mensaje. Intenta nuevamente.', 'error');
+      }
     },
   });
   const sendMessageWithFileMutation = useSendMessageWithFile(conversationId, {
-    onError: () => {
-      showToast('Error al enviar el archivo. Intenta nuevamente.', 'error');
+    onError: (_error, errorType) => {
+      if (errorType === 'credits_limit') {
+        showToast('Sin créditos disponibles. Has alcanzado el límite de tu plan.', 'error');
+      } else {
+        showToast('Error al enviar el archivo. Intenta nuevamente.', 'error');
+      }
     },
   });
 
