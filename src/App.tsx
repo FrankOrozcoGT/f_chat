@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { LoginPage } from '@/features/auth/components/LoginPage';
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
 import { UsersPage } from '@/features/users/components/UsersPage';
+import { CostsPage } from '@/features/costs/components/CostsPage';
 import { PhonesPage } from '@/features/phones/components/PhonesPage';
 import { ConversationsPage } from '@/features/conversations/components/ConversationsPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
@@ -128,6 +129,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole="admin">
                 <UsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/costs"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <CostsPage />
               </ProtectedRoute>
             }
           />
