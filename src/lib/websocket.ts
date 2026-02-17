@@ -68,6 +68,14 @@ export interface ConversationReturnedPayload {
   timestamp: string;
 }
 
+export interface CreditsExhaustedPayload {
+  userId: string;
+  conversationId: string;
+  creditsUsed: number;
+  creditsLimit: number;
+  timestamp: string;
+}
+
 export const ApiName = {
   EVOLUTION: 'evolution',
   QWEN_STT: 'qwen_stt',

@@ -56,12 +56,18 @@ export const ConversationsPage = () => {
       }
     };
 
+    const handleCreditsExhausted = () => {
+      // Refresh conversation list to show updated mode (HITL)
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+    };
+
     socket.on('message:incoming', handleMessageIncoming);
     socket.on('message:new', handleMessageNew);
     socket.on('conversation:created', handleConversationCreated);
     socket.on('conversation:hitl', handleHitl);
     socket.on('conversation:taken', handleConversationTaken);
     socket.on('conversation:returned', handleConversationReturned);
+    socket.on('credits:exhausted', handleCreditsExhausted);
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
@@ -70,6 +76,7 @@ export const ConversationsPage = () => {
       socket.off('conversation:hitl', handleHitl);
       socket.off('conversation:taken', handleConversationTaken);
       socket.off('conversation:returned', handleConversationReturned);
+      socket.off('credits:exhausted', handleCreditsExhausted);
     };
   }, [queryClient, selectedConversationId]);
 

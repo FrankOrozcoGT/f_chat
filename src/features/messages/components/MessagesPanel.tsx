@@ -21,8 +21,9 @@ import { useTakeControl } from '../api/useTakeControl';
 import { useReturnToAi } from '../api/useReturnToAi';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
-import type { MessageIncomingPayload, MessageSentPayload } from '@/lib/websocket';
+import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload } from '@/lib/websocket';
 import type { Message } from '../types';
+import { authKeys } from '@/features/auth/api/useGetMe';
 
 interface MessagesPanelProps {
   conversationId: string;
@@ -146,6 +147,25 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       }
     };
 
+    // credits:exhausted — créditos agotados, conversación movida a HITL
+    const handleCreditsExhausted = (data: CreditsExhaustedPayload) => {
+      if (data.conversationId === conversationId) {
+        // Show toast notification
+        const usedFormatted = data.creditsUsed.toFixed(2);
+        const limitFormatted = data.creditsLimit.toFixed(0);
+        showToast(
+          `⚠️ Créditos agotados. Usado: ${usedFormatted} / ${limitFormatted}. La conversación se movió a modo manual (HITL).`,
+          'error'
+        );
+
+        // Refresh conversation detail to update mode to HITL
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+
+        // Refresh user data to update creditsUsed
+        queryClient.invalidateQueries({ queryKey: authKeys.me() });
+      }
+    };
+
     socket.on('message:incoming', handleMessageIncoming);
     socket.on('message:new', handleMessageNew);
     socket.on('message:sent', handleMessageSent);
@@ -154,6 +174,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
     socket.on('conversation:hitl', handleHitl);
     socket.on('conversation:taken', handleTaken);
     socket.on('conversation:returned', handleReturned);
+    socket.on('credits:exhausted', handleCreditsExhausted);
 
     return () => {
       socket.off('message:incoming', handleMessageIncoming);
@@ -164,6 +185,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       socket.off('conversation:hitl', handleHitl);
       socket.off('conversation:taken', handleTaken);
       socket.off('conversation:returned', handleReturned);
+      socket.off('credits:exhausted', handleCreditsExhausted);
     };
   }, [conversationId, queryClient, showToast]);
 
