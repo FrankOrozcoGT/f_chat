@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
 import { Button } from '@/shared/ui/Button';
 import { useUpdateLimits } from '../api/useUpdateLimits';
