@@ -12,44 +12,52 @@ export const Sidebar = () => {
       icon: LayoutDashboard,
       label: 'Dashboard',
       path: '/dashboard',
-      roles: ['free', 'full', 'admin'],
+      allowedPlans: ['free', 'full'],
+      allowedRoles: ['admin'],
     },
     {
       icon: Smartphone,
       label: 'Instancias WhatsApp',
       path: '/phones',
-      roles: ['full', 'admin'],
+      allowedPlans: ['full'],
+      allowedRoles: ['admin'],
     },
     {
       icon: MessageSquare,
       label: 'Conversaciones',
       path: '/conversations',
-      roles: ['full', 'admin'],
+      allowedPlans: ['full'],
+      allowedRoles: ['admin'],
     },
     {
       icon: DollarSign,
       label: 'Costos',
       path: '/admin/costs',
-      roles: ['admin'],
+      allowedPlans: [],
+      allowedRoles: ['admin'],
     },
     {
       icon: Activity,
       label: 'Health Status',
       path: '/admin/health',
-      roles: ['free', 'full', 'admin'],
+      allowedPlans: ['free', 'full'],
+      allowedRoles: ['admin'],
     },
     {
       icon: Users,
       label: 'Gestión de Usuarios',
       path: '/admin/users',
-      roles: ['admin'],
+      allowedPlans: [],
+      allowedRoles: ['admin'],
     },
   ];
 
-  // Filter menu items based on user role
-  const visibleMenuItems = menuItems.filter((item) =>
-    user?.role ? item.roles.includes(user.role) : false
-  );
+  // Filter menu items based on user plan or role
+  const visibleMenuItems = menuItems.filter((item) => {
+    const hasPlanAccess = user?.plan && item.allowedPlans.includes(user.plan);
+    const hasRoleAccess = user?.role && item.allowedRoles.includes(user.role);
+    return hasPlanAccess || hasRoleAccess;
+  });
 
   return (
     <>
@@ -134,7 +142,7 @@ export const Sidebar = () => {
             {user.name}
           </p>
           <p className="text-xs text-text-tertiary capitalize">
-            {user.role}
+            {user.role === 'admin' ? 'Admin' : `Plan ${user.plan}`}
           </p>
         </div>
       )}
