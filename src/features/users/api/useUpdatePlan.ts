@@ -13,7 +13,7 @@ export const useUpdatePlan = () => {
 
   return useMutation({
     mutationFn: async ({ userId, plan }: UpdatePlanParams) => {
-      const response = await apiClient.patch<User>(`/users/${userId}/plan`, {
+      const response = await apiClient.patch<User>(`/admin/users/${userId}/plan`, {
         plan,
       });
       return response.data;
