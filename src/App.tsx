@@ -17,14 +17,18 @@ import { conversationKeys } from '@/features/conversations/api/conversationKeys'
 import { messageKeys } from '@/features/messages/api/messageKeys';
 import { useGetMe } from '@/features/auth/api';
 
-/** Redirige según el rol del usuario autenticado */
+/** Redirige según el plan/rol del usuario autenticado */
 const DefaultRedirect = () => {
   const { data: user, isLoading } = useGetMe();
 
   if (isLoading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'free') return <Navigate to="/dashboard" replace />;
-  return <Navigate to="/conversations" replace />;
+
+  // Admin y Full van a conversations, Free va a dashboard
+  if (user.role === 'admin' || user.plan === 'full') {
+    return <Navigate to="/conversations" replace />;
+  }
+  return <Navigate to="/dashboard" replace />;
 };
 
 // Module-level guard: inicializar WebSocket solo una vez por app load
@@ -118,7 +122,7 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute requiredRole="free">
+              <ProtectedRoute requiredAccess="free">
                 <DashboardPage />
               </ProtectedRoute>
             }
@@ -128,7 +132,7 @@ function App() {
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute requiredAccess="admin">
                 <UsersPage />
               </ProtectedRoute>
             }
@@ -136,7 +140,7 @@ function App() {
           <Route
             path="/admin/costs"
             element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute requiredAccess="admin">
                 <CostsPage />
               </ProtectedRoute>
             }
@@ -146,7 +150,7 @@ function App() {
           <Route
             path="/admin/health"
             element={
-              <ProtectedRoute requiredRole="free">
+              <ProtectedRoute requiredAccess="free">
                 <HealthPage />
               </ProtectedRoute>
             }
@@ -156,7 +160,7 @@ function App() {
           <Route
             path="/phones"
             element={
-              <ProtectedRoute requiredRole="full">
+              <ProtectedRoute requiredAccess="full">
                 <PhonesPage />
               </ProtectedRoute>
             }
@@ -166,7 +170,7 @@ function App() {
           <Route
             path="/conversations"
             element={
-              <ProtectedRoute requiredRole="full">
+              <ProtectedRoute requiredAccess="full">
                 <ConversationsPage />
               </ProtectedRoute>
             }

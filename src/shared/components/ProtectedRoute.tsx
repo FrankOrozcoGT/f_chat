@@ -4,16 +4,14 @@ import { useGetMe } from '@/features/auth/api';
 import { ComingSoonPage } from '@/features/dashboard/components/ComingSoonPage';
 import { ForbiddenPage } from '@/features/dashboard/components/ForbiddenPage';
 
-type AppRole = 'free' | 'full' | 'admin';
-
-const ROLE_LEVEL: Record<AppRole, number> = { free: 0, full: 1, admin: 2 };
+type AppAccess = 'free' | 'full' | 'admin';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRole?: AppRole;
+  requiredAccess?: AppAccess;
 }
 
-export const ProtectedRoute = ({ children, requiredRole = 'free' }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children, requiredAccess = 'free' }: ProtectedRouteProps) => {
   const { data: user, isLoading, isError } = useGetMe();
 
   if (isLoading) {
@@ -31,11 +29,23 @@ export const ProtectedRoute = ({ children, requiredRole = 'free' }: ProtectedRou
     return <Navigate to="/login" replace />;
   }
 
-  const userLevel = ROLE_LEVEL[user.role as AppRole] ?? 0;
-  const requiredLevel = ROLE_LEVEL[requiredRole];
+  // Check access based on plan and role
+  const hasAccess = (() => {
+    // Admin always has access
+    if (user.role === 'admin') return true;
 
-  if (userLevel < requiredLevel) {
-    return requiredLevel === ROLE_LEVEL.admin ? <ForbiddenPage /> : <ComingSoonPage />;
+    // For admin-only routes
+    if (requiredAccess === 'admin') return false;
+
+    // For plan-based routes (free, full)
+    if (requiredAccess === 'free') return true; // Everyone with account can access free
+    if (requiredAccess === 'full') return user.plan === 'full'; // Only full plan
+
+    return false;
+  })();
+
+  if (!hasAccess) {
+    return requiredAccess === 'admin' ? <ForbiddenPage /> : <ComingSoonPage />;
   }
 
   return <>{children}</>;
