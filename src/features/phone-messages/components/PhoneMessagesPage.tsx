@@ -3,6 +3,7 @@ import { MessageSquare } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
 import { PhoneInstanceSelect } from './PhoneInstanceSelect';
 import { ContactMultiSelect } from './ContactMultiSelect';
+import { PhoneMessagePanel } from './PhoneMessagePanel';
 import type { Phone } from '@/features/phones/types';
 import type { Contact } from '@/features/phone-messages/types';
 
@@ -59,16 +60,15 @@ export const PhoneMessagesPage = () => {
           </div>
         </div>
 
-        {/* Paneles — Task 2 */}
+        {/* Paneles */}
         {selectedContacts.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {selectedContacts.map((contact) => (
-              <div
+              <PhoneMessagePanel
                 key={contact.id}
-                className="bg-bg-secondary border border-border-primary rounded-lg p-4 min-h-50 flex items-center justify-center"
-              >
-                <p className="text-text-secondary text-sm">{contact.name}</p>
-              </div>
+                contact={contact}
+                phoneId={selectedPhone!.id}
+              />
             ))}
           </div>
         )}
