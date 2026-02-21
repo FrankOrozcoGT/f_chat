@@ -6,6 +6,7 @@ import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
 import { UsersPage } from '@/features/users/components/UsersPage';
 import { CostsPage } from '@/features/costs/components/CostsPage';
 import { PhonesPage } from '@/features/phones/components/PhonesPage';
+import { PhoneMessagesPage } from '@/features/phone-messages/components/PhoneMessagesPage';
 import { ConversationsPage } from '@/features/conversations/components/ConversationsPage';
 import { HealthPage } from '@/features/health/components/HealthPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
@@ -162,6 +163,16 @@ function App() {
             element={
               <ProtectedRoute requiredAccess="full">
                 <PhonesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Phone Messages routes */}
+          <Route
+            path="/phone-messages"
+            element={
+              <ProtectedRoute requiredAccess="full">
+                <PhoneMessagesPage />
               </ProtectedRoute>
             }
           />
