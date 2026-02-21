@@ -120,13 +120,15 @@ export const MultiSelect = <T extends string = string>({
                 className="flex items-center gap-1 px-2 py-0.5 bg-accent-blue/15 text-accent-blue text-xs font-medium rounded-md"
               >
                 {o.label}
-                <button
-                  type="button"
+                <span
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => remove(o.value, e)}
-                  className="hover:opacity-60 transition-opacity min-w-4 min-h-4 flex items-center justify-center"
+                  onKeyDown={(e) => e.key === 'Enter' && remove(o.value, e as never)}
+                  className="hover:opacity-60 transition-opacity min-w-4 min-h-4 flex items-center justify-center cursor-pointer"
                 >
                   <X size={10} strokeWidth={2.5} />
-                </button>
+                </span>
               </span>
             ))
           )}
