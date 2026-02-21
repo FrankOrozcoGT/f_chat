@@ -72,9 +72,15 @@ export const MultiSelect = <T extends string = string>({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  const filtered = options.filter((o) =>
-    o.label.toLowerCase().includes(search.toLowerCase())
-  );
+  const q = search.toLowerCase();
+  const filtered = options
+    .filter((o) =>
+      !q ||
+      o.label.toLowerCase().includes(q) ||
+      (o.sublabel?.toLowerCase().includes(q) ?? false) ||
+      String(o.value).toLowerCase().includes(q)
+    )
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   const isSelected = (v: T) => value.includes(v);
 
