@@ -68,6 +68,18 @@ export interface ConversationReturnedPayload {
   timestamp: string;
 }
 
+export interface MediaReadyPayload {
+  id: string;
+  conversationId: string;
+  mediaUrl: string;
+}
+
+export interface PhoneSyncProgressPayload {
+  phoneId: string;
+  progress: number;
+  isLatest: boolean;
+}
+
 export interface CreditsExhaustedPayload {
   userId: string;
   conversationId: string;

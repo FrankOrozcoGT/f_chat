@@ -30,13 +30,6 @@ export const Sidebar = () => {
       allowedRoles: ['admin'],
     },
     {
-      icon: MessageSquare,
-      label: 'Mensajes por Número',
-      path: '/phone-messages',
-      allowedPlans: ['full'],
-      allowedRoles: ['admin'],
-    },
-    {
       icon: DollarSign,
       label: 'Costos',
       path: '/admin/costs',

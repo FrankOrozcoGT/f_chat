@@ -6,7 +6,7 @@ import { useDeletePhone } from '@/features/phones/api/useDeletePhone';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
 import type { Phone, PhoneStatus } from '@/features/phones/types';
-import type { PhoneStatusChangedPayload } from '@/lib/websocket';
+import type { PhoneStatusChangedPayload, PhoneSyncProgressPayload } from '@/lib/websocket';
 
 interface PhoneCardProps {
   phone: Phone;
@@ -15,6 +15,7 @@ interface PhoneCardProps {
 export const PhoneCard = ({ phone }: PhoneCardProps) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<PhoneStatus>(phone.status);
+  const [syncProgress, setSyncProgress] = useState<number | null>(null);
   const deletePhone = useDeletePhone();
   const { showToast } = useToast();
 
@@ -27,10 +28,18 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
       }
     };
 
+    const handleSyncProgress = (data: PhoneSyncProgressPayload) => {
+      if (data.phoneId === phone.id) {
+        setSyncProgress(data.isLatest ? null : data.progress);
+      }
+    };
+
     socket.on('phone:status_changed', handleStatusChange);
+    socket.on('phone:sync_progress', handleSyncProgress);
 
     return () => {
       socket.off('phone:status_changed', handleStatusChange);
+      socket.off('phone:sync_progress', handleSyncProgress);
     };
   }, [phone.id]);
 
@@ -105,7 +114,7 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
           {/* Header con ícono y estado */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-blue/10 flex items-center justify-center flex-shrink-0">
+              <div className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-blue/10 flex items-center justify-center shrink-0">
                 <Smartphone size={20} className="text-accent-blue" />
               </div>
               <div className="flex-1 min-w-0">
@@ -121,7 +130,7 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
             <div className="flex items-center gap-2">
               {/* Badge de estado */}
               <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${getStatusColor(
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border shrink-0 ${getStatusColor(
                   currentStatus
                 )}`}
               >
@@ -141,10 +150,26 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
             </div>
           </div>
 
+          {/* Barra de progreso de sincronización */}
+          {syncProgress !== null && (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-text-secondary">Sincronizando mensajes...</p>
+                <p className="text-xs font-medium text-accent-blue">{syncProgress}%</p>
+              </div>
+              <div className="h-1.5 w-full bg-bg-tertiary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent-blue rounded-full transition-all duration-300"
+                  style={{ width: `${syncProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Información adicional */}
           <div className="space-y-1.5 text-sm">
             <div className="flex items-center gap-2 text-text-secondary">
-              <Clock size={14} className="text-text-tertiary flex-shrink-0" />
+              <Clock size={14} className="text-text-tertiary shrink-0" />
               <span className="truncate">
                 {currentStatus === 'connected' && phone.lastConnected
                   ? `Conectado: ${formatDate(phone.lastConnected)}`

@@ -117,6 +117,17 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
             <p className="text-sm md:text-base whitespace-pre-wrap">{message.content}</p>
           )}
 
+          {/* Media loading skeleton */}
+          {message.mediaLoading && !message.mediaUrl && (
+            <div className="flex items-center gap-2 min-w-40">
+              <div className="w-8 h-8 rounded-full bg-current opacity-20 animate-pulse shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-2 rounded bg-current opacity-20 animate-pulse" />
+                <div className="h-2 rounded bg-current opacity-20 animate-pulse w-3/4" />
+              </div>
+            </div>
+          )}
+
           {/* Voice message */}
           {message.type === 'voice' && message.mediaUrl && (
             <div className="flex flex-col gap-2 min-w-62.5">

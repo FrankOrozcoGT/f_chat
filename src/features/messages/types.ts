@@ -35,6 +35,7 @@ export interface Message {
   conversationId: string;
   content: string;
   mediaUrl: string | null;
+  mediaLoading?: boolean;
   fileName?: string | null;
   fileSize?: number | null;
   mimeType?: string | null;
@@ -110,6 +111,7 @@ export const mapBackendMessage = (msg: BackendMessage): Message => ({
   conversationId: msg.conversationId,
   content: msg.content,
   mediaUrl: msg.mediaUrl,
+  mediaLoading: (msg.metadata as { mediaLoading?: boolean } | undefined)?.mediaLoading ?? false,
   fileName: msg.fileName,
   fileSize: msg.fileSize,
   mimeType: msg.mimeType,

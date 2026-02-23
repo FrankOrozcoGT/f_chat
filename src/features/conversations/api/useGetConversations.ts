@@ -39,7 +39,7 @@ export const useGetConversations = (params: GetConversationsParams = {}) => {
   return useInfiniteQuery({
     queryKey: conversationKeys.list({ search, phoneId, limit }),
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await apiClient.get<BackendConversation[]>(
+      const response = await apiClient.get<{ data: BackendConversation[]; total: number; page: number; limit: number; totalPages: number }>(
         '/api/conversations',
         {
           params: {
@@ -52,7 +52,7 @@ export const useGetConversations = (params: GetConversationsParams = {}) => {
       );
 
       // Transform backend response to frontend format
-      const conversations = response.data.map((conv) => ({
+      const conversations = response.data.data.map((conv) => ({
         id: conv.id,
         phoneId: conv.phoneId,
         clientPhone: conv.client.phoneNumber,
@@ -69,13 +69,13 @@ export const useGetConversations = (params: GetConversationsParams = {}) => {
 
       return {
         conversations,
-        hasMore: conversations.length >= limit, // Simple pagination check
+        page: response.data.page,
+        totalPages: response.data.totalPages,
       };
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      // If last page returned full limit, there might be more
-      return lastPage.hasMore ? allPages.length + 1 : undefined;
+    getNextPageParam: (lastPage) => {
+      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
     },
     staleTime: 1 * 60 * 1000, // 1 minute
   });

@@ -21,7 +21,7 @@ import { useTakeControl } from '../api/useTakeControl';
 import { useReturnToAi } from '../api/useReturnToAi';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
-import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload } from '@/lib/websocket';
+import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
 import type { Message } from '../types';
 import { authKeys } from '@/features/auth/api/useGetMe';
 
@@ -147,6 +147,21 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       }
     };
 
+    // message:media_ready — media procesada, actualizar mediaUrl del mensaje en cache
+    const handleMediaReady = (data: MediaReadyPayload) => {
+      if (data.conversationId === conversationId) {
+        queryClient.setQueryData<Message[]>(
+          messageKeys.list(conversationId),
+          (oldMessages = []) =>
+            oldMessages.map((msg) =>
+              msg.id === data.id
+                ? { ...msg, mediaUrl: data.mediaUrl, mediaLoading: false }
+                : msg
+            )
+        );
+      }
+    };
+
     // credits:exhausted — créditos agotados, conversación movida a HITL
     const handleCreditsExhausted = (data: CreditsExhaustedPayload) => {
       if (data.conversationId === conversationId) {
@@ -166,6 +181,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       }
     };
 
+    socket.on('message:media_ready', handleMediaReady);
     socket.on('message:incoming', handleMessageIncoming);
     socket.on('message:new', handleMessageNew);
     socket.on('message:sent', handleMessageSent);
@@ -177,6 +193,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
     socket.on('credits:exhausted', handleCreditsExhausted);
 
     return () => {
+      socket.off('message:media_ready', handleMediaReady);
       socket.off('message:incoming', handleMessageIncoming);
       socket.off('message:new', handleMessageNew);
       socket.off('message:sent', handleMessageSent);
