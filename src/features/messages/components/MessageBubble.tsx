@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Check, CheckCheck, Clock, XCircle, Bot, Cog, User } from 'lucide-react';
+import { Check, CheckCheck, Clock, XCircle, Bot, Cog, User, Reply } from 'lucide-react';
 import { Avatar } from '@/shared/ui/Avatar';
 import { ImageModal } from '@/shared/ui/ImageModal';
 import type { Message } from '../types';
@@ -13,13 +13,16 @@ import { cn } from '@/shared/lib/utils';
 interface MessageBubbleProps {
   message: Message;
   clientName?: string;
+  onReply?: (message: Message) => void;
+  onScrollToMessage?: (messageId: string) => void;
 }
 
-export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, clientName, onReply, onScrollToMessage }: MessageBubbleProps) => {
   const isIncoming = message.direction === 'incoming';
   const isBot = message.senderType === 'bot';
   const isSystem = message.senderType === 'system';
   const [showImageModal, setShowImageModal] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Format timestamp
   const formattedTime = formatDistanceToNow(new Date(message.timestamp), {
@@ -60,10 +63,13 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
 
   return (
     <div
+      id={`msg-${message.id}`}
       className={cn(
-        'flex gap-2 items-end',
+        'flex gap-2 items-end group',
         isIncoming ? 'justify-start' : 'justify-end'
       )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Avatar for incoming messages */}
       {isIncoming && (
@@ -83,6 +89,22 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
             className="shrink-0"
           />
         )
+      )}
+
+      {/* Reply button - visible on hover (incoming: left side, outgoing: right side) */}
+      {onReply && isIncoming && (
+        <button
+          onClick={() => onReply(message)}
+          className={cn(
+            'shrink-0 w-8 h-8 flex items-center justify-center rounded-full',
+            'bg-bg-secondary border border-border-primary text-text-secondary',
+            'hover:bg-bg-tertiary hover:text-text-primary transition-all',
+            isHovered ? 'opacity-100' : 'opacity-0'
+          )}
+          title="Responder"
+        >
+          <Reply className="w-4 h-4" />
+        </button>
       )}
 
       <div
@@ -112,6 +134,60 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
               : 'bg-accent-blue text-white rounded-br-sm'
           )}
         >
+          {/* Quoted message preview (cited bubble) */}
+          {message.quotedMessage && (() => {
+            const q = message.quotedMessage;
+            const qAuthor = q.direction === 'incoming' ? clientName || 'Cliente' : 'Tú';
+            const qIsMedia = q.type !== 'text';
+            const qPreviewText = q.type === 'voice'
+              ? '🎤 Audio'
+              : q.type === 'video'
+              ? '🎥 Video'
+              : q.type === 'document'
+              ? `📄 ${q.fileName || 'Documento'}`
+              : q.content || '';
+            return (
+              <button
+                type="button"
+                onClick={() => onScrollToMessage?.(q.id)}
+                className={cn(
+                  'mb-2 w-full text-left rounded-lg overflow-hidden border-l-4 flex items-stretch gap-0',
+                  'transition-opacity hover:opacity-80',
+                  onScrollToMessage ? 'cursor-pointer' : 'cursor-default',
+                  isIncoming
+                    ? 'bg-black/10 border-text-secondary/60'
+                    : 'bg-white/15 border-white/60'
+                )}
+              >
+                {/* Image thumbnail if quoted is image */}
+                {q.type === 'image' && q.mediaUrl && (
+                  <img
+                    src={q.mediaUrl}
+                    alt=""
+                    className="w-12 h-12 object-cover shrink-0"
+                  />
+                )}
+
+                <div className="px-2 py-1.5 min-w-0 flex-1">
+                  <p className={cn(
+                    'text-xs font-semibold truncate mb-0.5',
+                    isIncoming ? 'text-text-primary' : 'text-white'
+                  )}>
+                    {qAuthor}
+                  </p>
+                  <p className={cn(
+                    'text-xs truncate',
+                    isIncoming ? 'text-text-secondary' : 'text-white/80'
+                  )}>
+                    {qIsMedia && q.type !== 'document' && !qPreviewText
+                      ? q.type === 'image' ? '📷 Imagen' : qPreviewText
+                      : qPreviewText || '📎 Archivo'}
+                  </p>
+                </div>
+              </button>
+            );
+          })()}
+
           {/* Text message */}
           {message.type === 'text' && (
             <p className="text-sm md:text-base whitespace-pre-wrap">{message.content}</p>
@@ -208,6 +284,22 @@ export const MessageBubble = ({ message, clientName }: MessageBubbleProps) => {
           <StatusIcon />
         </div>
       </div>
+
+      {/* Reply button - for outgoing messages (right side) */}
+      {onReply && !isIncoming && (
+        <button
+          onClick={() => onReply(message)}
+          className={cn(
+            'shrink-0 w-8 h-8 flex items-center justify-center rounded-full',
+            'bg-bg-secondary border border-border-primary text-text-secondary',
+            'hover:bg-bg-tertiary hover:text-text-primary transition-all',
+            isHovered ? 'opacity-100' : 'opacity-0'
+          )}
+          title="Responder"
+        >
+          <Reply className="w-4 h-4" />
+        </button>
+      )}
 
       {/* Avatar for outgoing messages */}
       {!isIncoming && (
