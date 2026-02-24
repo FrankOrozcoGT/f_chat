@@ -22,6 +22,7 @@ interface BackendConversation {
     id: string;
     phoneNumber: string;
     name: string;
+    profilePicUrl?: string | null;
     firstContactAt: string;
     lastContactAt: string;
   };
@@ -57,7 +58,7 @@ export const useGetConversations = (params: GetConversationsParams = {}) => {
         phoneId: conv.phoneId,
         clientPhone: conv.client.phoneNumber,
         clientName: conv.client.name,
-        clientAvatar: undefined,
+        clientAvatar: conv.client.profilePicUrl ?? undefined,
         lastMessage: conv.lastMessagePreview,
         lastMessageAt: conv.lastMessageAt,
         unreadCount: 0, // TODO: Backend should provide this
