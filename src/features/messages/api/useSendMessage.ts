@@ -12,6 +12,7 @@ interface SendMessagePayload {
   contenido: string;
   tipo: BackendMessageType;
   mediaUrl?: string | null;
+  quotedMessageId?: string;
 }
 
 interface SendMessageResponse {
@@ -47,7 +48,7 @@ export const useSendMessage = (conversationId: string, options?: UseSendMessageO
     },
 
     // Optimistic update: add message immediately to UI
-    onMutate: async ({ contenido, tipo, mediaUrl }) => {
+    onMutate: async ({ contenido, tipo, mediaUrl, quotedMessageId }) => {
       // Cancel ongoing refetches to avoid race conditions
       await queryClient.cancelQueries({ queryKey: messageKeys.list(conversationId) });
 
@@ -62,6 +63,11 @@ export const useSendMessage = (conversationId: string, options?: UseSendMessageO
       // Map backend type to frontend type
       const frontendType = tipo === 'audio' ? 'voice' : tipo;
 
+      // Resolve quoted message from current cache for immediate preview
+      const resolvedQuotedMessage = quotedMessageId
+        ? (previousMessages ?? []).find((m) => m.id === quotedMessageId) ?? null
+        : null;
+
       // Create optimistic message
       const optimisticMessage: Message = {
         id: tempId,
@@ -73,6 +79,8 @@ export const useSendMessage = (conversationId: string, options?: UseSendMessageO
         senderType: 'agent',
         status: 'pending', // "sending" visual state
         timestamp: new Date().toISOString(),
+        quotedKeyId: quotedMessageId ?? null,
+        quotedMessage: resolvedQuotedMessage,
       };
 
       // Optimistically update cache

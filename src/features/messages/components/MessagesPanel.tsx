@@ -34,6 +34,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { setSelectedConversationId } = useConversationsStore();
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
   const { showToast } = useToast();
 
   // Fetch messages and conversation detail (includes client data)
@@ -211,6 +212,22 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
     setSelectedConversationId(null);
   };
 
+  // Reply handler
+  const handleReply = (message: Message) => {
+    setQuotedMessage(message);
+  };
+
+  // Scroll to quoted message handler
+  const handleScrollToMessage = (messageId: string) => {
+    const el = document.getElementById(`msg-${messageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Brief highlight flash
+      el.classList.add('opacity-60');
+      setTimeout(() => el.classList.remove('opacity-60'), 600);
+    }
+  };
+
   // Get initials for avatar fallback
   const initials = client?.name
     ? client.name
@@ -309,13 +326,21 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
           </div>
         ) : (
           <>
-            {messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                clientName={client?.name}
-              />
-            ))}
+            {messages.map((message) => {
+              // Resolve quoted message from local list by DB id
+              const quotedMessage = message.quotedKeyId
+                ? messages.find((m) => m.id === message.quotedKeyId) ?? null
+                : null;
+              return (
+                <MessageBubble
+                  key={message.id}
+                  message={{ ...message, quotedMessage }}
+                  clientName={client?.name}
+                  onReply={handleReply}
+                  onScrollToMessage={handleScrollToMessage}
+                />
+              );
+            })}
             {/* Auto-scroll anchor */}
             <div ref={messagesEndRef} />
           </>
@@ -323,7 +348,12 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
       </div>
 
       {/* Footer with input */}
-      <MessageInput conversationId={conversationId} disabled={conversationMode === 'AI'} />
+      <MessageInput
+        conversationId={conversationId}
+        disabled={conversationMode === 'AI'}
+        quotedMessage={quotedMessage}
+        onCancelQuote={() => setQuotedMessage(null)}
+      />
 
       {/* Bottom Sheet for mobile - shows client info + conversation summary */}
       <BottomSheet
