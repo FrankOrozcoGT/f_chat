@@ -4,7 +4,7 @@
 // Validations: not empty, max 4096 chars
 // Support: text, image, video, audio, document
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
 import { Send, Image, Paperclip, Mic, X, Trash2, Square, Reply } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
@@ -35,6 +35,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
   const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isCancelledRef = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { showToast } = useToast();
   const sendMessageMutation = useSendMessage(conversationId, {
     onError: (_error, errorType) => {
@@ -154,6 +155,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
 
     // Clear inputs
     setMessage('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     onCancelQuote?.();
   };
 
@@ -291,13 +293,19 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    // Enter to send, Shift+Enter for new line (not applicable in input, but keep for textarea upgrade)
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [message]);
 
   const isDisabled = disabled || sendMessageMutation.isPending || sendMessageWithFileMutation.isPending;
 
@@ -460,7 +468,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={(e) => handleKeyDown(e as unknown as KeyboardEvent<HTMLTextAreaElement>)}
             disabled={isDisabled}
             placeholder="Agregar un mensaje..."
             className="
@@ -541,23 +549,28 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
           </button>
         </div>
 
-        {/* Text input - more compact on mobile */}
-        <input
-          type="text"
+        {/* Text input - auto-resize textarea, Enter sends, Shift+Enter newline */}
+        <textarea
+          ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isDisabled}
           placeholder="Escribe un mensaje..."
+          rows={1}
           className="
-            flex-1 h-9 md:h-10 px-3 md:px-4 rounded-full md:rounded-lg
+            flex-1 px-3 md:px-4 py-2 rounded-lg
             bg-bg-primary border border-border-primary
-            text-sm md:text-base placeholder:text-text-tertiary
+            text-base placeholder:text-text-tertiary
+            resize-none overflow-y-auto
+            min-h-9 md:min-h-10
+            leading-snug
             focus:border-accent-blue focus:outline-2 focus:outline-accent-blue
             disabled:opacity-60 disabled:cursor-not-allowed
             transition-colors
           "
           maxLength={4096}
+          style={{ maxHeight: '120px' }}
         />
 
         {/* Send button - compact on mobile */}
