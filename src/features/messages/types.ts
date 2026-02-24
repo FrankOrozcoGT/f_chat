@@ -44,6 +44,12 @@ export interface Message {
   senderType: BackendSenderType;
   status: MessageStatus;
   timestamp: string;
+  // Evolution keyId (from metadata.keyId)
+  keyId?: string | null;
+  // DB id of the quoted message (from metadata.quotedMessageId)
+  quotedKeyId?: string | null;
+  // Resolved quoted message (populated in MessagesPanel, not in mapper)
+  quotedMessage?: Message | null;
 }
 
 // Backend client structure
@@ -106,21 +112,26 @@ export const mapBackendStatus = (status: BackendMessageStatus): MessageStatus =>
   return status;
 };
 
-export const mapBackendMessage = (msg: BackendMessage): Message => ({
-  id: msg.id,
-  conversationId: msg.conversationId,
-  content: msg.content,
-  mediaUrl: msg.mediaUrl,
-  mediaLoading: (msg.metadata as { mediaLoading?: boolean } | undefined)?.mediaLoading ?? false,
-  fileName: msg.fileName,
-  fileSize: msg.fileSize,
-  mimeType: msg.mimeType,
-  type: mapBackendMessageType(msg.type),
-  direction: mapBackendDirection(msg.direction),
-  senderType: msg.senderType,
-  status: mapBackendStatus(msg.status),
-  timestamp: new Date(msg.createdAt).toISOString(),
-});
+export const mapBackendMessage = (msg: BackendMessage): Message => {
+  const meta = msg.metadata as { mediaLoading?: boolean; keyId?: string; quotedMessageId?: string } | undefined;
+  return {
+    id: msg.id,
+    conversationId: msg.conversationId,
+    content: msg.content,
+    mediaUrl: msg.mediaUrl,
+    mediaLoading: meta?.mediaLoading ?? false,
+    fileName: msg.fileName,
+    fileSize: msg.fileSize,
+    mimeType: msg.mimeType,
+    type: mapBackendMessageType(msg.type),
+    direction: mapBackendDirection(msg.direction),
+    senderType: msg.senderType,
+    status: mapBackendStatus(msg.status),
+    timestamp: new Date(msg.createdAt).toISOString(),
+    keyId: meta?.keyId ?? null,
+    quotedKeyId: meta?.quotedMessageId ?? null,
+  };
+};
 
 export const mapBackendClient = (client: BackendClient): Client => ({
   id: client.id,
