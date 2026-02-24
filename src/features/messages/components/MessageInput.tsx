@@ -6,20 +6,22 @@
 
 import { useState, useRef } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
-import { Send, Image, Paperclip, Mic, X, Trash2, Square } from 'lucide-react';
+import { Send, Image, Paperclip, Mic, X, Trash2, Square, Reply } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { InfoBanner } from '@/shared/ui/InfoBanner';
 import { useToast } from '@/shared/hooks/useToast';
 import { useSendMessage } from '../api/useSendMessage';
 import { useSendMessageWithFile } from '../api/useSendMessageWithFile';
-import type { BackendMessageType } from '../types';
+import type { BackendMessageType, Message } from '../types';
 
 interface MessageInputProps {
   conversationId: string;
   disabled?: boolean;
+  quotedMessage?: Message | null;
+  onCancelQuote?: () => void;
 }
 
-export const MessageInput = ({ conversationId, disabled }: MessageInputProps) => {
+export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancelQuote }: MessageInputProps) => {
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
@@ -83,6 +85,7 @@ export const MessageInput = ({ conversationId, disabled }: MessageInputProps) =>
       // Clear inputs
       setMessage('');
       clearAudioRecording();
+      onCancelQuote?.();
       return;
     }
 
@@ -136,6 +139,7 @@ export const MessageInput = ({ conversationId, disabled }: MessageInputProps) =>
       // Clear inputs
       setMessage('');
       clearFileSelection();
+      onCancelQuote?.();
       return;
     }
 
@@ -145,10 +149,12 @@ export const MessageInput = ({ conversationId, disabled }: MessageInputProps) =>
       contenido: trimmedMessage,
       tipo: 'text',
       mediaUrl: null,
+      quotedMessageId: quotedMessage?.id ?? undefined,
     });
 
     // Clear inputs
     setMessage('');
+    onCancelQuote?.();
   };
 
   const clearFileSelection = () => {
@@ -484,6 +490,28 @@ export const MessageInput = ({ conversationId, disabled }: MessageInputProps) =>
   // Default mode: text input with attachment buttons
   return (
     <div className="w-full p-2 md:p-3 border-t border-border-primary bg-bg-secondary">
+      {/* Quoted message preview */}
+      {quotedMessage && (
+        <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-bg-tertiary border-l-2 border-accent-blue">
+          <Reply className="w-4 h-4 text-accent-blue shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-accent-blue">
+              {quotedMessage.direction === 'incoming' ? 'Cliente' : 'Tú'}
+            </p>
+            <p className="text-xs text-text-secondary truncate">
+              {quotedMessage.content || '📎 Archivo'}
+            </p>
+          </div>
+          <button
+            onClick={onCancelQuote}
+            className="shrink-0 text-text-tertiary hover:text-text-primary transition-colors"
+            title="Cancelar respuesta"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <div className="flex gap-1 md:gap-2 items-center w-full">
         {/* Attachment buttons - compact on mobile */}
         <div className="flex gap-0.5 md:gap-1">
