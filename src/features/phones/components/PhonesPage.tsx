@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Smartphone, AlertCircle, Loader2, Plus } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useGetPhones } from '@/features/phones/api/useGetPhones';
@@ -7,11 +7,50 @@ import { Toast } from '@/shared/ui/Toast';
 import { Button } from '@/shared/ui/Button';
 import { PhoneCard } from '@/features/phones/components/PhoneCard';
 import { CreatePhoneModal } from '@/features/phones/components/CreatePhoneModal';
+import { PhoneSyncModal } from '@/features/phones/components/PhoneSyncModal';
+import { socket } from '@/lib/websocket';
+import type { PhoneSyncingPayload, PhoneSyncProgressPayload, PhoneSyncCompletePayload } from '@/lib/websocket';
 
 export const PhonesPage = () => {
   const { data: phones, isLoading, isError, error } = useGetPhones();
   const { toasts, showToast, removeToast } = useToast();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Sync modal state
+  const [syncModal, setSyncModal] = useState<{
+    isOpen: boolean;
+    phase: 'syncing' | 'progress' | 'complete';
+    contactsCount: number;
+    phoneId: string | null;
+  }>({ isOpen: false, phase: 'syncing', contactsCount: 0, phoneId: null });
+
+  const closeSyncModal = useCallback(() => {
+    setSyncModal({ isOpen: false, phase: 'syncing', contactsCount: 0, phoneId: null });
+  }, []);
+
+  useEffect(() => {
+    const handleSyncing = (data: PhoneSyncingPayload) => {
+      setSyncModal({ isOpen: true, phase: 'syncing', contactsCount: data.contactsCount, phoneId: data.phoneId });
+    };
+
+    const handleProgress = (data: PhoneSyncProgressPayload) => {
+      setSyncModal((prev) => ({ ...prev, isOpen: true, phase: 'progress', contactsCount: data.contactsCount, phoneId: data.phoneId }));
+    };
+
+    const handleComplete = (data: PhoneSyncCompletePayload) => {
+      setSyncModal((prev) => ({ ...prev, isOpen: true, phase: 'complete', contactsCount: data.contactsCount, phoneId: data.phoneId }));
+    };
+
+    socket.on('phone:syncing', handleSyncing);
+    socket.on('phone:sync_progress', handleProgress);
+    socket.on('phone:sync_complete', handleComplete);
+
+    return () => {
+      socket.off('phone:syncing', handleSyncing);
+      socket.off('phone:sync_progress', handleProgress);
+      socket.off('phone:sync_complete', handleComplete);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -129,6 +168,15 @@ export const PhonesPage = () => {
         onSuccess={() => {
           showToast('Instancia creada exitosamente', 'success');
         }}
+      />
+
+      {/* Modal sincronización — bloquea interacción durante sync */}
+      <PhoneSyncModal
+        isOpen={syncModal.isOpen}
+        phase={syncModal.phase}
+        contactsCount={syncModal.contactsCount}
+        instanceName={phones?.find((p) => p.id === syncModal.phoneId)?.instanceName}
+        onClose={closeSyncModal}
       />
     </MainLayout>
   );

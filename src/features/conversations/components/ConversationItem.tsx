@@ -37,6 +37,28 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
     .toUpperCase()
     .slice(0, 2);
 
+  // Consistent gradient per contact based on phone number (djb2 hash)
+  const AVATAR_GRADIENTS: [string, string][] = [
+    ['#FF6B6B', '#FF8E53'],
+    ['#FFC107', '#FF8E53'],
+    ['#4CAF50', '#26C6DA'],
+    ['#42A5F5', '#7E57C2'],
+    ['#EC407A', '#AB47BC'],
+    ['#26A69A', '#42A5F5'],
+    ['#EF5350', '#EC407A'],
+    ['#5C6BC0', '#26C6DA'],
+    ['#FF8E53', '#FFC107'],
+    ['#AB47BC', '#5C6BC0'],
+    ['#26C6DA', '#4CAF50'],
+    ['#7E57C2', '#EC407A'],
+  ];
+  let hash = 0;
+  for (let i = 0; i < conversation.clientPhone.length; i++) {
+    hash = conversation.clientPhone.charCodeAt(i) + ((hash << 5) - hash);
+    hash = hash & hash;
+  }
+  const [gradientFrom, gradientTo] = AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+
   // Clean phone number (remove WhatsApp group suffix @g.us)
   const cleanPhone = conversation.clientPhone.replace(/@g\.us$/, '');
   const isGroup = conversation.clientPhone.includes('@g.us');
@@ -59,7 +81,10 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
             className="w-12 h-12 rounded-full object-cover"
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+            style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
+          >
             {initials}
           </div>
         )}

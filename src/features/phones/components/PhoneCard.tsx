@@ -6,7 +6,7 @@ import { useDeletePhone } from '@/features/phones/api/useDeletePhone';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
 import type { Phone, PhoneStatus } from '@/features/phones/types';
-import type { PhoneStatusChangedPayload, PhoneSyncProgressPayload } from '@/lib/websocket';
+import type { PhoneStatusChangedPayload } from '@/lib/websocket';
 
 interface PhoneCardProps {
   phone: Phone;
@@ -15,7 +15,6 @@ interface PhoneCardProps {
 export const PhoneCard = ({ phone }: PhoneCardProps) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<PhoneStatus>(phone.status);
-  const [syncProgress, setSyncProgress] = useState<number | null>(null);
   const deletePhone = useDeletePhone();
   const { showToast } = useToast();
 
@@ -28,18 +27,10 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
       }
     };
 
-    const handleSyncProgress = (data: PhoneSyncProgressPayload) => {
-      if (data.phoneId === phone.id) {
-        setSyncProgress(data.isLatest ? null : data.progress);
-      }
-    };
-
     socket.on('phone:status_changed', handleStatusChange);
-    socket.on('phone:sync_progress', handleSyncProgress);
 
     return () => {
       socket.off('phone:status_changed', handleStatusChange);
-      socket.off('phone:sync_progress', handleSyncProgress);
     };
   }, [phone.id]);
 
@@ -149,22 +140,6 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
               </button>
             </div>
           </div>
-
-          {/* Barra de progreso de sincronización */}
-          {syncProgress !== null && (
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-text-secondary">Sincronizando mensajes...</p>
-                <p className="text-xs font-medium text-accent-blue">{syncProgress}%</p>
-              </div>
-              <div className="h-1.5 w-full bg-bg-tertiary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-accent-blue rounded-full transition-all duration-300"
-                  style={{ width: `${syncProgress}%` }}
-                />
-              </div>
-            </div>
-          )}
 
           {/* Información adicional */}
           <div className="space-y-1.5 text-sm">

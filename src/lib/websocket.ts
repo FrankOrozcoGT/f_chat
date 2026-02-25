@@ -74,10 +74,19 @@ export interface MediaReadyPayload {
   mediaUrl: string;
 }
 
+export interface PhoneSyncingPayload {
+  phoneId: string;
+  contactsCount: number;
+}
+
 export interface PhoneSyncProgressPayload {
   phoneId: string;
-  progress: number;
-  isLatest: boolean;
+  contactsCount: number;
+}
+
+export interface PhoneSyncCompletePayload {
+  phoneId: string;
+  contactsCount: number;
 }
 
 export interface CreditsExhaustedPayload {
