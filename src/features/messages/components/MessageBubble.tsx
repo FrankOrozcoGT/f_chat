@@ -92,6 +92,13 @@ export const MessageBubble = ({ message, clientName, isGroup, onReply, onScrollT
           <div className="w-8 h-8 rounded-full bg-accent-orange/20 flex items-center justify-center shrink-0">
             <Cog className="w-4 h-4 text-accent-orange" />
           </div>
+        ) : isGroup && message.senderName ? (
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs shrink-0"
+            style={{ background: gradientFrom }}
+          >
+            {message.senderName.replace(/^~/, '').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+          </div>
         ) : (
           <Avatar
             alt={clientName}
@@ -148,7 +155,7 @@ export const MessageBubble = ({ message, clientName, isGroup, onReply, onScrollT
           {/* Group sender name (WhatsApp style: shown above message content, only for incoming group messages) */}
           {isGroup && isIncoming && !isBot && !isSystem && message.senderName && (
             <p className="text-xs font-semibold mb-1" style={{ color: gradientFrom }}>
-              {message.senderName}
+              {message.senderName.replace(/^~/, '')}
             </p>
           )}
 
