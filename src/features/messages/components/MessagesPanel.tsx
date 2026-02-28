@@ -43,6 +43,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
 
   const client = conversationDetail?.client;
   const conversationMode = conversationDetail?.conversation?.mode;
+  const isGroup = conversationDetail?.conversation?.type === 'group';
 
   // HITL mutation hooks
   const takeControl = useTakeControl({
@@ -336,6 +337,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
                   key={message.id}
                   message={{ ...message, quotedMessage }}
                   clientName={client?.name}
+                  isGroup={isGroup}
                   onReply={handleReply}
                   onScrollToMessage={handleScrollToMessage}
                 />

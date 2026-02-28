@@ -73,8 +73,60 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
       `}
     >
       {/* Avatar */}
-      <div className="shrink-0">
-        {conversation.clientAvatar ? (
+      <div className="shrink-0 w-12 h-12 relative">
+        {conversation.type === 'group' ? (
+          // Group avatar: stack of participant photos (WhatsApp style)
+          (() => {
+            const pics = (conversation.participants ?? []).slice(0, 4);
+            if (pics.length === 0) {
+              return (
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                  style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
+                >
+                  {initials}
+                </div>
+              );
+            }
+            // 2x2 grid for 3+ participants, side-by-side for 2, single for 1
+            const count = pics.length;
+            const gridClass = count >= 3
+              ? 'grid grid-cols-2 gap-[2px]'
+              : count === 2
+              ? 'flex gap-[2px]'
+              : '';
+            return (
+              <div className={`w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 ${count > 1 ? gridClass : ''}`}>
+                {pics.map((p) => {
+                  const pInitials = p.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 1);
+                  let ph = 0;
+                  for (let ci = 0; ci < p.phoneNumber.length; ci++) {
+                    ph = p.phoneNumber.charCodeAt(ci) + ((ph << 5) - ph);
+                    ph = ph & ph;
+                  }
+                  const [pFrom, pTo] = AVATAR_GRADIENTS[Math.abs(ph) % AVATAR_GRADIENTS.length];
+                  const sizeClass = count === 1 ? 'w-full h-full' : count === 2 ? 'w-[22px] h-12' : 'w-[22px] h-[22px]';
+                  return p.profilePicUrl ? (
+                    <img
+                      key={p.id}
+                      src={p.profilePicUrl}
+                      alt={p.name}
+                      className={`${sizeClass} object-cover`}
+                    />
+                  ) : (
+                    <div
+                      key={p.id}
+                      className={`${sizeClass} flex items-center justify-center text-white font-semibold`}
+                      style={{ background: `linear-gradient(135deg, ${pFrom}, ${pTo})`, fontSize: count === 1 ? '14px' : '10px' }}
+                    >
+                      {pInitials}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()
+        ) : conversation.clientAvatar ? (
           <img
             src={conversation.clientAvatar}
             alt={conversation.clientName}
@@ -107,7 +159,9 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
         {/* Bottom row: phone + timestamp */}
         <div className="flex items-center justify-between gap-2 text-xs">
           <span className="text-gray-400 dark:text-gray-500 truncate">
-            {isGroup ? `Grupo · ${cleanPhone}` : cleanPhone}
+            {conversation.type === 'group'
+              ? `Grupo · ${(conversation.participants ?? []).length} participantes`
+              : cleanPhone}
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
             {conversation.mode === 'AI' ? (

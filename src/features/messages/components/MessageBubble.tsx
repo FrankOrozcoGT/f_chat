@@ -13,11 +13,12 @@ import { cn } from '@/shared/lib/utils';
 interface MessageBubbleProps {
   message: Message;
   clientName?: string;
+  isGroup?: boolean;
   onReply?: (message: Message) => void;
   onScrollToMessage?: (messageId: string) => void;
 }
 
-export const MessageBubble = ({ message, clientName, onReply, onScrollToMessage }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, clientName, isGroup, onReply, onScrollToMessage }: MessageBubbleProps) => {
   const isIncoming = message.direction === 'incoming';
   const isBot = message.senderType === 'bot';
   const isSystem = message.senderType === 'system';
@@ -39,6 +40,16 @@ export const MessageBubble = ({ message, clientName, onReply, onScrollToMessage 
         .toUpperCase()
         .slice(0, 2)
     : '?';
+
+  // Consistent color per group participant (based on senderJid, same palette as ConversationItem)
+  const SENDER_COLORS = ['#FF6B6B', '#4CAF50', '#42A5F5', '#EC407A', '#26A69A', '#EF5350', '#5C6BC0', '#FF8E53', '#AB47BC', '#26C6DA', '#7E57C2', '#FFC107'];
+  let senderHash = 0;
+  const senderKey = message.senderJid ?? message.senderName ?? '';
+  for (let i = 0; i < senderKey.length; i++) {
+    senderHash = senderKey.charCodeAt(i) + ((senderHash << 5) - senderHash);
+    senderHash = senderHash & senderHash;
+  }
+  const gradientFrom = SENDER_COLORS[Math.abs(senderHash) % SENDER_COLORS.length];
 
   // Status icon for outgoing messages
   const StatusIcon = () => {
@@ -134,6 +145,13 @@ export const MessageBubble = ({ message, clientName, onReply, onScrollToMessage 
               : 'bg-accent-blue text-white rounded-br-sm'
           )}
         >
+          {/* Group sender name (WhatsApp style: shown above message content, only for incoming group messages) */}
+          {isGroup && isIncoming && !isBot && !isSystem && message.senderName && (
+            <p className="text-xs font-semibold mb-1" style={{ color: gradientFrom }}>
+              {message.senderName}
+            </p>
+          )}
+
           {/* Quoted message preview (cited bubble) */}
           {message.quotedMessage && (() => {
             const q = message.quotedMessage;

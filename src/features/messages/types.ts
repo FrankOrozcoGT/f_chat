@@ -50,6 +50,9 @@ export interface Message {
   quotedKeyId?: string | null;
   // Resolved quoted message (populated in MessagesPanel, not in mapper)
   quotedMessage?: Message | null;
+  // Group message sender info (from metadata, only for group conversations)
+  senderName?: string | null;
+  senderJid?: string | null;
 }
 
 // Backend client structure
@@ -113,7 +116,7 @@ export const mapBackendStatus = (status: BackendMessageStatus): MessageStatus =>
 };
 
 export const mapBackendMessage = (msg: BackendMessage): Message => {
-  const meta = msg.metadata as { mediaLoading?: boolean; keyId?: string; quotedMessageId?: string } | undefined;
+  const meta = msg.metadata as { mediaLoading?: boolean; keyId?: string; quotedMessageId?: string; senderName?: string; senderJid?: string } | undefined;
   return {
     id: msg.id,
     conversationId: msg.conversationId,
@@ -130,6 +133,8 @@ export const mapBackendMessage = (msg: BackendMessage): Message => {
     timestamp: new Date(msg.createdAt).toISOString(),
     keyId: meta?.keyId ?? null,
     quotedKeyId: meta?.quotedMessageId ?? null,
+    senderName: meta?.senderName ?? null,
+    senderJid: meta?.senderJid ?? null,
   };
 };
 

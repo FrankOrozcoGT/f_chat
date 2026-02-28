@@ -4,13 +4,15 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { conversationKeys } from './conversationKeys';
-import type { GetConversationsParams } from '../types';
+import type { GetConversationsParams, Participant } from '../types';
 
 // Backend response structure (based on actual API response)
 interface BackendConversation {
   id: string;
   phoneId: string;
   clientId: string;
+  type: 'individual' | 'group';
+  groupName?: string | null;
   lastMessageAt: string;
   lastMessagePreview: string;
   isActive: boolean;
@@ -25,7 +27,8 @@ interface BackendConversation {
     profilePicUrl?: string | null;
     firstContactAt: string;
     lastContactAt: string;
-  };
+  } | null;
+  participants?: Participant[];
   phone: {
     id: string;
     phoneNumber: string;
@@ -56,9 +59,12 @@ export const useGetConversations = (params: GetConversationsParams = {}) => {
       const conversations = response.data.data.map((conv) => ({
         id: conv.id,
         phoneId: conv.phoneId,
-        clientPhone: conv.client.phoneNumber,
-        clientName: conv.client.name,
-        clientAvatar: conv.client.profilePicUrl ?? undefined,
+        type: conv.type ?? 'individual',
+        clientPhone: conv.client?.phoneNumber ?? conv.participants?.[0]?.phoneNumber ?? '',
+        clientName: conv.type === 'group' ? (conv.groupName ?? 'Grupo') : (conv.client?.name ?? ''),
+        clientAvatar: conv.type === 'individual' ? (conv.client?.profilePicUrl ?? undefined) : undefined,
+        groupName: conv.groupName ?? undefined,
+        participants: conv.participants,
         lastMessage: conv.lastMessagePreview,
         lastMessageAt: conv.lastMessageAt,
         unreadCount: 0, // TODO: Backend should provide this

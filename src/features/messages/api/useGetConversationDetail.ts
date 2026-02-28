@@ -13,6 +13,8 @@ interface BackendConversationDetailResponse {
     id: string;
     phoneId: string;
     clientId: string;
+    type: 'individual' | 'group';
+    groupName?: string | null;
     lastMessageAt: string;
     lastMessagePreview: string;
     isActive: boolean;
@@ -21,7 +23,7 @@ interface BackendConversationDetailResponse {
     createdAt: string;
     updatedAt: string;
   };
-  client: BackendClient;
+  client: BackendClient | null;
   summary: {
     conversationId: string;
     clientName: string;
@@ -40,8 +42,8 @@ export const useGetConversationDetail = (conversationId: string) => {
         `/api/conversations/${conversationId}`
       );
 
-      // Transform backend client to frontend structure
-      const client = mapBackendClient(response.data.client);
+      // Transform backend client to frontend structure (null for group conversations)
+      const client = response.data.client ? mapBackendClient(response.data.client) : null;
 
       return {
         conversation: response.data.conversation,
