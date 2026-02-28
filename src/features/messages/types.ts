@@ -96,6 +96,10 @@ export interface BackendConversationDetail {
     lastMessagePreview: string;
     isActive: boolean;
   };
+  products: unknown[];
+  clientDiscounts: unknown[];
+  promotions: unknown[];
+  clientPromotionDiscounts: unknown[];
 }
 
 // Type mappers

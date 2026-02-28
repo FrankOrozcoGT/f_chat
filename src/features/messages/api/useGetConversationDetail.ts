@@ -32,6 +32,10 @@ interface BackendConversationDetailResponse {
     lastMessagePreview: string;
     isActive: boolean;
   };
+  products: unknown[];
+  clientDiscounts: unknown[];
+  promotions: unknown[];
+  clientPromotionDiscounts: unknown[];
 }
 
 export const useGetConversationDetail = (conversationId: string) => {
@@ -49,6 +53,10 @@ export const useGetConversationDetail = (conversationId: string) => {
         conversation: response.data.conversation,
         client,
         summary: response.data.summary,
+        products: response.data.products ?? [],
+        clientDiscounts: response.data.clientDiscounts ?? [],
+        promotions: response.data.promotions ?? [],
+        clientPromotionDiscounts: response.data.clientPromotionDiscounts ?? [],
       };
     },
     enabled: !!conversationId,

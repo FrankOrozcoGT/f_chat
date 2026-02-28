@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, X } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X } from 'lucide-react';
 import { useGetMe } from '@/features/auth/api';
 import { useSidebarStore } from '@/stores/useSidebarStore';
 
@@ -48,6 +48,13 @@ export const Sidebar = () => {
       label: 'Gestión de Usuarios',
       path: '/admin/users',
       allowedPlans: [],
+      allowedRoles: ['admin'],
+    },
+    {
+      icon: Settings,
+      label: 'Configuración',
+      path: '/settings',
+      allowedPlans: ['free', 'full'],
       allowedRoles: ['admin'],
     },
   ];
