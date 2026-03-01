@@ -1,15 +1,17 @@
 // HITL (Human-In-The-Loop) Panel - right column
-// Shows ClientInfo + ConversationSummary
+// Shows ClientInfo + ProductsPromotions + ConversationSummary (with analyzed conversations)
 
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
 import { ClientInfo } from './ClientInfo';
+import { ProductsPromotions } from './ProductsPromotions';
 import { ConversationSummary } from './ConversationSummary';
 
 interface HITLPanelProps {
   conversationId: string;
+  onSelectHistoricalConversation?: (conversationId: string) => void;
 }
 
-export const HITLPanel = ({ conversationId }: HITLPanelProps) => {
+export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HITLPanelProps) => {
   const { data: conversationDetail, isLoading } = useGetConversationDetail(conversationId);
 
   if (isLoading) {
@@ -31,13 +33,19 @@ export const HITLPanel = ({ conversationId }: HITLPanelProps) => {
     );
   }
 
-  // For now, summaries will be empty - can be added later if backend provides them
-  const summaries: any[] = [];
-
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 bg-bg-primary">
+    <div className="h-full overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 bg-bg-primary">
       <ClientInfo client={conversationDetail.client} />
-      <ConversationSummary summaries={summaries} />
+      <ProductsPromotions
+        products={conversationDetail.products}
+        promotions={conversationDetail.promotions}
+        clientDiscounts={conversationDetail.clientDiscounts}
+        clientPromotionDiscounts={conversationDetail.clientPromotionDiscounts}
+      />
+      <ConversationSummary
+        analyzedConversations={conversationDetail.analyzedConversations}
+        onSelectConversation={onSelectHistoricalConversation}
+      />
     </div>
   );
 };

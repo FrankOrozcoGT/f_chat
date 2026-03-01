@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Bot, Hand, Info } from 'lucide-react';
+import { ArrowLeft, Bot, Hand, Info, AlertTriangle } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
@@ -12,6 +12,7 @@ import { messageKeys } from '../api/messageKeys';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { ClientInfo } from './ClientInfo';
+import { ProductsPromotions } from './ProductsPromotions';
 import { ConversationSummary } from './ConversationSummary';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
@@ -27,9 +28,11 @@ import { authKeys } from '@/features/auth/api/useGetMe';
 
 interface MessagesPanelProps {
   conversationId: string;
+  historicalConversationId?: string | null;
+  onExitHistorical?: () => void;
 }
 
-export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
+export const MessagesPanel = ({ conversationId, historicalConversationId, onExitHistorical }: MessagesPanelProps) => {
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { setSelectedConversationId } = useConversationsStore();
@@ -41,9 +44,19 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
   const { data: messages = [], isLoading: isLoadingMessages } = useGetMessages(conversationId);
   const { data: conversationDetail } = useGetConversationDetail(conversationId);
 
+  // Historical conversation messages (when viewing a sub-conversation)
+  const isViewingHistorical = !!historicalConversationId;
+  const { data: historicalMessages = [], isLoading: isLoadingHistorical } = useGetMessages(
+    historicalConversationId || ''
+  );
+
+  // Choose which messages to display
+  const displayMessages = isViewingHistorical ? historicalMessages : messages;
+  const isLoadingDisplay = isViewingHistorical ? isLoadingHistorical : isLoadingMessages;
+
   const client = conversationDetail?.client;
   const conversationMode = conversationDetail?.conversation?.mode;
-  const isGroup = conversationDetail?.conversation?.type === 'group';
+  const isGroup = (conversationDetail?.conversation as any)?.type === 'group';
 
   // HITL mutation hooks
   const takeControl = useTakeControl({
@@ -64,7 +77,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [displayMessages]);
 
   // WebSocket integration for real-time message updates
   useEffect(() => {
@@ -312,25 +325,42 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
         </button>
       </header>
 
+      {/* Historical conversation warning banner */}
+      {isViewingHistorical && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-accent-orange/10 border-b border-accent-orange/30 shrink-0">
+          <button
+            onClick={onExitHistorical}
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-accent-orange/20 transition-colors"
+            aria-label="Volver a conversación actual"
+          >
+            <ArrowLeft className="w-5 h-5 text-accent-orange" />
+          </button>
+          <AlertTriangle className="w-4 h-4 text-accent-orange shrink-0" />
+          <span className="text-sm text-accent-orange font-medium">
+            Conversación antigua — los mensajes no se pueden enviar aquí
+          </span>
+        </div>
+      )}
+
       {/* Messages body */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3">
-        {isLoadingMessages && messages.length === 0 ? (
+        {isLoadingDisplay && displayMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3">
               <div className="w-10 h-10 border-4 border-border-primary border-t-accent-blue rounded-full animate-spin" />
               <p className="text-sm text-text-secondary">Cargando mensajes...</p>
             </div>
           </div>
-        ) : messages.length === 0 ? (
+        ) : displayMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-sm text-text-secondary">No hay mensajes aún</p>
           </div>
         ) : (
           <>
-            {messages.map((message) => {
+            {displayMessages.map((message) => {
               // Resolve quoted message from local list by DB id
               const quotedMessage = message.quotedKeyId
-                ? messages.find((m) => m.id === message.quotedKeyId) ?? null
+                ? displayMessages.find((m) => m.id === message.quotedKeyId) ?? null
                 : null;
               return (
                 <MessageBubble
@@ -338,7 +368,7 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
                   message={{ ...message, quotedMessage }}
                   clientName={client?.name}
                   isGroup={isGroup}
-                  onReply={handleReply}
+                  onReply={isViewingHistorical ? undefined : handleReply}
                   onScrollToMessage={handleScrollToMessage}
                 />
               );
@@ -349,13 +379,15 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
         )}
       </div>
 
-      {/* Footer with input */}
-      <MessageInput
-        conversationId={conversationId}
-        disabled={conversationMode === 'AI'}
-        quotedMessage={quotedMessage}
-        onCancelQuote={() => setQuotedMessage(null)}
-      />
+      {/* Footer with input (hidden when viewing historical) */}
+      {!isViewingHistorical && (
+        <MessageInput
+          conversationId={conversationId}
+          disabled={conversationMode === 'AI'}
+          quotedMessage={quotedMessage}
+          onCancelQuote={() => setQuotedMessage(null)}
+        />
+      )}
 
       {/* Bottom Sheet for mobile - shows client info + conversation summary */}
       <BottomSheet
@@ -363,10 +395,18 @@ export const MessagesPanel = ({ conversationId }: MessagesPanelProps) => {
         onClose={() => setIsBottomSheetOpen(false)}
         title="Información del Cliente"
       >
-        {client && (
+        {client && conversationDetail && (
           <div className="space-y-4">
             <ClientInfo client={client} />
-            <ConversationSummary summaries={[]} />
+            <ProductsPromotions
+              products={conversationDetail.products}
+              promotions={conversationDetail.promotions}
+              clientDiscounts={conversationDetail.clientDiscounts}
+              clientPromotionDiscounts={conversationDetail.clientPromotionDiscounts}
+            />
+            <ConversationSummary
+              analyzedConversations={conversationDetail.analyzedConversations}
+            />
           </div>
         )}
       </BottomSheet>

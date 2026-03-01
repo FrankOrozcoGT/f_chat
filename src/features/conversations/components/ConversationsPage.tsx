@@ -2,7 +2,7 @@
 // Left: ConversationsList, Center: MessagesPanel, Right: HITLPanel
 // Includes WebSocket integration for real-time updates
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/layouts/components/Header';
 import { Sidebar } from '@/layouts/components/Sidebar';
@@ -19,6 +19,12 @@ export const ConversationsPage = () => {
   const queryClient = useQueryClient();
   const isCollapsed = useSidebarStore((state) => state.isCollapsed);
   const { selectedConversationId } = useConversationsStore();
+  const [historicalConversationId, setHistoricalConversationId] = useState<string | null>(null);
+
+  // Reset historical view when switching conversations
+  useEffect(() => {
+    setHistoricalConversationId(null);
+  }, [selectedConversationId]);
 
   // WebSocket integration for real-time updates
   useEffect(() => {
@@ -96,7 +102,11 @@ export const ConversationsPage = () => {
 
             {/* Center column: Messages panel or placeholder */}
             {selectedConversationId ? (
-              <MessagesPanel conversationId={selectedConversationId} />
+              <MessagesPanel
+                conversationId={selectedConversationId}
+                historicalConversationId={historicalConversationId}
+                onExitHistorical={() => setHistoricalConversationId(null)}
+              />
             ) : (
               <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-800">
                 <div className="text-center text-gray-400 dark:text-gray-500">
@@ -126,7 +136,10 @@ export const ConversationsPage = () => {
             {/* Right column: HITL Panel (only desktop ≥1024px) */}
             <div className="hidden lg:block w-[320px] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               {selectedConversationId ? (
-                <HITLPanel conversationId={selectedConversationId} />
+                <HITLPanel
+                  conversationId={selectedConversationId}
+                  onSelectHistoricalConversation={setHistoricalConversationId}
+                />
               ) : null}
             </div>
           </div>

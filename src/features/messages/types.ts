@@ -74,32 +74,83 @@ export interface Client {
   createdAt: string;
 }
 
+// Product discount (per-client or general)
+export interface ProductDiscount {
+  id: string;
+  discountPrice: number;
+  clientId: string | null;
+}
+
+// Product from backend
+export interface Product {
+  id: string;
+  userId: string;
+  name: string;
+  basePrice: number;
+  discounts: ProductDiscount[];
+}
+
+// Client-specific discount (with product embedded)
+export interface ClientDiscount {
+  id: string;
+  productId: string;
+  discountPrice: number;
+  product: Product;
+}
+
+// Promotion product entry
+export interface PromotionProduct {
+  product: { id: string; name: string };
+}
+
+// Promotion discount
+export interface PromotionDiscount {
+  id: string;
+  discountPrice: number;
+  clientId: string | null;
+}
+
+// Promotion from backend
+export interface Promotion {
+  id: string;
+  name: string;
+  specialPrice: number;
+  promotionProducts: PromotionProduct[];
+  promotionDiscounts: PromotionDiscount[];
+}
+
+// Client-specific promotion discount
+export interface ClientPromotionDiscount {
+  id: string;
+  promotionId: string;
+  discountPrice: number;
+  promotion: Promotion;
+}
+
+// Analyzed sub-conversation from GET /api/conversations/:id
+export interface AnalyzedConversation {
+  id: string;
+  summary: string | null;
+  messageCount: number;
+  createdAt: string;
+}
+
 // Backend conversation detail response
 export interface BackendConversationDetail {
   conversation: {
     id: string;
     phoneId: string;
-    clientId: string;
     isActive: boolean;
     mode: 'AI' | 'HITL';
-    lastMessageAt: Date;
-    lastMessagePreview: string;
-    createdAt: Date;
-    updatedAt: Date;
+    lastMessageAt: string;
+    lastMessagePreview: string | null;
   };
   client: BackendClient | null;
-  summary: {
-    conversationId: string;
-    clientName: string;
-    clientPhone: string;
-    lastMessageAt: Date;
-    lastMessagePreview: string;
-    isActive: boolean;
-  };
-  products: unknown[];
-  clientDiscounts: unknown[];
-  promotions: unknown[];
-  clientPromotionDiscounts: unknown[];
+  products: Product[];
+  clientDiscounts: ClientDiscount[];
+  promotions: Promotion[];
+  clientPromotionDiscounts: ClientPromotionDiscount[];
+  analyzedConversations: AnalyzedConversation[];
 }
 
 // Type mappers

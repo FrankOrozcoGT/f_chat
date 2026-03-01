@@ -1,110 +1,104 @@
 // Conversation summary component for HITL Panel
-// Shows previous conversations summaries (if available)
+// Shows analyzed sub-conversations from GET /api/conversations/:id
+// Click to load historical messages in the main panel
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardBody } from '@/shared/ui/Card';
-
-interface ConversationSummaryItem {
-  id: string;
-  date: string;
-  summary: string;
-}
+import { ChevronDown, ChevronUp, MessageSquare, History } from 'lucide-react';
+import { Card } from '@/shared/ui/Card';
+import { Badge } from '@/shared/ui/Badge';
+import type { AnalyzedConversation } from '../types';
 
 interface ConversationSummaryProps {
-  summaries?: ConversationSummaryItem[];
+  analyzedConversations: AnalyzedConversation[];
+  onSelectConversation?: (conversationId: string) => void;
 }
 
-export const ConversationSummary = ({ summaries = [] }: ConversationSummaryProps) => {
+export const ConversationSummary = ({
+  analyzedConversations,
+  onSelectConversation,
+}: ConversationSummaryProps) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const toggleExpanded = (id: string) => {
     setExpandedIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
   };
 
-  if (summaries.length === 0) {
+  if (analyzedConversations.length === 0) {
     return (
-      <Card variant="default" className="p-4 md:p-6">
-        <CardHeader className="mb-4 pb-4">
-          <CardTitle>Conversaciones Previas</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <MessageSquare className="w-12 h-12 text-text-tertiary mb-3" />
-            <p className="text-sm text-text-secondary">
-              No hay resúmenes de conversaciones previas
-            </p>
-          </div>
-        </CardBody>
+      <Card variant="default" className="p-3 md:p-4">
+        <div className="flex items-center gap-2 text-text-tertiary">
+          <History className="w-4 h-4" />
+          <span className="text-xs">Sin conversaciones analizadas</span>
+        </div>
       </Card>
     );
   }
 
   return (
-    <Card variant="default" className="p-4 md:p-6">
-      <CardHeader className="mb-4 pb-4">
-        <CardTitle>Conversaciones Previas</CardTitle>
-      </CardHeader>
+    <Card variant="default" className="p-3 md:p-4">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-3">
+        <History className="w-4 h-4 text-accent-blue" />
+        <h4 className="text-sm font-semibold text-text-primary">
+          Historial ({analyzedConversations.length})
+        </h4>
+      </div>
 
-      <CardBody className="space-y-3">
-        {summaries.map((item) => {
-          const isExpanded = expandedIds.has(item.id);
-          const shouldTruncate = item.summary.length > 150;
+      {/* Sub-conversations list */}
+      <div className="space-y-1.5">
+        {analyzedConversations.map((conv) => {
+          const isExpanded = expandedIds.has(conv.id);
+          const summary = conv.summary || 'Sin resumen';
+          const shouldTruncate = summary.length > 100;
           const displayText = isExpanded || !shouldTruncate
-            ? item.summary
-            : `${item.summary.slice(0, 150)}...`;
-
-          const formattedDate = formatDistanceToNow(new Date(item.date), {
-            addSuffix: true,
-            locale: es,
-          });
+            ? summary
+            : `${summary.slice(0, 100)}...`;
 
           return (
             <div
-              key={item.id}
-              className="p-3 rounded-lg bg-bg-tertiary border border-border-primary"
+              key={conv.id}
+              className="p-2 rounded-lg bg-bg-tertiary border border-border-primary hover:border-accent-blue/40 transition-colors"
             >
-              {/* Date */}
-              <p className="text-xs font-semibold text-text-secondary mb-2">
-                {formattedDate}
-              </p>
+              {/* Top row: badge + message count + click action */}
+              <div className="flex items-center justify-between mb-1">
+                <Badge variant="default" size="sm">
+                  {conv.messageCount} msgs
+                </Badge>
+                <button
+                  onClick={() => onSelectConversation?.(conv.id)}
+                  className="flex items-center gap-1 text-xs text-accent-blue hover:underline"
+                >
+                  <MessageSquare className="w-3 h-3" />
+                  Ver
+                </button>
+              </div>
 
               {/* Summary text */}
-              <p className="text-sm text-text-primary whitespace-pre-wrap mb-2">
+              <p className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">
                 {displayText}
               </p>
 
-              {/* Expand/Collapse button */}
               {shouldTruncate && (
                 <button
-                  onClick={() => toggleExpanded(item.id)}
-                  className="flex items-center gap-1 text-xs text-accent-blue hover:underline"
+                  onClick={() => toggleExpanded(conv.id)}
+                  className="flex items-center gap-1 mt-1 text-xs text-accent-blue hover:underline"
                 >
                   {isExpanded ? (
-                    <>
-                      Ver menos <ChevronUp className="w-3 h-3" />
-                    </>
+                    <>Menos <ChevronUp className="w-3 h-3" /></>
                   ) : (
-                    <>
-                      Ver más <ChevronDown className="w-3 h-3" />
-                    </>
+                    <>Más <ChevronDown className="w-3 h-3" /></>
                   )}
                 </button>
               )}
             </div>
           );
         })}
-      </CardBody>
+      </div>
     </Card>
   );
 };
