@@ -1,5 +1,5 @@
 // HITL (Human-In-The-Loop) Panel - right column
-// Shows ClientInfo + ProductsPromotions + Analyze button
+// Shows ClientInfo + ProductsPromotions + Analyze button + ConversationSummary
 
 import { useQueryClient } from '@tanstack/react-query';
 import { Search, Loader2 } from 'lucide-react';
@@ -9,12 +9,14 @@ import { messageKeys } from '../api/messageKeys';
 import { useToast } from '@/shared/hooks/useToast';
 import { ClientInfo } from './ClientInfo';
 import { ProductsPromotions } from './ProductsPromotions';
+import { ConversationSummary } from './ConversationSummary';
 
 interface HITLPanelProps {
   conversationId: string;
+  onSelectHistoricalConversation?: (conversationId: string) => void;
 }
 
-export const HITLPanel = ({ conversationId }: HITLPanelProps) => {
+export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HITLPanelProps) => {
   const queryClient = useQueryClient();
   const { data: conversationDetail, isLoading } = useGetConversationDetail(conversationId);
   const { showToast } = useToast();
@@ -22,8 +24,9 @@ export const HITLPanel = ({ conversationId }: HITLPanelProps) => {
 
   const handleAnalyze = () => {
     analyze(conversationId, {
-      onSuccess: () => {
+      onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+        showToast(`Análisis completado — ${data.creditsUsed.toFixed(2)} créditos usados`, 'success');
       },
       onError: (error: any) => {
         const msg = error?.response?.data?.message || 'Error al analizar la conversación';
@@ -51,6 +54,8 @@ export const HITLPanel = ({ conversationId }: HITLPanelProps) => {
     );
   }
 
+  const hasAnalyzed = conversationDetail.analyzedConversations.length > 0;
+
   return (
     <div className="h-full overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 bg-bg-primary">
       <ClientInfo client={conversationDetail.client} />
@@ -73,10 +78,16 @@ export const HITLPanel = ({ conversationId }: HITLPanelProps) => {
         ) : (
           <>
             <Search className="w-4 h-4" />
-            Analizar Conversación
+            {hasAnalyzed ? 'Re-analizar' : 'Analizar Conversación'}
           </>
         )}
       </button>
+      {hasAnalyzed && (
+        <ConversationSummary
+          analyzedConversations={conversationDetail.analyzedConversations}
+          onSelectConversation={onSelectHistoricalConversation}
+        />
+      )}
     </div>
   );
 };

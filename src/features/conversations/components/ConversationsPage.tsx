@@ -138,6 +138,7 @@ export const ConversationsPage = () => {
               {selectedConversationId ? (
                 <HITLPanel
                   conversationId={selectedConversationId}
+                  onSelectHistoricalConversation={setHistoricalConversationId}
                 />
               ) : null}
             </div>
