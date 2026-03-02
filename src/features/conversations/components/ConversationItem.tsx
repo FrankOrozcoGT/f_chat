@@ -61,7 +61,6 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
 
   // Clean phone number (remove WhatsApp group suffix @g.us)
   const cleanPhone = conversation.clientPhone.replace(/@g\.us$/, '');
-  const isGroup = conversation.clientPhone.includes('@g.us');
 
   return (
     <button
