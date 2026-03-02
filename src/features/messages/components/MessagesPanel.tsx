@@ -35,7 +35,7 @@ interface MessagesPanelProps {
 export const MessagesPanel = ({ conversationId, historicalConversationId, onExitHistorical }: MessagesPanelProps) => {
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { setSelectedConversationId } = useConversationsStore();
+  const { setSelectedConversationId, selectedConversationType } = useConversationsStore();
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
   const { showToast } = useToast();
@@ -69,7 +69,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
 
   const client = conversationDetail?.client;
   const conversationMode = conversationDetail?.conversation?.mode;
-  const isGroup = (conversationDetail?.conversation as any)?.type === 'group';
+  const isGroup = selectedConversationType === 'group';
 
   // HITL mutation hooks
   const takeControl = useTakeControl({
@@ -373,7 +373,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
             {displayMessages.map((message) => {
               // Resolve quoted message from local list by DB id
               const quotedMessage = message.quotedKeyId
-                ? displayMessages.find((m) => m.id === message.quotedKeyId) ?? null
+                ? displayMessages.find((m) => m.keyId === message.quotedKeyId) ?? null
                 : null;
               return (
                 <MessageBubble
@@ -417,23 +417,25 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
               clientDiscounts={conversationDetail.clientDiscounts}
               clientPromotionDiscounts={conversationDetail.clientPromotionDiscounts}
             />
-            <button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent-blue text-white text-sm font-medium hover:bg-accent-blue/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Analizando...
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4" />
-                  Analizar Conversación
-                </>
-              )}
-            </button>
+            {!isGroup && (
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent-blue text-white text-sm font-medium hover:bg-accent-blue/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Analizando...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4" />
+                    Analizar Conversación
+                  </>
+                )}
+              </button>
+            )}
           </div>
         )}
       </BottomSheet>

@@ -3,6 +3,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { Search, Loader2 } from 'lucide-react';
+import { useConversationsStore } from '@/features/conversations/store';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
 import { useAnalyzeConversation } from '../api/useAnalyzeConversation';
 import { messageKeys } from '../api/messageKeys';
@@ -18,6 +19,7 @@ interface HITLPanelProps {
 
 export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HITLPanelProps) => {
   const queryClient = useQueryClient();
+  const { selectedConversationType } = useConversationsStore();
   const { data: conversationDetail, isLoading } = useGetConversationDetail(conversationId);
   const { showToast } = useToast();
   const { mutate: analyze, isPending: isAnalyzing } = useAnalyzeConversation();
@@ -55,6 +57,7 @@ export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HI
   }
 
   const hasAnalyzed = conversationDetail.analyzedConversations.length > 0;
+  const isGroup = selectedConversationType === 'group';
 
   return (
     <div className="h-full overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 bg-bg-primary">
@@ -65,24 +68,26 @@ export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HI
         clientDiscounts={conversationDetail.clientDiscounts}
         clientPromotionDiscounts={conversationDetail.clientPromotionDiscounts}
       />
-      <button
-        onClick={handleAnalyze}
-        disabled={isAnalyzing}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent-blue text-white text-sm font-medium hover:bg-accent-blue/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {isAnalyzing ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Analizando...
-          </>
-        ) : (
-          <>
-            <Search className="w-4 h-4" />
-            {hasAnalyzed ? 'Re-analizar' : 'Analizar Conversación'}
-          </>
-        )}
-      </button>
-      {hasAnalyzed && (
+      {!isGroup && (
+        <button
+          onClick={handleAnalyze}
+          disabled={isAnalyzing}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent-blue text-white text-sm font-medium hover:bg-accent-blue/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isAnalyzing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Analizando...
+            </>
+          ) : (
+            <>
+              <Search className="w-4 h-4" />
+              {hasAnalyzed ? 'Re-analizar' : 'Analizar Conversación'}
+            </>
+          )}
+        </button>
+      )}
+      {!isGroup && hasAnalyzed && (
         <ConversationSummary
           analyzedConversations={conversationDetail.analyzedConversations}
           onSelectConversation={onSelectHistoricalConversation}

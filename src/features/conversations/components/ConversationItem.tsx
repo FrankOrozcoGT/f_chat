@@ -12,13 +12,13 @@ interface ConversationItemProps {
 }
 
 export const ConversationItem = ({ conversation }: ConversationItemProps) => {
-  const { selectedConversationId, setSelectedConversationId } =
+  const { selectedConversationId, setSelectedConversation } =
     useConversationsStore();
 
   const isSelected = selectedConversationId === conversation.id;
 
   const handleClick = () => {
-    setSelectedConversationId(conversation.id);
+    setSelectedConversation(conversation.id, conversation.type);
   };
 
   // Format timestamp relative to now
