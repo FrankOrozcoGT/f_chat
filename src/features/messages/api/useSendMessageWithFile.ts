@@ -32,7 +32,7 @@ interface SendMessageWithFileResponse {
 }
 
 interface UseSendMessageWithFileOptions {
-  onError?: (error: Error, errorType?: 'credits_limit' | 'generic') => void;
+  onError?: (error: Error, errorType?: 'credits_limit' | 'phone_disconnected' | 'generic') => void;
 }
 
 export const useSendMessageWithFile = (
@@ -125,25 +125,16 @@ export const useSendMessageWithFile = (
       }
 
       // Detect error type
-      let errorType: 'credits_limit' | 'generic' = 'generic';
+      let errorType: 'credits_limit' | 'phone_disconnected' | 'generic' = 'generic';
 
-      // Check if it's a 403 error with credits limit message
-      if (
-        error &&
-        typeof error === 'object' &&
-        'response' in error &&
-        error.response &&
-        typeof error.response === 'object' &&
-        'status' in error.response &&
-        error.response.status === 403 &&
-        'data' in error.response &&
-        error.response.data &&
-        typeof error.response.data === 'object' &&
-        'message' in error.response.data &&
-        typeof error.response.data.message === 'string' &&
-        error.response.data.message.includes('Credits limit')
-      ) {
+      const resp = error && typeof error === 'object' && 'response' in error
+        ? (error as any).response
+        : null;
+
+      if (resp?.status === 403 && typeof resp?.data?.message === 'string' && resp.data.message.includes('Credits limit')) {
         errorType = 'credits_limit';
+      } else if (resp?.status === 503) {
+        errorType = 'phone_disconnected';
       }
 
       // Call external error handler if provided
