@@ -25,6 +25,8 @@ import { socket } from '@/lib/websocket';
 import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
 import type { Message } from '../types';
 import { authKeys } from '@/features/auth/api/useGetMe';
+import { usePhoneReconnectStore } from '@/features/phones/store';
+import { PhoneDisconnectedModal } from '@/features/phones/components/PhoneDisconnectedModal';
 
 interface MessagesPanelProps {
   conversationId: string;
@@ -39,6 +41,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
   const { showToast } = useToast();
+  const { showModal: showDisconnectedModal, closeModal: closeDisconnectedModal } = usePhoneReconnectStore();
   const { mutate: analyze, isPending: isAnalyzing } = useAnalyzeConversation();
 
   const handleAnalyze = () => {
@@ -439,6 +442,12 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
           </div>
         )}
       </BottomSheet>
+
+      {/* Phone disconnected modal (triggered by 503 on send) */}
+      <PhoneDisconnectedModal
+        isOpen={showDisconnectedModal}
+        onClose={closeDisconnectedModal}
+      />
     </div>
   );
 };

@@ -13,10 +13,11 @@ import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { Toast, ToastContainer } from '@/shared/ui/Toast';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
-import type { ConversationHitlPayload, ApiDownPayload, ApiUpPayload } from '@/lib/websocket';
+import type { ConversationHitlPayload, ApiDownPayload, ApiUpPayload, PhoneQRUpdatedPayload, PhoneStatusChangedPayload } from '@/lib/websocket';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { messageKeys } from '@/features/messages/api/messageKeys';
 import { useGetMe } from '@/features/auth/api';
+import { usePhoneReconnectStore } from '@/features/phones/store';
 
 /** Redirige según el plan/rol del usuario autenticado */
 const DefaultRedirect = () => {
@@ -90,6 +91,31 @@ function App() {
       socket.off('conversation:hitl', handleHitl);
     };
   }, [queryClient, showToast]);
+
+  // Global phone:qr_updated & phone:status_changed listeners
+  useEffect(() => {
+    const { setLatestQR, clearQR } = usePhoneReconnectStore.getState();
+
+    const handleQRUpdated = (data: PhoneQRUpdatedPayload) => {
+      console.log('[Phone] QR updated:', data.phoneId);
+      setLatestQR(data.phoneId, data.qrCode);
+    };
+
+    const handleStatusChanged = (data: PhoneStatusChangedPayload) => {
+      console.log('[Phone] Status changed:', data.phoneId, data.status);
+      if (data.status === 'connected') {
+        clearQR();
+      }
+    };
+
+    socket.on('phone:qr_updated', handleQRUpdated);
+    socket.on('phone:status_changed', handleStatusChanged);
+
+    return () => {
+      socket.off('phone:qr_updated', handleQRUpdated);
+      socket.off('phone:status_changed', handleStatusChanged);
+    };
+  }, []);
 
   // Global Health alerts listener
   useEffect(() => {

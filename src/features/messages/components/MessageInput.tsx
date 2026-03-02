@@ -12,6 +12,7 @@ import { InfoBanner } from '@/shared/ui/InfoBanner';
 import { useToast } from '@/shared/hooks/useToast';
 import { useSendMessage } from '../api/useSendMessage';
 import { useSendMessageWithFile } from '../api/useSendMessageWithFile';
+import { usePhoneReconnectStore } from '@/features/phones/store';
 import type { BackendMessageType, Message } from '../types';
 
 interface MessageInputProps {
@@ -37,23 +38,27 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
   const isCancelledRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { showToast } = useToast();
-  const sendMessageMutation = useSendMessage(conversationId, {
-    onError: (_error, errorType) => {
-      if (errorType === 'credits_limit') {
-        showToast('Sin créditos disponibles. Has alcanzado el límite de tu plan.', 'error');
+  const { openModal: openDisconnectedModal, isDismissed } = usePhoneReconnectStore();
+
+  const handleSendError = (error: Error, errorType?: 'credits_limit' | 'phone_disconnected' | 'generic', isFile = false) => {
+    if (errorType === 'phone_disconnected') {
+      if (!isDismissed()) {
+        openDisconnectedModal();
       } else {
-        showToast('Error al enviar el mensaje. Intenta nuevamente.', 'error');
+        showToast('El teléfono está desconectado.', 'error');
       }
-    },
+    } else if (errorType === 'credits_limit') {
+      showToast('Sin créditos disponibles. Has alcanzado el límite de tu plan.', 'error');
+    } else {
+      showToast(isFile ? 'Error al enviar el archivo. Intenta nuevamente.' : 'Error al enviar el mensaje. Intenta nuevamente.', 'error');
+    }
+  };
+
+  const sendMessageMutation = useSendMessage(conversationId, {
+    onError: (error, errorType) => handleSendError(error, errorType),
   });
   const sendMessageWithFileMutation = useSendMessageWithFile(conversationId, {
-    onError: (_error, errorType) => {
-      if (errorType === 'credits_limit') {
-        showToast('Sin créditos disponibles. Has alcanzado el límite de tu plan.', 'error');
-      } else {
-        showToast('Error al enviar el archivo. Intenta nuevamente.', 'error');
-      }
-    },
+    onError: (error, errorType) => handleSendError(error, errorType, true),
   });
 
   const handleSend = async () => {
