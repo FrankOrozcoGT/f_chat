@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { create } from 'zustand';
 
 export type ToastType = 'error' | 'success' | 'info';
 
@@ -8,21 +8,19 @@ export interface ToastItem {
   type: ToastType;
 }
 
-export const useToast = () => {
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
+interface ToastState {
+  toasts: ToastItem[];
+  showToast: (message: string, type?: ToastType) => void;
+  removeToast: (id: string) => void;
+}
 
-  const showToast = (message: string, type: ToastType = 'info') => {
+export const useToast = create<ToastState>((set) => ({
+  toasts: [],
+  showToast: (message, type = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
-
-  return {
-    toasts,
-    showToast,
-    removeToast,
-  };
-};
+    set((state) => ({ toasts: [...state.toasts, { id, message, type }] }));
+  },
+  removeToast: (id) => {
+    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
+  },
+}));
