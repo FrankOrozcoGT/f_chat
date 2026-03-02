@@ -4,16 +4,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Bot, Hand, Info, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Bot, Hand, Info, AlertTriangle, Search, Loader2 } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
 import { messageKeys } from '../api/messageKeys';
+import { useAnalyzeConversation } from '../api/useAnalyzeConversation';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { ClientInfo } from './ClientInfo';
 import { ProductsPromotions } from './ProductsPromotions';
-import { ConversationSummary } from './ConversationSummary';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
@@ -39,6 +39,19 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
   const { showToast } = useToast();
+  const { mutate: analyze, isPending: isAnalyzing } = useAnalyzeConversation();
+
+  const handleAnalyze = () => {
+    analyze(conversationId, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.message || 'Error al analizar la conversación';
+        showToast(msg, 'error');
+      },
+    });
+  };
 
   // Fetch messages and conversation detail (includes client data)
   const { data: messages = [], isLoading: isLoadingMessages } = useGetMessages(conversationId);
@@ -169,7 +182,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
           messageKeys.list(conversationId),
           (oldMessages = []) =>
             oldMessages.map((msg) =>
-              msg.id === data.id
+              msg.keyId === data.keyId
                 ? { ...msg, mediaUrl: data.mediaUrl, mediaLoading: false }
                 : msg
             )
@@ -253,7 +266,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
     : '?';
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-bg-primary">
+    <div className="flex-1 min-w-0 flex flex-col h-full bg-bg-primary">
       {/* Header */}
       <header className="flex items-center gap-3 p-4 border-b border-border-primary bg-bg-secondary shrink-0">
         {/* Back button (mobile + medium screens when conversations list is hidden) */}
@@ -404,9 +417,23 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
               clientDiscounts={conversationDetail.clientDiscounts}
               clientPromotionDiscounts={conversationDetail.clientPromotionDiscounts}
             />
-            <ConversationSummary
-              analyzedConversations={conversationDetail.analyzedConversations}
-            />
+            <button
+              onClick={handleAnalyze}
+              disabled={isAnalyzing}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent-blue text-white text-sm font-medium hover:bg-accent-blue/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Analizando...
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4" />
+                  Analizar Conversación
+                </>
+              )}
+            </button>
           </div>
         )}
       </BottomSheet>

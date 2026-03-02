@@ -251,7 +251,7 @@ export const MessageBubble = ({ message, clientName, isGroup, onReply, onScrollT
                 <img
                   src={message.mediaUrl}
                   alt="Imagen"
-                  className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                  className="rounded-lg w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
                   onClick={() => setShowImageModal(true)}
                 />
                 {message.content && (
@@ -276,7 +276,7 @@ export const MessageBubble = ({ message, clientName, isGroup, onReply, onScrollT
               <video
                 src={message.mediaUrl}
                 controls
-                className="rounded-lg max-w-full h-auto"
+                className="rounded-lg w-full h-auto"
               />
               {message.content && (
                 <p className="text-sm md:text-base whitespace-pre-wrap">{message.content}</p>

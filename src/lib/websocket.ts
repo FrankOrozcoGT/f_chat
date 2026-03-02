@@ -69,7 +69,7 @@ export interface ConversationReturnedPayload {
 }
 
 export interface MediaReadyPayload {
-  id: string;
+  keyId: string;
   conversationId: string;
   mediaUrl: string;
 }

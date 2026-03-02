@@ -1,18 +1,36 @@
 // HITL (Human-In-The-Loop) Panel - right column
-// Shows ClientInfo + ProductsPromotions + ConversationSummary (with analyzed conversations)
+// Shows ClientInfo + ProductsPromotions + Analyze button
 
+import { useQueryClient } from '@tanstack/react-query';
+import { Search, Loader2 } from 'lucide-react';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
+import { useAnalyzeConversation } from '../api/useAnalyzeConversation';
+import { messageKeys } from '../api/messageKeys';
+import { useToast } from '@/shared/hooks/useToast';
 import { ClientInfo } from './ClientInfo';
 import { ProductsPromotions } from './ProductsPromotions';
-import { ConversationSummary } from './ConversationSummary';
 
 interface HITLPanelProps {
   conversationId: string;
-  onSelectHistoricalConversation?: (conversationId: string) => void;
 }
 
-export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HITLPanelProps) => {
+export const HITLPanel = ({ conversationId }: HITLPanelProps) => {
+  const queryClient = useQueryClient();
   const { data: conversationDetail, isLoading } = useGetConversationDetail(conversationId);
+  const { showToast } = useToast();
+  const { mutate: analyze, isPending: isAnalyzing } = useAnalyzeConversation();
+
+  const handleAnalyze = () => {
+    analyze(conversationId, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+      },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.message || 'Error al analizar la conversación';
+        showToast(msg, 'error');
+      },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -42,10 +60,23 @@ export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HI
         clientDiscounts={conversationDetail.clientDiscounts}
         clientPromotionDiscounts={conversationDetail.clientPromotionDiscounts}
       />
-      <ConversationSummary
-        analyzedConversations={conversationDetail.analyzedConversations}
-        onSelectConversation={onSelectHistoricalConversation}
-      />
+      <button
+        onClick={handleAnalyze}
+        disabled={isAnalyzing}
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent-blue text-white text-sm font-medium hover:bg-accent-blue/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        {isAnalyzing ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Analizando...
+          </>
+        ) : (
+          <>
+            <Search className="w-4 h-4" />
+            Analizar Conversación
+          </>
+        )}
+      </button>
     </div>
   );
 };
