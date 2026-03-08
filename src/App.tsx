@@ -8,6 +8,7 @@ import { CostsPage } from '@/features/costs/components/CostsPage';
 import { PhonesPage } from '@/features/phones/components/PhonesPage';
 import { ConversationsPage } from '@/features/conversations/components/ConversationsPage';
 import { HealthPage } from '@/features/health/components/HealthPage';
+import { FlowsPage } from '@/features/flows/components/FlowsPage';
 import { SettingsPage } from '@/features/settings/components/SettingsPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { Toast, ToastContainer } from '@/shared/ui/Toast';
@@ -209,6 +210,16 @@ function App() {
             element={
               <ProtectedRoute requiredAccess="full">
                 <ConversationsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Flows routes */}
+          <Route
+            path="/flows"
+            element={
+              <ProtectedRoute requiredAccess="full">
+                <FlowsPage />
               </ProtectedRoute>
             }
           />

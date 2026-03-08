@@ -1,0 +1,132 @@
+import { X, Wrench, Code, AlertTriangle, Users } from 'lucide-react';
+import type { Node } from '../types';
+
+function parseJsonArray(value: string | null): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+interface NodeDetailPanelProps {
+  node: Node;
+  activeSessions: number;
+  isRouter?: boolean;
+  onClose: () => void;
+}
+
+export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: NodeDetailPanelProps) => {
+  const tools = parseJsonArray(node.tools);
+  const preCodeItems = parseJsonArray(node.preCode);
+  const postCodeItems = parseJsonArray(node.postCode);
+
+  return (
+    <div className="absolute right-0 top-0 h-full w-96 bg-bg-secondary border-l border-border-primary z-10 overflow-y-auto shadow-xl">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border-primary sticky top-0 bg-bg-secondary">
+        <div>
+          <h3 className="text-base font-semibold text-text-primary">{node.name}</h3>
+          <div className="flex items-center gap-2 mt-1">
+            {isRouter && (
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-accent-blue/10 text-accent-blue">
+                Router
+              </span>
+            )}
+            {activeSessions > 0 && (
+              <span className="flex items-center gap-1 text-xs text-accent-green">
+                <Users size={12} /> {activeSessions} activos
+              </span>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors"
+        >
+          <X size={18} className="text-text-secondary" />
+        </button>
+      </div>
+
+      <div className="p-4 space-y-5">
+        {/* System Prompt */}
+        <section>
+          <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2">System Prompt</h4>
+          <pre className="text-sm text-text-secondary bg-bg-tertiary rounded-lg p-3 whitespace-pre-wrap max-h-60 overflow-y-auto">
+            {node.systemPrompt || '(vacio)'}
+          </pre>
+        </section>
+
+        {/* Tools */}
+        {tools.length > 0 && (
+          <section>
+            <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2 flex items-center gap-1">
+              <Wrench size={12} /> Tools ({tools.length})
+            </h4>
+            <div className="flex flex-wrap gap-1.5">
+              {tools.map((tool) => (
+                <span key={tool} className="px-2 py-1 text-xs rounded bg-bg-tertiary text-text-secondary">
+                  {tool}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Pre Code */}
+        {preCodeItems.length > 0 && (
+          <section>
+            <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2 flex items-center gap-1">
+              <Code size={12} /> Pre Code
+            </h4>
+            <div className="flex flex-wrap gap-1.5">
+              {preCodeItems.map((item) => (
+                <span key={item} className="px-2 py-1 text-xs rounded bg-accent-purple/10 text-accent-purple">
+                  {item}
+                </span>
+              ))}
+            </div>
+            {node.preCodeInputSchema && (
+              <pre className="text-xs text-text-tertiary bg-bg-tertiary rounded-md p-2 mt-2 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                {node.preCodeInputSchema}
+              </pre>
+            )}
+          </section>
+        )}
+
+        {/* Post Code */}
+        {postCodeItems.length > 0 && (
+          <section>
+            <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2 flex items-center gap-1">
+              <Code size={12} /> Post Code
+            </h4>
+            <div className="flex flex-wrap gap-1.5">
+              {postCodeItems.map((item) => (
+                <span key={item} className="px-2 py-1 text-xs rounded bg-accent-orange/10 text-accent-orange">
+                  {item}
+                </span>
+              ))}
+            </div>
+            {node.postCodeInputSchema && (
+              <pre className="text-xs text-text-tertiary bg-bg-tertiary rounded-md p-2 mt-2 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                {node.postCodeInputSchema}
+              </pre>
+            )}
+          </section>
+        )}
+
+        {/* On Error */}
+        <section>
+          <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2 flex items-center gap-1">
+            <AlertTriangle size={12} /> On Error
+          </h4>
+          <span className="px-2 py-1 text-xs rounded bg-bg-tertiary text-text-secondary">
+            {node.onError}
+          </span>
+        </section>
+      </div>
+    </div>
+  );
+};

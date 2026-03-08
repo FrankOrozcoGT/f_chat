@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X, Workflow } from 'lucide-react';
 import { useGetMe } from '@/features/auth/api';
 import { useSidebarStore } from '@/stores/useSidebarStore';
 
@@ -26,6 +26,13 @@ export const Sidebar = () => {
       icon: MessageSquare,
       label: 'Conversaciones',
       path: '/conversations',
+      allowedPlans: ['full'],
+      allowedRoles: ['admin'],
+    },
+    {
+      icon: Workflow,
+      label: 'Automatizacion',
+      path: '/flows',
       allowedPlans: ['full'],
       allowedRoles: ['admin'],
     },
