@@ -9,6 +9,7 @@ interface ProcessNodeData {
   hasPreCode: boolean;
   hasPostCode: boolean;
   onError: string;
+  isHighlighted?: boolean;
   onSelect: () => void;
   [key: string]: unknown;
 }
@@ -19,8 +20,8 @@ export const ProcessNode = memo(({ data }: { data: ProcessNodeData }) => {
       <Handle type="target" position={Position.Left} className="!w-3 !h-3 !bg-accent-purple !border-2 !border-bg-secondary" />
       <div
         onClick={data.onSelect}
-        className="bg-bg-secondary border-2 border-border-primary rounded-xl p-4 min-w-[160px] cursor-pointer
-                   hover:border-accent-purple hover:shadow-lg transition-all group"
+        className={`bg-bg-secondary border-2 border-border-primary rounded-xl p-4 min-w-[160px] cursor-pointer
+                   hover:border-accent-purple hover:shadow-lg transition-all group ${data.isHighlighted ? 'ring-4 ring-accent-green shadow-lg shadow-accent-green/20 border-accent-green' : ''}`}
       >
         <div className="flex items-center gap-2 mb-2">
           <Bot size={18} className="text-accent-purple" />

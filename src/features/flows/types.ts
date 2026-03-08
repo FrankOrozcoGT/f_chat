@@ -36,3 +36,39 @@ export type FlowsResponse = Flow[];
 
 // { [nodeId]: activeSessionCount }
 export type ActiveSessionsResponse = Record<string, number>;
+
+// === Test Types ===
+
+export interface TestSession {
+  testId: string;
+}
+
+export interface TestSendResponse {
+  response: string;
+  currentNodeId: string;
+}
+
+export interface TestStepBackResponse {
+  currentNodeId: string;
+  lastMessage: string;
+}
+
+export interface TestMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  nodeId?: string;
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  phone: string;
+  conversations: ContactConversation[];
+}
+
+export interface ContactConversation {
+  id: string;
+  lastMessage?: string;
+  updatedAt: string;
+}
