@@ -17,7 +17,7 @@ interface ProcessNodeData {
 export const ProcessNode = memo(({ data }: { data: ProcessNodeData }) => {
   return (
     <>
-      <Handle type="target" position={Position.Left} className="!w-3 !h-3 !bg-accent-purple !border-2 !border-bg-secondary" />
+      <Handle type="target" position={Position.Left} className="w-3! !h-3 !bg-accent-purple !border-2 !border-bg-secondary" />
       <div
         onClick={data.onSelect}
         className={`bg-bg-secondary border-2 border-border-primary rounded-xl p-4 min-w-[160px] cursor-pointer

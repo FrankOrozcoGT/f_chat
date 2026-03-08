@@ -39,66 +39,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   const testStepBack = useTestStepBack();
   const testStop = useTestStop();
 
-  // Cleanup interval on unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  // Auto-play logic
-  useEffect(() => {
-    if (isPlaying && testId && currentMsgIndex < conversationMessages.length) {
-      intervalRef.current = setInterval(() => {
-        setCurrentMsgIndex((prev) => {
-          if (prev >= conversationMessages.length) {
-            setIsPlaying(false);
-            return prev;
-          }
-          handleSendMessage(conversationMessages[prev], prev);
-          return prev + 1;
-        });
-      }, 2000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isPlaying, testId, currentMsgIndex, conversationMessages]);
-
-  const handleSelectConversation = (contact: Contact, conversation: ContactConversation) => {
-    setSelectedContact(contact);
-    setSelectedConversation(conversation);
-  };
-
-  const handleStartTest = async () => {
-    if (!selectedConversation) return;
-
-    try {
-      const result = await startTest.mutateAsync({
-        conversationId: selectedConversation.id,
-        flowId,
-      });
-
-      setTestId(result.testId);
-      setPhase('testing');
-      setMessages([]);
-      setCurrentMsgIndex(0);
-
-      // TODO: los mensajes de la conversación vendrán del response de start
-      // Por ahora placeholder
-      setConversationMessages([]);
-    } catch {
-      // Error manejado por tanstack query
-    }
-  };
-
-  const handleSendMessage = useCallback(async (content: string, _index: number) => {
+  const handleSendMessage = useCallback(async (content: string) => {
     if (!testId) return;
 
     const userMsg: TestMessage = {
@@ -131,6 +72,64 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
       setMessages((prev) => [...prev, errorMsg]);
     }
   }, [testId, testSend, onNodeHighlight]);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  // Auto-play logic
+  useEffect(() => {
+    if (isPlaying && testId && currentMsgIndex < conversationMessages.length) {
+      intervalRef.current = setInterval(() => {
+        setCurrentMsgIndex((prev) => {
+          if (prev >= conversationMessages.length) {
+            setIsPlaying(false);
+            return prev;
+          }
+          handleSendMessage(conversationMessages[prev]);
+          return prev + 1;
+        });
+      }, 2000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isPlaying, testId, currentMsgIndex, conversationMessages, handleSendMessage]);
+
+  const handleSelectConversation = (contact: Contact, conversation: ContactConversation) => {
+    setSelectedContact(contact);
+    setSelectedConversation(conversation);
+  };
+
+  const handleStartTest = async () => {
+    if (!selectedConversation) return;
+
+    try {
+      const result = await startTest.mutateAsync({
+        conversationId: selectedConversation.id,
+        flowId,
+      });
+
+      setTestId(result.testId);
+      setPhase('testing');
+      setMessages([]);
+      setCurrentMsgIndex(0);
+
+      // TODO: los mensajes de la conversación vendrán del response de start
+      setConversationMessages([]);
+    } catch {
+      // Error manejado por tanstack query
+    }
+  };
 
   const handleStepBack = async () => {
     if (!testId) return;
