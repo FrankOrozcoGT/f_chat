@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { X, Search, Play, Pause, SkipBack, Square, MessageSquare, Phone } from 'lucide-react';
+import { X, Search, Play, Pause, SkipBack, Square, MessageSquare, Phone, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { useSearchContacts } from '../api/useSearchContacts';
 import { useStartTest } from '../api/useStartTest';
@@ -8,7 +8,15 @@ import { useTestStepBack } from '../api/useTestStepBack';
 import { useTestStop } from '../api/useTestStop';
 import { useGetMessages } from '@/features/messages/api/useGetMessages';
 import { TestChat } from './TestChat';
+import { TestIntent } from '../types';
 import type { TestMessage, Contact, ContactConversation } from '../types';
+
+const TERMINAL_INTENTS = new Set([
+  TestIntent.CloseSession,
+  TestIntent.SwitchToHitl,
+  TestIntent.MaxIterations,
+  TestIntent.ReportHacking,
+]);
 
 const TEST_PHONE_KEY = 'flowTest_testPhone';
 
@@ -26,6 +34,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<ContactConversation | null>(null);
   const [testPhone, setTestPhone] = useState(() => localStorage.getItem(TEST_PHONE_KEY) || '');
+  const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
 
   // Test phase
   const [phase, setPhase] = useState<Phase>('search');
@@ -65,9 +74,15 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
         content: result.response,
         role: 'assistant',
         nodeId: result.currentNodeId,
+        intent: result.intent,
+        sideEffects: result.sideEffects,
       };
       setMessages((prev) => [...prev, assistantMsg]);
       onNodeHighlight(result.currentNodeId);
+
+      if (TERMINAL_INTENTS.has(result.intent)) {
+        setIsPlaying(false);
+      }
     } catch {
       const errorMsg: TestMessage = {
         id: `error-${Date.now()}`,
@@ -134,7 +149,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
       const result = await startTest.mutateAsync({
         conversationId: selectedConversation.id,
         flowId,
-        testPhone: testPhone.trim(),
+        clientPhone: testPhone.trim(),
       });
 
       setTestId(result.testId);
@@ -239,29 +254,37 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
               <div className="p-4 text-center text-text-tertiary text-sm">Buscando...</div>
             )}
 
-            {contacts?.map((contact) => (
-              <div key={contact.id} className="border-b border-border-primary">
-                <div className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-primary/50">
-                  {contact.name} · {contact.phone}
-                </div>
-                {contact.conversations.map((conv) => (
+            {contacts?.map((contact) => {
+              const isExpanded = expandedContactId === contact.id;
+              return (
+                <div key={contact.id} className="border-b border-border-primary">
                   <button
-                    key={conv.id}
-                    onClick={() => handleSelectConversation(contact, conv)}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-bg-tertiary transition-colors ${
-                      selectedConversation?.id === conv.id ? 'bg-bg-tertiary' : ''
-                    }`}
+                    onClick={() => setExpandedContactId(isExpanded ? null : contact.id)}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-text-primary bg-bg-primary/50 hover:bg-bg-tertiary transition-colors"
                   >
-                    <div className="text-text-secondary truncate">
-                      {conv.lastMessage || 'Sin mensajes'}
-                    </div>
-                    <div className="text-xs text-text-tertiary mt-0.5">
-                      {new Date(conv.updatedAt).toLocaleDateString()}
-                    </div>
+                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span className="truncate">{contact.name}</span>
+                    <span className="text-text-tertiary font-normal ml-auto text-xs">{contact.phone}</span>
                   </button>
-                ))}
-              </div>
-            ))}
+                  {isExpanded && contact.conversations.map((conv) => (
+                    <button
+                      key={conv.id}
+                      onClick={() => handleSelectConversation(contact, conv)}
+                      className={`w-full text-left pl-9 pr-4 py-2.5 text-sm hover:bg-bg-tertiary transition-colors ${
+                        selectedConversation?.id === conv.id ? 'bg-bg-tertiary' : ''
+                      }`}
+                    >
+                      <div className="text-text-secondary truncate">
+                        {conv.lastMessage || 'Sin mensajes'}
+                      </div>
+                      <div className="text-xs text-text-tertiary mt-0.5">
+                        {new Date(conv.updatedAt).toLocaleDateString()}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
 
             {searchQuery.length >= 2 && !isSearching && contacts?.length === 0 && (
               <div className="p-4 text-center text-text-tertiary text-sm">
