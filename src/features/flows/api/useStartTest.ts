@@ -5,6 +5,7 @@ import type { TestSession } from '../types';
 interface StartTestPayload {
   conversationId: string;
   flowId: string;
+  testPhone: string;
 }
 
 export const useStartTest = () => {

@@ -1,13 +1,16 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { X, Search, Play, Pause, SkipBack, Square, MessageSquare } from 'lucide-react';
+import { X, Search, Play, Pause, SkipBack, Square, MessageSquare, Phone } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { useSearchContacts } from '../api/useSearchContacts';
 import { useStartTest } from '../api/useStartTest';
 import { useTestSend } from '../api/useTestSend';
 import { useTestStepBack } from '../api/useTestStepBack';
 import { useTestStop } from '../api/useTestStop';
+import { useGetMessages } from '@/features/messages/api/useGetMessages';
 import { TestChat } from './TestChat';
 import type { TestMessage, Contact, ContactConversation } from '../types';
+
+const TEST_PHONE_KEY = 'flowTest_testPhone';
 
 interface TestPanelProps {
   flowId: string;
@@ -22,6 +25,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<ContactConversation | null>(null);
+  const [testPhone, setTestPhone] = useState(() => localStorage.getItem(TEST_PHONE_KEY) || '');
 
   // Test phase
   const [phase, setPhase] = useState<Phase>('search');
@@ -34,6 +38,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
 
   // API hooks
   const { data: contacts, isLoading: isSearching } = useSearchContacts(searchQuery);
+  const { data: convMessages } = useGetMessages(selectedConversation?.id || '');
   const startTest = useStartTest();
   const testSend = useTestSend();
   const testStepBack = useTestStepBack();
@@ -105,27 +110,38 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
     };
   }, [isPlaying, testId, currentMsgIndex, conversationMessages, handleSendMessage]);
 
+  const handleTestPhoneChange = (value: string) => {
+    setTestPhone(value);
+    localStorage.setItem(TEST_PHONE_KEY, value);
+  };
+
   const handleSelectConversation = (contact: Contact, conversation: ContactConversation) => {
     setSelectedContact(contact);
     setSelectedConversation(conversation);
   };
 
   const handleStartTest = async () => {
-    if (!selectedConversation) return;
+    if (!selectedConversation || !testPhone.trim()) return;
+
+    // Filtrar solo mensajes incoming (del cliente) para enviar al test
+    const incomingMessages = convMessages
+      ?.filter((m) => m.direction === 'incoming')
+      .map((m) => m.content) || [];
+
+    if (incomingMessages.length === 0) return;
 
     try {
       const result = await startTest.mutateAsync({
         conversationId: selectedConversation.id,
         flowId,
+        testPhone: testPhone.trim(),
       });
 
       setTestId(result.testId);
       setPhase('testing');
       setMessages([]);
       setCurrentMsgIndex(0);
-
-      // TODO: los mensajes de la conversación vendrán del response de start
-      setConversationMessages([]);
+      setConversationMessages(incomingMessages);
     } catch {
       // Error manejado por tanstack query
     }
@@ -136,7 +152,6 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
 
     try {
       const result = await testStepBack.mutateAsync({ testId });
-      // Remover los últimos 2 mensajes (user + assistant)
       setMessages((prev) => prev.slice(0, -2));
       setCurrentMsgIndex((prev) => Math.max(0, prev - 1));
       onNodeHighlight(result.currentNodeId);
@@ -164,6 +179,8 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
     setIsPlaying((prev) => !prev);
   };
 
+  const canStart = selectedConversation && testPhone.trim() && convMessages && convMessages.some((m) => m.direction === 'incoming');
+
   return (
     <div className="absolute right-0 top-0 h-full w-96 bg-bg-secondary border-l border-border-primary z-10 flex flex-col shadow-xl">
       {/* Header */}
@@ -182,8 +199,28 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
 
       {phase === 'search' ? (
         <>
+          {/* Test phone input */}
+          <div className="p-3 border-b border-border-primary">
+            <label className="text-xs font-medium text-text-tertiary mb-1.5 block">
+              Teléfono de pruebas
+            </label>
+            <div className="relative">
+              <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <input
+                type="text"
+                value={testPhone}
+                onChange={(e) => handleTestPhoneChange(e.target.value)}
+                placeholder="5491155551234"
+                className="w-full pl-9 pr-3 py-2 bg-bg-tertiary border border-border-primary rounded-lg text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-blue"
+              />
+            </div>
+          </div>
+
           {/* Search input */}
           <div className="p-3 border-b border-border-primary">
+            <label className="text-xs font-medium text-text-tertiary mb-1.5 block">
+              Buscar conversación
+            </label>
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
               <input
@@ -238,12 +275,18 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
             <div className="p-3 border-t border-border-primary">
               <div className="text-xs text-text-tertiary mb-2">
                 Contacto: <span className="text-text-secondary">{selectedContact?.name}</span>
+                {convMessages && (
+                  <span className="ml-2">
+                    · {convMessages.filter((m) => m.direction === 'incoming').length} mensajes incoming
+                  </span>
+                )}
               </div>
               <Button
                 variant="primary"
                 size="md"
                 onClick={handleStartTest}
                 isLoading={startTest.isPending}
+                disabled={!canStart}
                 className="w-full"
               >
                 Iniciar Test
