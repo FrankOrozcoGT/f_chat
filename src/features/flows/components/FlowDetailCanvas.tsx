@@ -1,10 +1,11 @@
 import { useMemo, useState, useCallback } from 'react';
 import { ReactFlow, type Node as RFNode, type Edge, MarkerType } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FlaskConical } from 'lucide-react';
 import { RouterNode } from './nodes/RouterNode';
 import { ProcessNode } from './nodes/ProcessNode';
 import { NodeDetailPanel } from './NodeDetailPanel';
+import { TestPanel } from './TestPanel';
 import type { Flow, Node, ActiveSessionsResponse } from '../types';
 
 const nodeTypes = {
@@ -30,9 +31,22 @@ interface FlowDetailCanvasProps {
 
 export const FlowDetailCanvas = ({ flow, activeSessions, onBack }: FlowDetailCanvasProps) => {
   const [selectedNode, setSelectedNode] = useState<{ node: Node; isRouter: boolean } | null>(null);
+  const [showTestPanel, setShowTestPanel] = useState(false);
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
 
   const handleSelectNode = useCallback((node: Node, isRouter: boolean) => {
     setSelectedNode({ node, isRouter });
+  }, []);
+
+  const handleToggleTestPanel = useCallback(() => {
+    setShowTestPanel((prev) => {
+      if (!prev) setSelectedNode(null); // Cerrar detail panel al abrir test
+      return !prev;
+    });
+  }, []);
+
+  const handleNodeHighlight = useCallback((nodeId: string | null) => {
+    setHighlightedNodeId(nodeId);
   }, []);
 
   const { nodes, edges } = useMemo(() => {
@@ -47,6 +61,7 @@ export const FlowDetailCanvas = ({ flow, activeSessions, onBack }: FlowDetailCan
       data: {
         label: flow.routerNode.name,
         activeSessions: activeSessions[flow.routerNode.id] || 0,
+        isHighlighted: highlightedNodeId === flow.routerNode.id,
         onSelect: () => handleSelectNode(flow.routerNode, true),
       },
     });
@@ -69,6 +84,7 @@ export const FlowDetailCanvas = ({ flow, activeSessions, onBack }: FlowDetailCan
           hasPreCode: !!flowNode.node.preCode,
           hasPostCode: !!flowNode.node.postCode,
           onError: flowNode.node.onError,
+          isHighlighted: highlightedNodeId === flowNode.node.id,
           onSelect: () => handleSelectNode(flowNode.node, false),
         },
       });
@@ -86,7 +102,7 @@ export const FlowDetailCanvas = ({ flow, activeSessions, onBack }: FlowDetailCan
     });
 
     return { nodes: rfNodes, edges: rfEdges };
-  }, [flow, activeSessions, handleSelectNode]);
+  }, [flow, activeSessions, handleSelectNode, highlightedNodeId]);
 
   return (
     <div className="relative w-full h-[calc(100vh-180px)]">
@@ -105,6 +121,19 @@ export const FlowDetailCanvas = ({ flow, activeSessions, onBack }: FlowDetailCan
         <h2 className="text-base font-semibold text-text-primary">{flow.name}</h2>
       </div>
 
+      {/* Testing button */}
+      <button
+        onClick={handleToggleTestPanel}
+        className={`absolute top-4 right-4 z-10 flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${
+          showTestPanel
+            ? 'bg-accent-green/10 border-accent-green text-accent-green'
+            : 'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-tertiary'
+        }`}
+      >
+        <FlaskConical size={16} />
+        Testing
+      </button>
+
       {/* Canvas */}
       <div className="w-full h-full bg-bg-primary rounded-lg border border-border-primary">
         <ReactFlow
@@ -121,12 +150,24 @@ export const FlowDetailCanvas = ({ flow, activeSessions, onBack }: FlowDetailCan
       </div>
 
       {/* Detail panel */}
-      {selectedNode && (
+      {selectedNode && !showTestPanel && (
         <NodeDetailPanel
           node={selectedNode.node}
           isRouter={selectedNode.isRouter}
           activeSessions={activeSessions[selectedNode.node.id] || 0}
           onClose={() => setSelectedNode(null)}
+        />
+      )}
+
+      {/* Test panel */}
+      {showTestPanel && (
+        <TestPanel
+          flowId={flow.id}
+          onClose={() => {
+            setShowTestPanel(false);
+            setHighlightedNodeId(null);
+          }}
+          onNodeHighlight={handleNodeHighlight}
         />
       )}
     </div>

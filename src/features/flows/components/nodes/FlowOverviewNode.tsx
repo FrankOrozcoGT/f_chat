@@ -12,9 +12,9 @@ interface FlowOverviewNodeData {
 export const FlowOverviewNode = memo(({ data }: { data: FlowOverviewNodeData }) => {
   return (
     <>
-      <Handle type="source" position={Position.Right} className="!invisible" />
+      <Handle type="source" position={Position.Right} className="invisible!" />
       <div
-        className="bg-bg-secondary border-2 border-border-primary rounded-xl p-6 min-w-[200px] cursor-pointer
+        className="bg-bg-secondary border-2 border-border-primary rounded-xl p-6 min-w-50 cursor-pointer
                    hover:border-accent-blue hover:shadow-lg transition-all group"
       >
         <div className="flex items-center gap-3 mb-3">

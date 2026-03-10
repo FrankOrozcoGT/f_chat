@@ -36,3 +36,71 @@ export type FlowsResponse = Flow[];
 
 // { [nodeId]: activeSessionCount }
 export type ActiveSessionsResponse = Record<string, number>;
+
+// === Test Types ===
+
+export interface TestSession {
+  testId: string;
+}
+
+export enum TestIntent {
+  Normal = 'normal',
+  Responder = 'responder',
+  CloseSession = 'closeSession',
+  SwitchToHitl = 'switchToHitl',
+  FindFlowForIntent = 'findFlowForIntent',
+  MoveToLastConversation = 'moveToLastConversation',
+  ReportHacking = 'reportHacking',
+  MaxIterations = 'max_iterations',
+}
+
+export enum SideEffectAction {
+  SendMessage = 'sendMessage',
+  SendFarewell = 'sendFarewell',
+  CloseNodeSession = 'closeNodeSession',
+  CloseConversation = 'closeConversation',
+  SwitchToHitl = 'switchToHitl',
+  UpsertIntent = 'upsertIntent',
+  TransitionToFlow = 'transitionToFlow',
+  MoveToLastConversation = 'moveToLastConversation',
+  ReportHacking = 'reportHacking',
+}
+
+export interface TestSideEffect {
+  action: SideEffectAction;
+  args: Record<string, unknown>;
+}
+
+export interface TestSendResponse {
+  response: string;
+  intent: TestIntent;
+  currentNodeId: string | null;
+  sideEffects: TestSideEffect[];
+}
+
+export interface TestStepBackResponse {
+  currentNodeId: string;
+  lastMessage: string;
+}
+
+export interface TestMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  nodeId?: string | null;
+  intent?: TestIntent;
+  sideEffects?: TestSideEffect[];
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  phone: string;
+  conversations: ContactConversation[];
+}
+
+export interface ContactConversation {
+  id: string;
+  lastMessage?: string;
+  updatedAt: string;
+}
