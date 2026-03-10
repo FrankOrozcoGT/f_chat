@@ -81,16 +81,18 @@ export const TestChat = ({ messages, isLoading }: TestChatProps) => {
                 <Bot size={14} className="text-accent-purple" />
               </div>
             )}
-            <div
-              className={cn(
-                'max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap',
-                msg.role === 'user'
-                  ? 'bg-accent-blue text-white'
-                  : 'bg-bg-tertiary text-text-primary'
-              )}
-            >
-              {msg.content}
-            </div>
+            {(msg.role === 'user' || msg.content) && (
+              <div
+                className={cn(
+                  'max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap',
+                  msg.role === 'user'
+                    ? 'bg-accent-blue text-white'
+                    : 'bg-bg-tertiary text-text-primary'
+                )}
+              >
+                {msg.content}
+              </div>
+            )}
             {msg.role === 'user' && (
               <div className="w-6 h-6 rounded-full bg-accent-blue/10 flex items-center justify-center shrink-0 mt-1">
                 <User size={14} className="text-accent-blue" />
