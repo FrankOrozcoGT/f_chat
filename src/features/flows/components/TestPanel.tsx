@@ -43,7 +43,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   const [conversationMessages, setConversationMessages] = useState<string[]>([]);
   const [currentMsgIndex, setCurrentMsgIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // API hooks
   const { data: contacts, isLoading: isSearching } = useSearchContacts(searchQuery);
@@ -53,8 +53,18 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   const testStepBack = useTestStepBack();
   const testStop = useTestStop();
 
-  const handleSendMessage = useCallback(async (content: string) => {
-    if (!testId) return;
+  // Refs para auto-play (evitar closures stale)
+  const isPlayingRef = useRef(false);
+  const currentMsgIndexRef = useRef(0);
+  const isSendingRef = useRef(false);
+
+  // Sync refs con state
+  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+  useEffect(() => { currentMsgIndexRef.current = currentMsgIndex; }, [currentMsgIndex]);
+
+  const handleSendMessage = useCallback(async (content: string): Promise<boolean> => {
+    if (!testId || isSendingRef.current) return false;
+    isSendingRef.current = true;
 
     const userMsg: TestMessage = {
       id: `user-${Date.now()}`,
@@ -79,10 +89,13 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
       };
       setMessages((prev) => [...prev, assistantMsg]);
       onNodeHighlight(result.currentNodeId);
+      isSendingRef.current = false;
 
       if (TERMINAL_INTENTS.has(result.intent)) {
         setIsPlaying(false);
+        return false;
       }
+      return true;
     } catch {
       const errorMsg: TestMessage = {
         id: `error-${Date.now()}`,
@@ -90,40 +103,36 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
         role: 'assistant',
       };
       setMessages((prev) => [...prev, errorMsg]);
+      setIsPlaying(false);
+      isSendingRef.current = false;
+      return false;
     }
   }, [testId, testSend, onNodeHighlight]);
 
-  // Cleanup interval on unmount
+  // Auto-play: setTimeout secuencial, espera respuesta antes de avanzar
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
+    if (!isPlaying || !testId) return;
 
-  // Auto-play logic
-  useEffect(() => {
-    if (isPlaying && testId && currentMsgIndex < conversationMessages.length) {
-      intervalRef.current = setInterval(() => {
-        setCurrentMsgIndex((prev) => {
-          if (prev >= conversationMessages.length) {
-            setIsPlaying(false);
-            return prev;
-          }
-          handleSendMessage(conversationMessages[prev]);
-          return prev + 1;
-        });
-      }, 2000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    const playNext = async () => {
+      const idx = currentMsgIndexRef.current;
+      if (idx >= conversationMessages.length || !isPlayingRef.current) {
+        setIsPlaying(false);
+        return;
       }
-    }
+
+      const success = await handleSendMessage(conversationMessages[idx]);
+      if (!success || !isPlayingRef.current) return;
+
+      setCurrentMsgIndex((prev) => prev + 1);
+      timeoutRef.current = setTimeout(playNext, 2000);
+    };
+
+    timeoutRef.current = setTimeout(playNext, 500);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [isPlaying, testId, currentMsgIndex, conversationMessages, handleSendMessage]);
+  }, [isPlaying, testId, conversationMessages, handleSendMessage]);
 
   const handleTestPhoneChange = (value: string) => {
     setTestPhone(value);
