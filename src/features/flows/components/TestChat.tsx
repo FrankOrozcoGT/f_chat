@@ -4,7 +4,7 @@ import { cn } from '@/shared/lib/utils';
 import { TestIntent, SideEffectAction } from '../types';
 import type { TestMessage, TestSideEffect } from '../types';
 
-const INTENT_CONFIG: Record<TestIntent, { label: string; color: string }> = {
+const INTENT_CONFIG: Record<string, { label: string; color: string }> = {
   [TestIntent.Normal]: { label: 'normal', color: 'bg-bg-tertiary text-text-secondary' },
   [TestIntent.Responder]: { label: 'responder', color: 'bg-accent-blue/10 text-accent-blue' },
   [TestIntent.CloseSession]: { label: 'cerrar sesión', color: 'bg-accent-orange/10 text-accent-orange' },
@@ -15,7 +15,13 @@ const INTENT_CONFIG: Record<TestIntent, { label: string; color: string }> = {
   [TestIntent.MaxIterations]: { label: 'max iteraciones', color: 'bg-accent-orange/10 text-accent-orange' },
 };
 
-const SIDE_EFFECT_LABELS: Record<SideEffectAction, string> = {
+const DEFAULT_INTENT = { label: '', color: 'bg-bg-tertiary text-text-secondary' };
+
+function getIntentConfig(intent: string) {
+  return INTENT_CONFIG[intent] || { ...DEFAULT_INTENT, label: intent };
+}
+
+const SIDE_EFFECT_LABELS: Record<string, string> = {
   [SideEffectAction.SendMessage]: 'enviar mensaje',
   [SideEffectAction.SendFarewell]: 'enviar despedida',
   [SideEffectAction.CloseNodeSession]: 'cerrar sesión nodo',
@@ -27,24 +33,48 @@ const SIDE_EFFECT_LABELS: Record<SideEffectAction, string> = {
   [SideEffectAction.ReportHacking]: 'reportar hacking',
 };
 
-function getSideEffectDetail(se: TestSideEffect): string {
-  const label = SIDE_EFFECT_LABELS[se.action] || se.action;
-  const args = se.args;
-
-  switch (se.action) {
-    case SideEffectAction.SendMessage:
-    case SideEffectAction.SendFarewell:
-      return `${label}: "${String(args.mensaje || '').slice(0, 50)}..."`;
-    case SideEffectAction.TransitionToFlow:
-      return `${label}: ${String(args.flowName || args.flowId || '')}`;
-    case SideEffectAction.SwitchToHitl:
-      return `${label}: ${String(args.reason || '')}`;
-    case SideEffectAction.UpsertIntent:
-      return `${label}: ${String(args.intentName || '')}`;
-    default:
-      return label;
-  }
+function getSideEffectLabel(action: string): string {
+  return SIDE_EFFECT_LABELS[action] || action;
 }
+
+function formatArgValue(value: unknown): string {
+  if (typeof value === 'string') return value.length > 60 ? `${value.slice(0, 60)}...` : value;
+  return String(value);
+}
+
+const SideEffectRow = ({ msg }: { msg: TestMessage }) => {
+  const cfg = getIntentConfig(msg.intent!);
+
+  return (
+    <div className="ml-8 mt-1 flex flex-wrap items-center gap-1.5">
+      {/* Intent badge */}
+      <span className={cn(
+        'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium',
+        cfg.color
+      )}>
+        {cfg.label}
+      </span>
+
+      {/* Side effects: action badge + each arg as badge */}
+      {msg.sideEffects && msg.sideEffects.length > 0 && msg.sideEffects.map((se, i) => (
+        <span key={i} className="inline-flex flex-wrap items-center gap-1">
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-accent-orange/10 text-accent-orange">
+            <Zap size={8} />
+            {getSideEffectLabel(se.action)}
+          </span>
+          {Object.entries(se.args).map(([key, value]) => (
+            <span
+              key={key}
+              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-bg-tertiary text-text-secondary"
+            >
+              {key}: {formatArgValue(value)}
+            </span>
+          ))}
+        </span>
+      ))}
+    </div>
+  );
+};
 
 interface TestChatProps {
   messages: TestMessage[];
@@ -100,29 +130,9 @@ export const TestChat = ({ messages, isLoading }: TestChatProps) => {
             )}
           </div>
 
-          {/* Intent badge + side effects */}
+          {/* Intent badge + side effects info */}
           {msg.role === 'assistant' && msg.intent && (
-            <div className="ml-8 mt-1 flex flex-wrap items-center gap-1.5">
-              {/* Intent badge */}
-              <span className={cn(
-                'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium',
-                INTENT_CONFIG[msg.intent]?.color || 'bg-bg-tertiary text-text-secondary'
-              )}>
-                {INTENT_CONFIG[msg.intent]?.label || msg.intent}
-              </span>
-
-              {/* Side effects */}
-              {msg.sideEffects && msg.sideEffects.length > 0 && msg.sideEffects.map((se, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-accent-orange/10 text-accent-orange"
-                  title={JSON.stringify(se.args, null, 2)}
-                >
-                  <Zap size={8} />
-                  {getSideEffectDetail(se)}
-                </span>
-              ))}
-            </div>
+            <SideEffectRow msg={msg} />
           )}
         </div>
       ))}

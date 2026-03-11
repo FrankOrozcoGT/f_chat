@@ -73,7 +73,7 @@ export interface TestSideEffect {
 
 export interface TestSendResponse {
   response: string;
-  intent: TestIntent;
+  intent: string;
   currentNodeId: string | null;
   sideEffects: TestSideEffect[];
 }
@@ -88,7 +88,7 @@ export interface TestMessage {
   content: string;
   role: 'user' | 'assistant';
   nodeId?: string | null;
-  intent?: TestIntent;
+  intent?: string;
   sideEffects?: TestSideEffect[];
 }
 
