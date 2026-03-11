@@ -102,5 +102,6 @@ export interface Contact {
 export interface ContactConversation {
   id: string;
   lastMessage?: string;
+  summary?: string | null;
   updatedAt: string;
 }

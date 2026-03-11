@@ -31,6 +31,7 @@ type Phase = 'search' | 'testing';
 export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) => {
   // Search phase
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<ContactConversation | null>(null);
   const [testPhone, setTestPhone] = useState(() => localStorage.getItem(TEST_PHONE_KEY) || '');
@@ -46,7 +47,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // API hooks
-  const { data: contacts, isLoading: isSearching } = useSearchContacts(searchQuery);
+  const { data: contacts, isLoading: isSearching } = useSearchContacts(debouncedQuery);
   const { data: convMessages } = useGetMessages(selectedConversation?.id || '');
   const startTest = useStartTest();
   const testSend = useTestSend();
@@ -57,6 +58,12 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   const isPlayingRef = useRef(false);
   const currentMsgIndexRef = useRef(0);
   const isSendingRef = useRef(false);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Sync refs con state
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
@@ -284,7 +291,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
                       }`}
                     >
                       <div className="text-text-secondary truncate">
-                        {conv.lastMessage || 'Sin mensajes'}
+                        {conv.summary || conv.lastMessage || 'Sin mensajes'}
                       </div>
                       <div className="text-xs text-text-tertiary mt-0.5">
                         {new Date(conv.updatedAt).toLocaleDateString()}
@@ -295,7 +302,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
               );
             })}
 
-            {searchQuery.length >= 2 && !isSearching && contacts?.length === 0 && (
+            {debouncedQuery.length >= 2 && !isSearching && contacts?.length === 0 && (
               <div className="p-4 text-center text-text-tertiary text-sm">
                 No se encontraron contactos
               </div>
