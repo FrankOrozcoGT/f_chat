@@ -21,7 +21,7 @@ const TERMINAL_INTENTS = new Set([
 const TEST_PHONE_KEY = 'flowTest_testPhone';
 
 interface TestPanelProps {
-  flowId: string;
+  flowId?: string;
   onClose: () => void;
   onNodeHighlight: (nodeId: string | null) => void;
 }

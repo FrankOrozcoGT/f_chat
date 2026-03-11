@@ -4,7 +4,7 @@ import type { TestSession } from '../types';
 
 interface StartTestPayload {
   conversationId: string;
-  flowId: string;
+  flowId?: string;
   clientPhone: string;
 }
 

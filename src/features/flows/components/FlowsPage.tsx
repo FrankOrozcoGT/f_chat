@@ -1,15 +1,17 @@
 import { useState, useCallback } from 'react';
-import { Workflow, AlertCircle, Loader2 } from 'lucide-react';
+import { Workflow, AlertCircle, Loader2, FlaskConical } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useGetFlows } from '../api/useGetFlows';
 import { useGetActiveSessions } from '../api/useGetActiveSessions';
 import { FlowOverviewCanvas } from './FlowOverviewCanvas';
 import { FlowDetailCanvas } from './FlowDetailCanvas';
+import { TestPanel } from './TestPanel';
 
 export const FlowsPage = () => {
   const { data: flows, isLoading, isError, error } = useGetFlows();
   const { data: activeSessions } = useGetActiveSessions();
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
+  const [showTestPanel, setShowTestPanel] = useState(false);
 
   const handleSelectFlow = useCallback((flowId: string) => {
     setSelectedFlowId(flowId);
@@ -64,20 +66,38 @@ export const FlowsPage = () => {
       <div className="max-w-full mx-auto space-y-4">
         {/* Header - solo en overview */}
         {!selectedFlow && (
-          <div className="flex items-center gap-3">
-            <Workflow size={28} className="text-accent-blue" />
-            <div>
-              <h1 className="text-2xl md:text-3xl font-semibold text-text-primary">Automatizacion</h1>
-              <p className="text-text-secondary text-sm md:text-base mt-1">
-                Flujos y nodos de procesamiento
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Workflow size={28} className="text-accent-blue" />
+              <div>
+                <h1 className="text-2xl md:text-3xl font-semibold text-text-primary">Automatizacion</h1>
+                <p className="text-text-secondary text-sm md:text-base mt-1">
+                  Flujos y nodos de procesamiento
+                </p>
+              </div>
             </div>
+            <button
+              onClick={() => setShowTestPanel((prev) => !prev)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${
+                showTestPanel
+                  ? 'bg-accent-green/10 border-accent-green text-accent-green'
+                  : 'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-tertiary'
+              }`}
+            >
+              <FlaskConical size={16} />
+              Testing
+            </button>
           </div>
         )}
 
         {/* Content */}
         {selectedFlow ? (
           <FlowDetailCanvas flow={selectedFlow} activeSessions={sessions} onBack={handleBack} />
+        ) : showTestPanel ? (
+          <TestPanel
+            onClose={() => setShowTestPanel(false)}
+            onNodeHighlight={() => {}}
+          />
         ) : flows && flows.length > 0 ? (
           <FlowOverviewCanvas flows={flows} activeSessions={sessions} onSelectFlow={handleSelectFlow} />
         ) : (
