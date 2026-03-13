@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { X, Search, Play, Pause, SkipBack, Square, MessageSquare, Phone, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Search, Play, Pause, SkipBack, Square, RotateCcw, MessageSquare, Phone, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { useSearchContacts } from '../api/useSearchContacts';
 import { useStartTest } from '../api/useStartTest';
@@ -8,7 +8,7 @@ import { useTestStepBack } from '../api/useTestStepBack';
 import { useTestStop } from '../api/useTestStop';
 import { useGetMessages } from '@/features/messages/api/useGetMessages';
 import { TestChat } from './TestChat';
-import { TestIntent } from '../types';
+import { TestIntent, SideEffectAction } from '../types';
 import type { TestMessage, Contact, ContactConversation } from '../types';
 
 const TERMINAL_INTENTS = new Set([
@@ -69,8 +69,8 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
   useEffect(() => { currentMsgIndexRef.current = currentMsgIndex; }, [currentMsgIndex]);
 
-  const handleSendMessage = useCallback(async (content: string): Promise<boolean> => {
-    if (!testId || isSendingRef.current) return false;
+  const handleSendMessage = useCallback(async (content: string): Promise<'continue' | 'wait' | 'stop'> => {
+    if (!testId || isSendingRef.current) return 'stop';
     isSendingRef.current = true;
 
     const userMsg: TestMessage = {
@@ -93,6 +93,8 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
         nodeId: result.currentNodeId,
         intent: result.intent,
         sideEffects: result.sideEffects,
+        preCodeContext: result.preCodeContext,
+        nodeTransitions: result.nodeTransitions,
       };
       setMessages((prev) => [...prev, assistantMsg]);
       onNodeHighlight(result.currentNodeId);
@@ -100,9 +102,13 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
 
       if (TERMINAL_INTENTS.has(result.intent)) {
         setIsPlaying(false);
-        return false;
+        return 'stop';
       }
-      return true;
+
+      const hasSendMessage = result.sideEffects?.some(
+        (se: { action: string }) => se.action === SideEffectAction.SendMessage
+      );
+      return hasSendMessage ? 'continue' : 'wait';
     } catch {
       const errorMsg: TestMessage = {
         id: `error-${Date.now()}`,
@@ -112,7 +118,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
       setMessages((prev) => [...prev, errorMsg]);
       setIsPlaying(false);
       isSendingRef.current = false;
-      return false;
+      return 'stop';
     }
   }, [testId, testSend, onNodeHighlight]);
 
@@ -127,11 +133,18 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
         return;
       }
 
-      const success = await handleSendMessage(conversationMessages[idx]);
-      if (!success || !isPlayingRef.current) return;
+      const result = await handleSendMessage(conversationMessages[idx]);
+      if (result === 'stop' || !isPlayingRef.current) return;
 
       setCurrentMsgIndex((prev) => prev + 1);
-      timeoutRef.current = setTimeout(playNext, 2000);
+
+      // 'continue' = agent sent a message, advance to next user msg
+      // 'wait' = agent didn't send message (e.g. switchToHitl), pause
+      if (result === 'continue') {
+        timeoutRef.current = setTimeout(playNext, 2000);
+      } else {
+        setIsPlaying(false);
+      }
     };
 
     timeoutRef.current = setTimeout(playNext, 500);
@@ -204,6 +217,31 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
     setSelectedContact(null);
     setSelectedConversation(null);
     onNodeHighlight(null);
+  };
+
+  const handleRestart = async () => {
+    if (!selectedConversation || !testPhone.trim()) return;
+    setIsPlaying(false);
+    if (testId) {
+      await testStop.mutateAsync({ testId });
+    }
+    setMessages([]);
+    setCurrentMsgIndex(0);
+    onNodeHighlight(null);
+
+    const incomingMessages = convMessages
+      ?.filter((m) => m.direction === 'incoming')
+      .map((m) => m.content) || [];
+    if (incomingMessages.length === 0) return;
+
+    const result = await startTest.mutateAsync({
+      conversationId: selectedConversation.id,
+      flowId,
+      clientPhone: testPhone.trim(),
+    });
+    setTestId(result.testId);
+    setConversationMessages(incomingMessages);
+    setIsPlaying(true);
   };
 
   const handleTogglePlay = () => {
@@ -334,12 +372,12 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
           )}
         </>
       ) : (
-        <>
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Chat area */}
           <TestChat messages={messages} isLoading={testSend.isPending} />
 
           {/* Controls */}
-          <div className="p-3 border-t border-border-primary">
+          <div className="shrink-0 p-3 border-t border-border-primary">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-text-tertiary">
                 Mensaje {currentMsgIndex}/{conversationMessages.length}
@@ -369,6 +407,14 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
                 <span className="ml-1">{isPlaying ? 'Pausar' : 'Reproducir'}</span>
               </Button>
               <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRestart}
+                title="Reiniciar test"
+              >
+                <RotateCcw size={16} />
+              </Button>
+              <Button
                 variant="danger"
                 size="sm"
                 onClick={handleStop}
@@ -378,7 +424,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
               </Button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
