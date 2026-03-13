@@ -71,11 +71,19 @@ export interface TestSideEffect {
   args: Record<string, unknown>;
 }
 
+export interface NodeTransition {
+  from: string;
+  to: string | null;
+  reason: string;
+}
+
 export interface TestSendResponse {
   response: string;
   intent: string;
   currentNodeId: string | null;
   sideEffects: TestSideEffect[];
+  preCodeContext?: string;
+  nodeTransitions?: NodeTransition[];
 }
 
 export interface TestStepBackResponse {
@@ -90,6 +98,8 @@ export interface TestMessage {
   nodeId?: string | null;
   intent?: string;
   sideEffects?: TestSideEffect[];
+  preCodeContext?: string;
+  nodeTransitions?: NodeTransition[];
 }
 
 export interface Contact {
