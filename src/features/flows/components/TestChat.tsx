@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
-import { Bot, User, Zap } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Bot, User, Zap, Info, ArrowRight } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { TestIntent, SideEffectAction } from '../types';
-import type { TestMessage, TestSideEffect } from '../types';
+import type { TestMessage } from '../types';
 
 const INTENT_CONFIG: Record<string, { label: string; color: string }> = {
   [TestIntent.Normal]: { label: 'normal', color: 'bg-bg-tertiary text-text-secondary' },
@@ -43,35 +43,63 @@ function formatArgValue(value: unknown): string {
 }
 
 const SideEffectRow = ({ msg }: { msg: TestMessage }) => {
+  const [showContext, setShowContext] = useState(false);
   const cfg = getIntentConfig(msg.intent!);
 
   return (
-    <div className="ml-8 mt-1 flex flex-wrap items-center gap-1.5">
-      {/* Intent badge */}
-      <span className={cn(
-        'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium',
-        cfg.color
-      )}>
-        {cfg.label}
-      </span>
-
-      {/* Side effects: action badge + each arg as badge */}
-      {msg.sideEffects && msg.sideEffects.length > 0 && msg.sideEffects.map((se, i) => (
-        <span key={i} className="inline-flex flex-wrap items-center gap-1">
-          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-accent-orange/10 text-accent-orange">
-            <Zap size={8} />
-            {getSideEffectLabel(se.action)}
-          </span>
-          {Object.entries(se.args).map(([key, value]) => (
-            <span
-              key={key}
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-bg-tertiary text-text-secondary"
-            >
-              {key}: {formatArgValue(value)}
-            </span>
-          ))}
+    <div className="ml-8 mt-1">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {/* Intent badge */}
+        <span className={cn(
+          'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium',
+          cfg.color
+        )}>
+          {cfg.label}
         </span>
-      ))}
+
+        {/* Side effects: action badge + each arg as badge */}
+        {msg.sideEffects && msg.sideEffects.length > 0 && msg.sideEffects.map((se, i) => (
+          <span key={i} className="inline-flex flex-wrap items-center gap-1">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-accent-orange/10 text-accent-orange">
+              <Zap size={8} />
+              {getSideEffectLabel(se.action)}
+            </span>
+            {se.args && Object.entries(se.args).map(([key, value]) => (
+              <span
+                key={key}
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-bg-tertiary text-text-secondary"
+              >
+                {key}: {formatArgValue(value)}
+              </span>
+            ))}
+          </span>
+        ))}
+
+        {/* Node transitions */}
+        {msg.nodeTransitions && msg.nodeTransitions.length > 0 && msg.nodeTransitions.map((t, i) => (
+          <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-accent-green/10 text-accent-green">
+            {t.from} <ArrowRight size={8} /> {t.to || 'end'} ({t.reason})
+          </span>
+        ))}
+
+        {/* PreCode context toggle */}
+        {msg.preCodeContext && (
+          <button
+            onClick={() => setShowContext((prev) => !prev)}
+            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
+          >
+            <Info size={8} className="mr-0.5" />
+            context
+          </button>
+        )}
+      </div>
+
+      {/* PreCode context expanded */}
+      {showContext && msg.preCodeContext && (
+        <pre className="mt-1.5 text-[10px] text-text-secondary bg-bg-tertiary rounded p-2 whitespace-pre-wrap max-h-40 overflow-y-auto">
+          {msg.preCodeContext}
+        </pre>
+      )}
     </div>
   );
 };
