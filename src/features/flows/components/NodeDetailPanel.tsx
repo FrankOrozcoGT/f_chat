@@ -53,7 +53,12 @@ export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: Nod
       <div className="p-4 space-y-5">
         {/* System Prompt */}
         <section>
-          <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2">System Prompt</h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-semibold text-text-tertiary uppercase">System Prompt</h4>
+            <span className="text-[10px] text-text-tertiary">
+              ~{Math.ceil((node.systemPrompt?.length || 0) / 4).toLocaleString()} / 4,000 tokens
+            </span>
+          </div>
           <pre className="text-sm text-text-secondary bg-bg-tertiary rounded-lg p-3 whitespace-pre-wrap max-h-60 overflow-y-auto">
             {node.systemPrompt || '(vacio)'}
           </pre>
