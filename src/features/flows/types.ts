@@ -21,6 +21,14 @@ export interface FlowNode {
   node: Node;
 }
 
+export interface FlowTransition {
+  id: string;
+  flowId: string;
+  fromNodeId: string;
+  toNodeId: string;
+  transitionCode: string;
+}
+
 export interface Flow {
   id: string;
   name: string;
@@ -30,6 +38,7 @@ export interface Flow {
   updatedAt: string;
   routerNode: Node;
   nodes: FlowNode[];
+  transitions: FlowTransition[];
 }
 
 export type FlowsResponse = Flow[];
@@ -79,7 +88,7 @@ export interface NodeTransition {
 
 export interface TestSendResponse {
   response: string;
-  intent: string;
+  intent: TestIntent;
   currentNodeId: string | null;
   sideEffects: TestSideEffect[];
   preCodeContext?: string;
