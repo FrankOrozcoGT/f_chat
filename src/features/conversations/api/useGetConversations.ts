@@ -20,6 +20,10 @@ interface BackendConversation {
   summary: string | null;
   createdAt: string;
   updatedAt: string;
+  stats?: {
+    lastMessageDirection: string | null;
+    unreadCount: number;
+  } | null;
   client: {
     id: string;
     phoneNumber: string;
@@ -67,7 +71,8 @@ export const useGetConversations = (params: GetConversationsParams = {}) => {
         participants: conv.participants,
         lastMessage: conv.lastMessagePreview,
         lastMessageAt: conv.lastMessageAt,
-        unreadCount: 0, // TODO: Backend should provide this
+        lastMessageDirection: conv.stats?.lastMessageDirection ?? null,
+        unreadCount: conv.stats?.unreadCount ?? 0,
         status: conv.isActive ? ('active' as const) : ('closed' as const),
         mode: conv.mode || 'HITL',
         createdAt: conv.createdAt,

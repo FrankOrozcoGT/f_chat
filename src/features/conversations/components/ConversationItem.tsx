@@ -16,6 +16,7 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
     useConversationsStore();
 
   const isSelected = selectedConversationId === conversation.id;
+  const hasUnread = conversation.unreadCount > 0 || conversation.lastMessageDirection === 'inbound';
 
   const handleClick = () => {
     setSelectedConversation(conversation.id, conversation.type);
@@ -70,6 +71,8 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
         hover:bg-gray-50 dark:hover:bg-gray-800
         ${isSelected
           ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+          : hasUnread
+          ? 'bg-amber-50 dark:bg-amber-900/10 border-l-4 border-amber-400'
           : 'border-l-4 border-transparent'}
       `}
     >
@@ -145,14 +148,21 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        {/* Name - Full width, no truncate on single line */}
-        <h3 className="font-semibold text-gray-900 dark:text-white text-base leading-tight mb-0.5">
-          {conversation.clientName}
-        </h3>
+        {/* Name row */}
+        <div className="flex items-center justify-between gap-2 mb-0.5">
+          <h3 className={`text-base leading-tight truncate ${hasUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-semibold text-gray-900 dark:text-white'}`}>
+            {conversation.clientName}
+          </h3>
+          {conversation.unreadCount > 0 && (
+            <span className="shrink-0 min-w-4.5 h-4.5 px-1 rounded-full bg-amber-400 text-white text-[10px] font-bold flex items-center justify-center">
+              {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
+            </span>
+          )}
+        </div>
 
         {/* Last message preview */}
         {conversation.lastMessage && (
-          <p className="text-sm text-gray-600 dark:text-gray-300 truncate mb-1">
+          <p className={`text-sm truncate mb-1 ${hasUnread ? 'text-gray-800 dark:text-gray-200 font-medium' : 'text-gray-600 dark:text-gray-300'}`}>
             {conversation.lastMessage}
           </p>
         )}
@@ -171,7 +181,7 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
               <span title="Modo HITL - Atendido por humano"><Hand className="w-3.5 h-3.5 text-accent-orange" /></span>
             ) : null}
             {formattedTime && (
-              <span className="text-gray-400 dark:text-gray-500">
+              <span className={hasUnread ? 'text-amber-500 font-medium' : 'text-gray-400 dark:text-gray-500'}>
                 {formattedTime}
               </span>
             )}

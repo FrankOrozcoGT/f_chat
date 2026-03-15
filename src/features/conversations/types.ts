@@ -22,6 +22,7 @@ export interface Conversation {
   participants?: Participant[];
   lastMessage?: string;
   lastMessageAt?: string;
+  lastMessageDirection?: string | null;
   unreadCount: number;
   status: ConversationStatus;
   mode: ConversationMode;
