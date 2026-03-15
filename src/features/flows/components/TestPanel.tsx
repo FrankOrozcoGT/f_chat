@@ -11,7 +11,7 @@ import { TestChat } from './TestChat';
 import { TestIntent, SideEffectAction } from '../types';
 import type { TestMessage, ConversationTestMessage, Contact, ContactConversation } from '../types';
 
-const TERMINAL_INTENTS = new Set([
+const TERMINAL_INTENTS = new Set<TestIntent>([
   TestIntent.CloseSession,
   TestIntent.SwitchToHitl,
   TestIntent.MaxIterations,

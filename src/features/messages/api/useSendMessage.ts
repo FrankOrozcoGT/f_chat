@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { messageKeys } from './messageKeys';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
+import { MessageDirection, MessageSenderType, MessageStatus } from '../types';
 import type { Message, BackendMessageType } from '../types';
 
 interface SendMessagePayload {
@@ -76,9 +77,9 @@ export const useSendMessage = (conversationId: string, options?: UseSendMessageO
         content: contenido,
         mediaUrl: mediaUrl || null,
         type: frontendType as Message['type'],
-        direction: 'outgoing',
-        senderType: 'agent',
-        status: 'pending', // "sending" visual state
+        direction: MessageDirection.Outgoing,
+        senderType: MessageSenderType.Agent,
+        status: MessageStatus.Pending,
         timestamp: new Date().toISOString(),
         quotedKeyId: quotedMessageId ?? null,
         quotedMessage: resolvedQuotedMessage,

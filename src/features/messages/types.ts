@@ -1,34 +1,38 @@
 // Message types for f_chat - Backend aligned
 
 // Backend enums (lowercase as returned by API)
-export enum MessageDirection {
-  Incoming = 'incoming',
-  Outgoing = 'outgoing',
-}
+export const MessageDirection = {
+  Incoming: 'incoming',
+  Outgoing: 'outgoing',
+} as const;
+export type MessageDirection = typeof MessageDirection[keyof typeof MessageDirection];
 
-export enum MessageSenderType {
-  Client = 'client',
-  Agent = 'agent',
-  Bot = 'bot',
-  System = 'system',
-}
+export const MessageSenderType = {
+  Client: 'client',
+  Agent: 'agent',
+  Bot: 'bot',
+  System: 'system',
+} as const;
+export type MessageSenderType = typeof MessageSenderType[keyof typeof MessageSenderType];
 
-export enum MessageType {
-  Text = 'text',
-  Image = 'image',
-  Video = 'video',
-  Audio = 'audio',
-  Voice = 'voice',
-  Document = 'document',
-}
+export const MessageType = {
+  Text: 'text',
+  Image: 'image',
+  Video: 'video',
+  Audio: 'audio',
+  Voice: 'voice',
+  Document: 'document',
+} as const;
+export type MessageType = typeof MessageType[keyof typeof MessageType];
 
-export enum MessageStatus {
-  Pending = 'pending',
-  Sent = 'sent',
-  Delivered = 'delivered',
-  Read = 'read',
-  Failed = 'failed',
-}
+export const MessageStatus = {
+  Pending: 'pending',
+  Sent: 'sent',
+  Delivered: 'delivered',
+  Read: 'read',
+  Failed: 'failed',
+} as const;
+export type MessageStatus = typeof MessageStatus[keyof typeof MessageStatus];
 
 // Legacy type aliases (keep for backwards compat)
 export type BackendMessageType = 'text' | 'image' | 'video' | 'audio' | 'document';
@@ -181,7 +185,7 @@ export interface BackendConversationDetail {
 // Type mappers
 export const mapBackendMessageType = (type: BackendMessageType): MessageType => {
   // Backend returns 'audio' but frontend uses 'voice'
-  if (type === 'audio') return 'voice';
+  if (type === 'audio') return MessageType.Voice;
   return type as MessageType;
 };
 

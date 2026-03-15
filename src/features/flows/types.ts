@@ -52,28 +52,30 @@ export interface TestSession {
   testId: string;
 }
 
-export enum TestIntent {
-  Normal = 'normal',
-  Responder = 'responder',
-  CloseSession = 'closeSession',
-  SwitchToHitl = 'switchToHitl',
-  FindFlowForIntent = 'findFlowForIntent',
-  MoveToLastConversation = 'moveToLastConversation',
-  ReportHacking = 'reportHacking',
-  MaxIterations = 'max_iterations',
-}
+export const TestIntent = {
+  Normal: 'normal',
+  Responder: 'responder',
+  CloseSession: 'closeSession',
+  SwitchToHitl: 'switchToHitl',
+  FindFlowForIntent: 'findFlowForIntent',
+  MoveToLastConversation: 'moveToLastConversation',
+  ReportHacking: 'reportHacking',
+  MaxIterations: 'max_iterations',
+} as const;
+export type TestIntent = typeof TestIntent[keyof typeof TestIntent];
 
-export enum SideEffectAction {
-  SendMessage = 'sendMessage',
-  SendFarewell = 'sendFarewell',
-  CloseNodeSession = 'closeNodeSession',
-  CloseConversation = 'closeConversation',
-  SwitchToHitl = 'switchToHitl',
-  UpsertIntent = 'upsertIntent',
-  TransitionToFlow = 'transitionToFlow',
-  MoveToLastConversation = 'moveToLastConversation',
-  ReportHacking = 'reportHacking',
-}
+export const SideEffectAction = {
+  SendMessage: 'sendMessage',
+  SendFarewell: 'sendFarewell',
+  CloseNodeSession: 'closeNodeSession',
+  CloseConversation: 'closeConversation',
+  SwitchToHitl: 'switchToHitl',
+  UpsertIntent: 'upsertIntent',
+  TransitionToFlow: 'transitionToFlow',
+  MoveToLastConversation: 'moveToLastConversation',
+  ReportHacking: 'reportHacking',
+} as const;
+export type SideEffectAction = typeof SideEffectAction[keyof typeof SideEffectAction];
 
 export interface TestSideEffect {
   action: SideEffectAction;

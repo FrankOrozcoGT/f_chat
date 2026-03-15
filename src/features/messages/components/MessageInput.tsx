@@ -40,7 +40,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
   const { showToast } = useToast();
   const { openModal: openDisconnectedModal, isDismissed } = usePhoneReconnectStore();
 
-  const handleSendError = (error: Error, errorType?: 'credits_limit' | 'phone_disconnected' | 'generic', isFile = false) => {
+  const handleSendError = (_error: Error, errorType?: 'credits_limit' | 'phone_disconnected' | 'generic', isFile = false) => {
     if (errorType === 'phone_disconnected') {
       if (!isDismissed()) {
         openDisconnectedModal();

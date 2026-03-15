@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { messageKeys } from './messageKeys';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
+import { MessageDirection, MessageSenderType, MessageStatus } from '../types';
 import type { Message, BackendMessageType } from '../types';
 
 interface SendMessageWithFilePayload {
@@ -95,9 +96,9 @@ export const useSendMessageWithFile = (
         mediaUrl: previewUrl, // Temporary preview URL
         fileName: file instanceof File ? file.name : null,
         type: frontendType as Message['type'],
-        direction: 'outgoing',
-        senderType: 'agent',
-        status: 'pending',
+        direction: MessageDirection.Outgoing,
+        senderType: MessageSenderType.Agent,
+        status: MessageStatus.Pending,
         timestamp: new Date().toISOString(),
       };
 
