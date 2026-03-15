@@ -5,6 +5,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { messageKeys } from './messageKeys';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import type { Message, BackendMessageType } from '../types';
 
 interface SendMessageWithFilePayload {
@@ -176,6 +177,7 @@ export const useSendMessageWithFile = (
           });
         }
       );
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
     },
   });
 };

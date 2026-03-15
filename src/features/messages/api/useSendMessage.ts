@@ -5,6 +5,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { messageKeys } from './messageKeys';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import type { Message, BackendMessageType } from '../types';
 
 interface SendMessagePayload {
@@ -121,11 +122,10 @@ export const useSendMessage = (conversationId: string, options?: UseSendMessageO
       }
     },
 
-    // On success: WebSocket will handle final update via message:sent event
-    // So we don't need to do anything here
     onSuccess: () => {
       // WebSocket event 'message:sent' will replace temp message with real one
-      // See MessagesPanel.tsx for WebSocket listener
+      // Invalidate conversation list to update stats (unreadCount, lastMessageDirection)
+      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
     },
   });
 };
