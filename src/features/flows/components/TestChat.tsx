@@ -128,6 +128,11 @@ export const TestChat = ({ messages, isLoading }: TestChatProps) => {
     <div className="flex-1 overflow-y-auto p-3 space-y-3">
       {messages.map((msg) => (
         <div key={msg.id}>
+          {/* Intent badge + side effects info (before response, since they happen first) */}
+          {msg.role === 'assistant' && msg.intent && (
+            <SideEffectRow msg={msg} />
+          )}
+
           <div
             className={cn(
               'flex gap-2',
@@ -148,6 +153,13 @@ export const TestChat = ({ messages, isLoading }: TestChatProps) => {
                     : 'bg-bg-tertiary text-text-primary'
                 )}
               >
+                {msg.type === 'image' && msg.mediaUrl && (
+                  <img
+                    src={msg.mediaUrl}
+                    alt="imagen"
+                    className="max-w-full rounded mb-1"
+                  />
+                )}
                 {msg.content}
               </div>
             )}
@@ -157,11 +169,6 @@ export const TestChat = ({ messages, isLoading }: TestChatProps) => {
               </div>
             )}
           </div>
-
-          {/* Intent badge + side effects info */}
-          {msg.role === 'assistant' && msg.intent && (
-            <SideEffectRow msg={msg} />
-          )}
         </div>
       ))}
 

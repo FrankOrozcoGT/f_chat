@@ -104,11 +104,19 @@ export interface TestMessage {
   id: string;
   content: string;
   role: 'user' | 'assistant';
+  type?: 'text' | 'image';
+  mediaUrl?: string;
   nodeId?: string | null;
   intent?: string;
   sideEffects?: TestSideEffect[];
   preCodeContext?: string;
   nodeTransitions?: NodeTransition[];
+}
+
+export interface ConversationTestMessage {
+  content: string;
+  type: 'text' | 'image';
+  mediaUrl?: string;
 }
 
 export interface Contact {

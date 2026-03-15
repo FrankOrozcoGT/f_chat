@@ -9,7 +9,7 @@ import { useTestStop } from '../api/useTestStop';
 import { useGetMessages } from '@/features/messages/api/useGetMessages';
 import { TestChat } from './TestChat';
 import { TestIntent, SideEffectAction } from '../types';
-import type { TestMessage, Contact, ContactConversation } from '../types';
+import type { TestMessage, ConversationTestMessage, Contact, ContactConversation } from '../types';
 
 const TERMINAL_INTENTS = new Set([
   TestIntent.CloseSession,
@@ -41,7 +41,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   const [phase, setPhase] = useState<Phase>('search');
   const [testId, setTestId] = useState<string | null>(null);
   const [messages, setMessages] = useState<TestMessage[]>([]);
-  const [conversationMessages, setConversationMessages] = useState<string[]>([]);
+  const [conversationMessages, setConversationMessages] = useState<ConversationTestMessage[]>([]);
   const [currentMsgIndex, setCurrentMsgIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,21 +69,24 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
   useEffect(() => { currentMsgIndexRef.current = currentMsgIndex; }, [currentMsgIndex]);
 
-  const handleSendMessage = useCallback(async (content: string): Promise<'continue' | 'wait' | 'stop'> => {
+  const handleSendMessage = useCallback(async (msg: ConversationTestMessage): Promise<'continue' | 'wait' | 'stop'> => {
     if (!testId || isSendingRef.current) return 'stop';
     isSendingRef.current = true;
 
     const userMsg: TestMessage = {
       id: `user-${Date.now()}`,
-      content,
+      content: msg.content,
       role: 'user',
+      type: msg.type,
+      mediaUrl: msg.mediaUrl,
     };
     setMessages((prev) => [...prev, userMsg]);
 
     try {
       const result = await testSend.mutateAsync({
         testId,
-        message: content,
+        message: msg.content,
+        mediaUrl: msg.mediaUrl,
       });
 
       const assistantMsg: TestMessage = {
@@ -168,9 +171,13 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
     if (!selectedConversation || !testPhone.trim()) return;
 
     // Filtrar solo mensajes incoming (del cliente) para enviar al test
-    const incomingMessages = convMessages
+    const incomingMessages: ConversationTestMessage[] = convMessages
       ?.filter((m) => m.direction === 'incoming')
-      .map((m) => m.content) || [];
+      .map((m) => ({
+        content: m.content,
+        type: (m.type === 'image' ? 'image' : 'text') as 'text' | 'image',
+        mediaUrl: m.mediaUrl ?? undefined,
+      })) || [];
 
     if (incomingMessages.length === 0) return;
 
@@ -229,9 +236,13 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
     setCurrentMsgIndex(0);
     onNodeHighlight(null);
 
-    const incomingMessages = convMessages
+    const incomingMessages: ConversationTestMessage[] = convMessages
       ?.filter((m) => m.direction === 'incoming')
-      .map((m) => m.content) || [];
+      .map((m) => ({
+        content: m.content,
+        type: (m.type === 'image' ? 'image' : 'text') as 'text' | 'image',
+        mediaUrl: m.mediaUrl ?? undefined,
+      })) || [];
     if (incomingMessages.length === 0) return;
 
     const result = await startTest.mutateAsync({

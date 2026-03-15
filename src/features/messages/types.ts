@@ -1,15 +1,40 @@
 // Message types for f_chat - Backend aligned
 
-// Backend types (lowercase as returned by API)
-export type BackendMessageType = 'text' | 'image' | 'video' | 'audio' | 'document';
-export type BackendMessageDirection = 'incoming' | 'outgoing';
-export type BackendSenderType = 'client' | 'agent' | 'bot' | 'system';
-export type BackendMessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+// Backend enums (lowercase as returned by API)
+export enum MessageDirection {
+  Incoming = 'incoming',
+  Outgoing = 'outgoing',
+}
 
-// Frontend types (mapped)
-export type MessageType = 'text' | 'image' | 'video' | 'voice' | 'document';
-export type MessageDirection = 'incoming' | 'outgoing';
-export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+export enum MessageSenderType {
+  Client = 'client',
+  Agent = 'agent',
+  Bot = 'bot',
+  System = 'system',
+}
+
+export enum MessageType {
+  Text = 'text',
+  Image = 'image',
+  Video = 'video',
+  Audio = 'audio',
+  Voice = 'voice',
+  Document = 'document',
+}
+
+export enum MessageStatus {
+  Pending = 'pending',
+  Sent = 'sent',
+  Delivered = 'delivered',
+  Read = 'read',
+  Failed = 'failed',
+}
+
+// Legacy type aliases (keep for backwards compat)
+export type BackendMessageType = 'text' | 'image' | 'video' | 'audio' | 'document';
+export type BackendMessageDirection = MessageDirection;
+export type BackendSenderType = MessageSenderType;
+export type BackendMessageStatus = MessageStatus;
 
 // Backend message structure
 export interface BackendMessage {

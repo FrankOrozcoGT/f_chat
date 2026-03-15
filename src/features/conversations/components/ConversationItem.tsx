@@ -68,7 +68,9 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
       className={`
         w-full flex items-start gap-3 p-3 text-left transition-colors
         hover:bg-gray-50 dark:hover:bg-gray-800
-        ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : 'border-l-4 border-transparent'}
+        ${isSelected
+          ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+          : 'border-l-4 border-transparent'}
       `}
     >
       {/* Avatar */}
@@ -177,14 +179,6 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
         </div>
       </div>
 
-      {/* Unread badge */}
-      {conversation.unreadCount > 0 && (
-        <div className="shrink-0">
-          <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
-            {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
-          </span>
-        </div>
-      )}
     </button>
   );
 };

@@ -1,15 +1,26 @@
 // Conversations list component with infinite scroll
-// Left column (280px) showing all conversations
+// Left column showing all conversations, resizable width
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useGetConversations } from '../api/useGetConversations';
 import { ConversationItem } from './ConversationItem';
 import { useDebounce } from '@/shared/hooks/useDebounce';
+
+const STORAGE_KEY = 'conversations_list_width';
+const DEFAULT_WIDTH = 420;
+const MIN_WIDTH = 240;
+const MAX_WIDTH = 700;
 
 export const ConversationsList = () => {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 500);
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const storedWidth = parseInt(localStorage.getItem(STORAGE_KEY) || String(DEFAULT_WIDTH), 10);
+  const [width, setWidth] = useState(storedWidth);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(width);
 
   const {
     data,
@@ -21,12 +32,10 @@ export const ConversationsList = () => {
     error,
   } = useGetConversations({ search: debouncedSearch });
 
-  // Debug: log error
   if (isError) {
     console.error('[ConversationsList] Error:', error);
   }
 
-  // Infinite scroll: observe last item
   const lastConversationRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isFetchingNextPage) return;
@@ -43,11 +52,48 @@ export const ConversationsList = () => {
     [isFetchingNextPage, hasNextPage, fetchNextPage]
   );
 
-  // Flatten all pages into single array
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    startX.current = e.clientX;
+    startWidth.current = width;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = e.clientX - startX.current;
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta));
+      setWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (!isDragging.current) return;
+      isDragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      setWidth((w) => {
+        localStorage.setItem(STORAGE_KEY, String(w));
+        return w;
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
   const conversations = data?.pages?.flatMap((page) => page.conversations) ?? [];
 
   return (
-    <div className="w-70 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full bg-white dark:bg-gray-900">
+    <div
+      style={{ width }}
+      className="relative border-r border-gray-200 dark:border-gray-700 flex flex-col h-full bg-white dark:bg-gray-900 shrink-0"
+    >
       {/* Header with search */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
@@ -102,6 +148,12 @@ export const ConversationsList = () => {
           </div>
         )}
       </div>
+
+      {/* Resize handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-accent-blue/40 transition-colors"
+      />
     </div>
   );
 };

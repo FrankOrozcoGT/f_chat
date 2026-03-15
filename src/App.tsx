@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { LoginPage } from '@/features/auth/components/LoginPage';
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
@@ -11,14 +11,45 @@ import { HealthPage } from '@/features/health/components/HealthPage';
 import { FlowsPage } from '@/features/flows/components/FlowsPage';
 import { SettingsPage } from '@/features/settings/components/SettingsPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
-import { Toast, ToastContainer } from '@/shared/ui/Toast';
+import { ToastContainer } from '@/shared/ui/Toast';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
-import type { ConversationHitlPayload, ApiDownPayload, ApiUpPayload, PhoneQRUpdatedPayload, PhoneStatusChangedPayload } from '@/lib/websocket';
+import type { ConversationHitlPayload, ApiDownPayload, ApiUpPayload, PhoneQRUpdatedPayload, PhoneStatusChangedPayload, MessageIncomingPayload } from '@/lib/websocket';
+import { MessageDirection } from '@/features/messages/types';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { messageKeys } from '@/features/messages/api/messageKeys';
 import { useGetMe } from '@/features/auth/api';
 import { usePhoneReconnectStore } from '@/features/phones/store';
+import { useConversationsStore } from '@/features/conversations/store';
+
+/** Listeners globales que requieren estar dentro de BrowserRouter (useNavigate) */
+const GlobalListeners = () => {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { setSelectedConversation } = useConversationsStore();
+
+  useEffect(() => {
+    const handleMessageIncoming = (data: MessageIncomingPayload) => {
+      if (data.direction !== MessageDirection.Incoming) return;
+      if (!data.content) return;
+
+      const preview = `${data.content.slice(0, 60)}${data.content.length > 60 ? '...' : ''}`;
+      showToast(
+        data.conversationName ? `${data.conversationName}: ${preview}` : preview,
+        'info',
+        () => {
+          setSelectedConversation(data.conversationId, 'individual');
+          navigate('/conversations');
+        }
+      );
+    };
+
+    socket.on('message:incoming', handleMessageIncoming);
+    return () => { socket.off('message:incoming', handleMessageIncoming); };
+  }, [navigate, showToast, setSelectedConversation]);
+
+  return null;
+};
 
 /** Redirige según el plan/rol del usuario autenticado */
 const DefaultRedirect = () => {
@@ -40,7 +71,7 @@ let didInitWebSocket = false;
 
 function App() {
   const queryClient = useQueryClient();
-  const { toasts, showToast, removeToast } = useToast();
+  const { showToast } = useToast();
 
   useEffect(() => {
     // Inicializar solo UNA VEZ por app load (no por component mount)
@@ -142,6 +173,7 @@ function App() {
   return (
     <>
       <BrowserRouter>
+        <GlobalListeners />
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
@@ -228,17 +260,6 @@ function App() {
           <Route path="/" element={<DefaultRedirect />} />
         </Routes>
       </BrowserRouter>
-
-      {/* HITL notification toasts (global) */}
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          duration={10000}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
 
       {/* Toast notifications */}
       <ToastContainer />

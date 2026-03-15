@@ -5,6 +5,7 @@ import type { TestSendResponse } from '../types';
 interface TestSendPayload {
   testId: string;
   message: string;
+  mediaUrl?: string;
 }
 
 export const useTestSend = () => {

@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Header } from '@/layouts/components/Header';
 import { Sidebar } from '@/layouts/components/Sidebar';
 import { useSidebarStore } from '@/stores/useSidebarStore';
@@ -20,6 +21,7 @@ export const ConversationsPage = () => {
   const isCollapsed = useSidebarStore((state) => state.isCollapsed);
   const { selectedConversationId } = useConversationsStore();
   const [historicalConversationId, setHistoricalConversationId] = useState<string | null>(null);
+  const [isHitlPanelOpen, setIsHitlPanelOpen] = useState(false);
 
   // Reset historical view when switching conversations
   useEffect(() => {
@@ -133,14 +135,28 @@ export const ConversationsPage = () => {
               </div>
             )}
 
-            {/* Right column: HITL Panel (only desktop ≥1024px) */}
-            <div className="hidden lg:block w-[320px] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              {selectedConversationId ? (
-                <HITLPanel
-                  conversationId={selectedConversationId}
-                  onSelectHistoricalConversation={setHistoricalConversationId}
-                />
-              ) : null}
+            {/* Right column: HITL Panel colapsable */}
+            <div className="hidden lg:flex items-stretch">
+              {/* Toggle button — siempre visible, fuera del overflow-hidden */}
+              <div className="relative flex items-center">
+                <button
+                  onClick={() => setIsHitlPanelOpen((prev) => !prev)}
+                  className="w-5 h-10 flex items-center justify-center bg-bg-secondary border border-border-primary rounded-l-md shadow-md hover:bg-bg-tertiary transition-colors"
+                  title={isHitlPanelOpen ? 'Cerrar panel' : 'Abrir panel'}
+                >
+                  {isHitlPanelOpen ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+                </button>
+              </div>
+
+              {/* Panel */}
+              <div className={`transition-all duration-300 overflow-hidden border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${isHitlPanelOpen ? 'w-[320px]' : 'w-0'}`}>
+                {selectedConversationId && isHitlPanelOpen && (
+                  <HITLPanel
+                    conversationId={selectedConversationId}
+                    onSelectHistoricalConversation={setHistoricalConversationId}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </main>

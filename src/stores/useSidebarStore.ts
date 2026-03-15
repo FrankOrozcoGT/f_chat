@@ -11,7 +11,7 @@ interface SidebarState {
 
 export const useSidebarStore = create<SidebarState>((set) => ({
   isMobileOpen: false,
-  isCollapsed: false,
+  isCollapsed: true,
   setMobileOpen: (open) => set({ isMobileOpen: open }),
   toggleMobile: () => set((state) => ({ isMobileOpen: !state.isMobileOpen })),
   setCollapsed: (collapsed) => set({ isCollapsed: collapsed }),
