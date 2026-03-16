@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Bot, Hand, Info, AlertTriangle, Search, Loader2 } from 'lucide-react';
+import { ArrowLeft, Bot, Hand, Info, AlertTriangle, Search, Loader2, ChevronDown } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
@@ -37,6 +37,8 @@ interface MessagesPanelProps {
 export const MessagesPanel = ({ conversationId, historicalConversationId, onExitHistorical }: MessagesPanelProps) => {
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const { setSelectedConversationId, selectedConversationType } = useConversationsStore();
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
@@ -88,11 +90,43 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
     },
   });
 
-  // Auto-scroll to bottom when messages change
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  const isNearBottom = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+  };
+
+  // Auto-scroll to bottom when messages change (only if near bottom)
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (isNearBottom()) scrollToBottom();
+  }, [displayMessages]);
+
+  // Track scroll position to show/hide the scroll-to-bottom button
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      setShowScrollButton(!isNearBottom());
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Re-scroll when images load and expand the container (if near bottom)
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      if (isNearBottom()) scrollToBottom('instant');
+    });
+    // Observe all images inside the container
+    const images = el.querySelectorAll('img');
+    images.forEach((img) => observer.observe(img));
+    return () => observer.disconnect();
   }, [displayMessages]);
 
   // WebSocket integration for real-time message updates
@@ -359,7 +393,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
       )}
 
       {/* Messages body */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 relative">
         {isLoadingDisplay && displayMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3">
@@ -392,6 +426,17 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
             {/* Auto-scroll anchor */}
             <div ref={messagesEndRef} />
           </>
+        )}
+
+        {/* Scroll-to-bottom button */}
+        {showScrollButton && (
+          <button
+            onClick={() => scrollToBottom()}
+            className="sticky bottom-4 left-full -translate-x-12 w-9 h-9 flex items-center justify-center rounded-full bg-bg-secondary border border-border-primary shadow-lg hover:bg-bg-tertiary transition-colors z-10"
+            aria-label="Ir al final"
+          >
+            <ChevronDown size={18} className="text-text-primary" />
+          </button>
         )}
       </div>
 
