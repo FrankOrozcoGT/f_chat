@@ -24,9 +24,7 @@ export const AcceptInvitationPage = () => {
 
   // Si no está autenticado, guardar token y mandar directo a Google OAuth
   useEffect(() => {
-    console.log('[AcceptInvitation] isLoadingMe:', isLoadingMe, 'me:', !!me, 'token:', token);
     if (!isLoadingMe && !me) {
-      console.log('[AcceptInvitation] not authenticated, saving token and going to Google OAuth');
       if (token) sessionStorage.setItem('pending_invitation_token', token);
       const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
       window.location.href = `${backendUrl}/auth/google-login`;
@@ -35,11 +33,9 @@ export const AcceptInvitationPage = () => {
 
   const handleAccept = () => {
     if (!token) return;
-    console.log('[AcceptInvitation] calling accept with token:', token);
 
     acceptInvitation(token, {
       onSuccess: (data) => {
-        console.log('[AcceptInvitation] accepted, tenantId:', data.tenantId, 'switching...');
         switchTenant(data.tenantId, {
           onSuccess: () => {
             // useSwitchTenant ya hace queryClient.clear() + redirect /
@@ -51,7 +47,6 @@ export const AcceptInvitationPage = () => {
       },
       onError: (error: unknown) => {
         const status = String((error as { response?: { status?: number } })?.response?.status ?? '');
-        console.log('[AcceptInvitation] error status:', status, error);
         setErrorMsg(ERROR_MESSAGES[status] ?? 'Ocurrió un error al aceptar la invitación.');
       },
     });

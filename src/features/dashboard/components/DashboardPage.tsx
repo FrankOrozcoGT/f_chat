@@ -15,7 +15,6 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     const pendingToken = sessionStorage.getItem('pending_invitation_token');
-    console.log('[Dashboard] pendingToken:', pendingToken);
     if (pendingToken) {
       sessionStorage.removeItem('pending_invitation_token');
       navigate(`/invitations/accept/${pendingToken}`, { replace: true });
