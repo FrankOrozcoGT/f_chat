@@ -10,6 +10,8 @@ import { ConversationsPage } from '@/features/conversations/components/Conversat
 import { HealthPage } from '@/features/health/components/HealthPage';
 import { FlowsPage } from '@/features/flows/components/FlowsPage';
 import { SettingsPage } from '@/features/settings/components/SettingsPage';
+import { TenantPage } from '@/features/tenants/components/TenantPage';
+import { AcceptInvitationPage } from '@/features/tenants/components/AcceptInvitationPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { ToastContainer } from '@/shared/ui/Toast';
 import { useToast } from '@/shared/hooks/useToast';
@@ -51,17 +53,18 @@ const GlobalListeners = () => {
   return null;
 };
 
-/** Redirige según el plan/rol del usuario autenticado */
+/** Redirige según el tenantRole/plan del usuario autenticado */
 const DefaultRedirect = () => {
-  const { data: user, isLoading } = useGetMe();
+  const { data: me, isLoading } = useGetMe();
 
   if (isLoading) return null;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!me) return <Navigate to="/login" replace />;
 
-  // Admin y Full van a conversations, Free va a dashboard
-  if (user.role === 'admin' || user.plan === 'full') {
-    return <Navigate to="/conversations" replace />;
-  }
+  // tecnico solo accede a flows
+  if (me.tenantRole === 'tecnico') return <Navigate to="/flows" replace />;
+  // owner y user con plan full van a conversations
+  if (me.tenant.plan === 'full') return <Navigate to="/conversations" replace />;
+  // free va a dashboard
   return <Navigate to="/dashboard" replace />;
 };
 
@@ -177,12 +180,13 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/invitations/accept/:token" element={<AcceptInvitationPage />} />
 
           {/* Protected routes */}
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute requiredAccess="free">
+              <ProtectedRoute requiredAccess="authenticated">
                 <DashboardPage />
               </ProtectedRoute>
             }
@@ -192,7 +196,7 @@ function App() {
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute requiredAccess="admin">
+              <ProtectedRoute requiredAccess="super-admin">
                 <UsersPage />
               </ProtectedRoute>
             }
@@ -200,7 +204,7 @@ function App() {
           <Route
             path="/admin/costs"
             element={
-              <ProtectedRoute requiredAccess="admin">
+              <ProtectedRoute requiredAccess="super-admin">
                 <CostsPage />
               </ProtectedRoute>
             }
@@ -210,7 +214,7 @@ function App() {
           <Route
             path="/admin/health"
             element={
-              <ProtectedRoute requiredAccess="free">
+              <ProtectedRoute requiredAccess="authenticated">
                 <HealthPage />
               </ProtectedRoute>
             }
@@ -220,7 +224,7 @@ function App() {
           <Route
             path="/phones"
             element={
-              <ProtectedRoute requiredAccess="full">
+              <ProtectedRoute requiredAccess="full-plan">
                 <PhonesPage />
               </ProtectedRoute>
             }
@@ -230,7 +234,7 @@ function App() {
           <Route
             path="/settings"
             element={
-              <ProtectedRoute requiredAccess="free">
+              <ProtectedRoute requiredAccess="authenticated">
                 <SettingsPage />
               </ProtectedRoute>
             }
@@ -240,7 +244,7 @@ function App() {
           <Route
             path="/conversations"
             element={
-              <ProtectedRoute requiredAccess="full">
+              <ProtectedRoute requiredAccess="conversations">
                 <ConversationsPage />
               </ProtectedRoute>
             }
@@ -250,8 +254,18 @@ function App() {
           <Route
             path="/flows"
             element={
-              <ProtectedRoute requiredAccess="full">
+              <ProtectedRoute requiredAccess="flows">
                 <FlowsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Tenant management — owner only */}
+          <Route
+            path="/tenant"
+            element={
+              <ProtectedRoute requiredAccess="tenant-owner">
+                <TenantPage />
               </ProtectedRoute>
             }
           />

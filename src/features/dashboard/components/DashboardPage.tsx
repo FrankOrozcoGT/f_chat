@@ -1,8 +1,26 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useGetMe } from '@/features/auth/api';
 
+const roleLabel: Record<string, string> = {
+  owner: 'Owner',
+  user: 'Usuario',
+  tecnico: 'Técnico',
+};
+
 export const DashboardPage = () => {
-  const { data: user } = useGetMe();
+  const { data: me } = useGetMe();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const pendingToken = sessionStorage.getItem('pending_invitation_token');
+    console.log('[Dashboard] pendingToken:', pendingToken);
+    if (pendingToken) {
+      sessionStorage.removeItem('pending_invitation_token');
+      navigate(`/invitations/accept/${pendingToken}`, { replace: true });
+    }
+  }, [navigate]);
 
   return (
     <MainLayout>
@@ -11,7 +29,7 @@ export const DashboardPage = () => {
           Dashboard
         </h1>
         <p className="text-text-secondary mb-8">
-          Bienvenido de nuevo, {user?.name}
+          Bienvenido de nuevo, {me?.user.name}
         </p>
 
         {/* Dashboard Cards */}
@@ -21,10 +39,10 @@ export const DashboardPage = () => {
               Plan Actual
             </h3>
             <p className="text-2xl font-bold text-accent-blue capitalize">
-              {user?.plan || 'Free'}
+              {me?.tenant.plan || 'Free'}
             </p>
             <p className="text-sm text-text-tertiary mt-1">
-              Rol: {user?.role}
+              Rol: {me?.tenantRole ? (roleLabel[me.tenantRole] ?? me.tenantRole) : '—'}
             </p>
           </div>
 
@@ -40,13 +58,13 @@ export const DashboardPage = () => {
 
           <div className="bg-bg-secondary border border-border-primary rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="text-lg font-semibold text-text-primary mb-2">
-              Acceso
+              Organización
             </h3>
-            <p className="text-text-primary font-medium">
-              {user?.role === 'admin' ? 'Administrador' : 'Usuario'}
+            <p className="text-text-primary font-medium truncate">
+              {me?.tenant.name ?? '—'}
             </p>
             <p className="text-sm text-text-tertiary mt-1">
-              Permisos completos
+              {me?.systemRole === 'super_admin' ? 'Super Admin' : 'Miembro'}
             </p>
           </div>
         </div>

@@ -1,77 +1,80 @@
 import { NavLink } from 'react-router-dom';
-import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X, Workflow } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X, Workflow, Building2 } from 'lucide-react';
 import { useGetMe } from '@/features/auth/api';
 import { useSidebarStore } from '@/stores/useSidebarStore';
+import type { AuthMe } from '@/features/auth/types';
+
+const menuItems = [
+  {
+    icon: LayoutDashboard,
+    label: 'Dashboard',
+    path: '/dashboard',
+    visibleFor: () => true,
+  },
+  {
+    icon: Smartphone,
+    label: 'Instancias WhatsApp',
+    path: '/phones',
+    visibleFor: (me: AuthMe) =>
+      me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'tecnico'),
+  },
+  {
+    icon: MessageSquare,
+    label: 'Conversaciones',
+    path: '/conversations',
+    visibleFor: (me: AuthMe) =>
+      me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'user'),
+  },
+  {
+    icon: Workflow,
+    label: 'Automatizacion',
+    path: '/flows',
+    visibleFor: (me: AuthMe) =>
+      me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'tecnico'),
+  },
+  {
+    icon: Building2,
+    label: 'Mi Organización',
+    path: '/tenant',
+    visibleFor: (me: AuthMe) => me.tenantRole === 'owner',
+  },
+  {
+    icon: DollarSign,
+    label: 'Costos',
+    path: '/admin/costs',
+    visibleFor: (me: AuthMe) => me.systemRole === 'super_admin',
+  },
+  {
+    icon: Activity,
+    label: 'Health Status',
+    path: '/admin/health',
+    visibleFor: () => true,
+  },
+  {
+    icon: Users,
+    label: 'Gestión de Usuarios',
+    path: '/admin/users',
+    visibleFor: (me: AuthMe) => me.systemRole === 'super_admin',
+  },
+  {
+    icon: Settings,
+    label: 'Configuración',
+    path: '/settings',
+    visibleFor: () => true,
+  },
+];
+
+const roleLabel: Record<string, string> = {
+  owner: 'Owner',
+  user: 'Usuario',
+  tecnico: 'Técnico',
+};
 
 export const Sidebar = () => {
   const { isMobileOpen, setMobileOpen, isCollapsed, toggleCollapsed } = useSidebarStore();
-  const { data: user } = useGetMe();
+  const { data: me } = useGetMe();
 
-  const menuItems = [
-    {
-      icon: LayoutDashboard,
-      label: 'Dashboard',
-      path: '/dashboard',
-      allowedPlans: ['free', 'full'],
-      allowedRoles: ['admin'],
-    },
-    {
-      icon: Smartphone,
-      label: 'Instancias WhatsApp',
-      path: '/phones',
-      allowedPlans: ['full'],
-      allowedRoles: ['admin'],
-    },
-    {
-      icon: MessageSquare,
-      label: 'Conversaciones',
-      path: '/conversations',
-      allowedPlans: ['full'],
-      allowedRoles: ['admin'],
-    },
-    {
-      icon: Workflow,
-      label: 'Automatizacion',
-      path: '/flows',
-      allowedPlans: ['full'],
-      allowedRoles: ['admin'],
-    },
-    {
-      icon: DollarSign,
-      label: 'Costos',
-      path: '/admin/costs',
-      allowedPlans: [],
-      allowedRoles: ['admin'],
-    },
-    {
-      icon: Activity,
-      label: 'Health Status',
-      path: '/admin/health',
-      allowedPlans: ['free', 'full'],
-      allowedRoles: ['admin'],
-    },
-    {
-      icon: Users,
-      label: 'Gestión de Usuarios',
-      path: '/admin/users',
-      allowedPlans: [],
-      allowedRoles: ['admin'],
-    },
-    {
-      icon: Settings,
-      label: 'Configuración',
-      path: '/settings',
-      allowedPlans: ['free', 'full'],
-      allowedRoles: ['admin'],
-    },
-  ];
-
-  // Filter menu items based on user plan or role
-  const visibleMenuItems = menuItems.filter((item) => {
-    const hasPlanAccess = user?.plan && item.allowedPlans.includes(user.plan);
-    const hasRoleAccess = user?.role && item.allowedRoles.includes(user.role);
-    return hasPlanAccess || hasRoleAccess;
-  });
+  const visibleMenuItems = me ? menuItems.filter((item) => item.visibleFor(me)) : [];
 
   return (
     <>
@@ -129,7 +132,7 @@ export const Sidebar = () => {
             <NavLink
               key={item.path}
               to={item.path}
-              onClick={() => setMobileOpen(false)} // Close mobile menu on nav
+              onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-md transition-all group ${
                   isActive
@@ -149,14 +152,14 @@ export const Sidebar = () => {
       </nav>
 
       {/* User Badge (bottom) */}
-      {user && !isCollapsed && (
+      {me && !isCollapsed && (
         <div className="absolute bottom-4 left-4 right-4 p-3 bg-bg-tertiary rounded-lg border border-border-primary">
-          <p className="text-xs text-text-secondary">Sesión actual</p>
+          <p className="text-xs text-text-secondary truncate">{me.tenant.name}</p>
           <p className="text-sm font-medium text-text-primary truncate">
-            {user.name}
+            {me.user.name}
           </p>
-          <p className="text-xs text-text-tertiary capitalize">
-            {user.role === 'admin' ? 'Admin' : `Plan ${user.plan}`}
+          <p className="text-xs text-text-tertiary">
+            {roleLabel[me.tenantRole] ?? me.tenantRole}
           </p>
         </div>
       )}

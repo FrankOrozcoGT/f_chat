@@ -4,15 +4,15 @@ import { useGetMe } from '@/features/auth/api';
 import { ComingSoonPage } from '@/features/dashboard/components/ComingSoonPage';
 import { ForbiddenPage } from '@/features/dashboard/components/ForbiddenPage';
 
-type AppAccess = 'free' | 'full' | 'admin';
+export type AppAccess = 'authenticated' | 'full-plan' | 'conversations' | 'flows' | 'super-admin' | 'tenant-owner';
 
 interface ProtectedRouteProps {
   children: ReactNode;
   requiredAccess?: AppAccess;
 }
 
-export const ProtectedRoute = ({ children, requiredAccess = 'free' }: ProtectedRouteProps) => {
-  const { data: user, isLoading, isError } = useGetMe();
+export const ProtectedRoute = ({ children, requiredAccess = 'authenticated' }: ProtectedRouteProps) => {
+  const { data: me, isLoading, isError } = useGetMe();
 
   if (isLoading) {
     return (
@@ -25,27 +25,26 @@ export const ProtectedRoute = ({ children, requiredAccess = 'free' }: ProtectedR
     );
   }
 
-  if (isError || !user) {
+  if (isError || !me) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check access based on plan and role
   const hasAccess = (() => {
-    // Admin always has access
-    if (user.role === 'admin') return true;
-
-    // For admin-only routes
-    if (requiredAccess === 'admin') return false;
-
-    // For plan-based routes (free, full)
-    if (requiredAccess === 'free') return true; // Everyone with account can access free
-    if (requiredAccess === 'full') return user.plan === 'full'; // Only full plan
-
+    if (requiredAccess === 'authenticated') return true;
+    if (requiredAccess === 'super-admin') return me.systemRole === 'super_admin';
+    if (requiredAccess === 'full-plan') return me.tenant.plan === 'full';
+    if (requiredAccess === 'conversations')
+      return me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'user');
+    if (requiredAccess === 'flows')
+      return me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'tecnico');
+    if (requiredAccess === 'tenant-owner') return me.tenantRole === 'owner';
     return false;
   })();
 
   if (!hasAccess) {
-    return requiredAccess === 'admin' ? <ForbiddenPage /> : <ComingSoonPage />;
+    return requiredAccess === 'super-admin' || requiredAccess === 'tenant-owner'
+      ? <ForbiddenPage />
+      : <ComingSoonPage />;
   }
 
   return <>{children}</>;

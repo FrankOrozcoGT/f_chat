@@ -29,14 +29,4 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Types exportados para reutilizar
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  role: 'free' | 'full' | 'admin';
-  plan?: 'free' | 'full';
-}
-
 // Ya no necesitamos googleLogin aquí, el backend maneja el OAuth directamente
