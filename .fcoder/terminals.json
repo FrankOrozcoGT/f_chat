@@ -1,16 +1,9 @@
 {
   "normal": {
     "id": "normal",
-    "pid": 1458284,
+    "pid": 114957,
     "command": "persistent-shell",
     "type": "normal",
-    "startedAt": "2026-03-15T22:37:04.746Z"
-  },
-  "deploy": {
-    "id": "deploy",
-    "pid": 1462343,
-    "command": "persistent-shell",
-    "type": "server",
-    "startedAt": "2026-03-15T23:03:38.851Z"
+    "startedAt": "2026-03-17T22:24:43.477Z"
   }
 }

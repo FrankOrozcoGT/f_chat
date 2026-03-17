@@ -32,8 +32,14 @@ export const LoginPage = () => {
   }, [searchParams, setSearchParams]);
 
   const handleGoogleLogin = () => {
-    // El backend redirige automáticamente a Google OAuth
+    const redirect = searchParams.get('redirect');
+    console.log('[Login] redirect param:', redirect);
+    if (redirect) {
+      sessionStorage.setItem('auth_redirect', redirect);
+      console.log('[Login] saved to sessionStorage:', redirect);
+    }
     const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+    console.log('[Login] going to:', `${backendUrl}/auth/google-login`);
     window.location.href = `${backendUrl}/auth/google-login`;
   };
 
