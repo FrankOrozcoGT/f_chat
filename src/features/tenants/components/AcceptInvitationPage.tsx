@@ -5,7 +5,7 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { Button } from '@/shared/ui/Button';
 import { useGetMe } from '@/features/auth/api';
 import { useSwitchTenant } from '@/features/auth/api';
-import { useAcceptInvitation } from '../api';
+import { useAcceptInvitation, useRejectInvitation } from '../api';
 
 const ERROR_MESSAGES: Record<string, string> = {
   '404': 'El enlace de invitación no existe o ya fue usado.',
@@ -20,6 +20,7 @@ export const AcceptInvitationPage = () => {
 
   const { data: me, isLoading: isLoadingMe } = useGetMe();
   const { mutate: acceptInvitation, isPending: isAccepting } = useAcceptInvitation();
+  const { mutate: rejectInvitation, isPending: isRejecting } = useRejectInvitation();
   const { mutate: switchTenant, isPending: isSwitching } = useSwitchTenant();
 
   // Si no está autenticado, guardar token y mandar directo a Google OAuth
@@ -65,7 +66,15 @@ export const AcceptInvitationPage = () => {
 
   if (!me) return null;
 
-  const isPending = isAccepting || isSwitching;
+  const isPending = isAccepting || isSwitching || isRejecting;
+
+  const handleReject = () => {
+    if (!token) return;
+    rejectInvitation(token, {
+      onSuccess: () => navigate('/'),
+      onError: () => setErrorMsg('No se pudo rechazar la invitación.'),
+    });
+  };
 
   return (
     <AuthLayout>
@@ -91,16 +100,35 @@ export const AcceptInvitationPage = () => {
               Hola <span className="font-medium text-text-primary">{me.user.name}</span>,
               fuiste invitado a unirte a una organización. Acepta para continuar.
             </p>
-            <Button onClick={handleAccept} disabled={isPending} className="w-full">
-              {isPending ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 size={16} className="animate-spin" />
-                  Aceptando...
-                </span>
-              ) : (
-                'Aceptar invitación'
-              )}
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button onClick={handleAccept} disabled={isPending} className="w-full">
+                {isAccepting || isSwitching ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    Aceptando...
+                  </span>
+                ) : (
+                  'Aceptar invitación'
+                )}
+              </Button>
+              <Button variant="ghost" onClick={handleReject} disabled={isPending} className="w-full">
+                {isRejecting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    Rechazando...
+                  </span>
+                ) : (
+                  'Rechazar'
+                )}
+              </Button>
+              <button
+                onClick={() => navigate('/')}
+                disabled={isPending}
+                className="text-sm text-text-tertiary hover:text-text-secondary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed py-1"
+              >
+                Omitir por ahora
+              </button>
+            </div>
           </>
         )}
       </div>
