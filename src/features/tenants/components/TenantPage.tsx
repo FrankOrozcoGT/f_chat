@@ -7,6 +7,7 @@ import { useGetTenantMembers } from '../api';
 import { MembersTable } from './MembersTable';
 import { InviteMemberModal } from './InviteMemberModal';
 import { RenameTenantSection } from './RenameTenantSection';
+import { PendingInvitationsSection } from './PendingInvitationsSection';
 
 export const TenantPage = () => {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -68,6 +69,15 @@ export const TenantPage = () => {
               currentUserId={me.user.id}
             />
           )}
+        </div>
+
+        {/* Sección: invitaciones pendientes */}
+        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4 md:p-6">
+          <h2 className="text-base md:text-lg font-semibold text-text-primary mb-1">Invitaciones pendientes</h2>
+          <p className="text-sm text-text-secondary mb-4">
+            Organizaciones que te han invitado a unirte.
+          </p>
+          <PendingInvitationsSection />
         </div>
       </div>
 

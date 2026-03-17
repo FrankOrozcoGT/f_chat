@@ -11,6 +11,7 @@ import { HealthPage } from '@/features/health/components/HealthPage';
 import { FlowsPage } from '@/features/flows/components/FlowsPage';
 import { SettingsPage } from '@/features/settings/components/SettingsPage';
 import { TenantPage } from '@/features/tenants/components/TenantPage';
+import { OrganizationsPage } from '@/features/tenants/components/OrganizationsPage';
 import { AcceptInvitationPage } from '@/features/tenants/components/AcceptInvitationPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { ToastContainer } from '@/shared/ui/Toast';
@@ -266,6 +267,16 @@ function App() {
             element={
               <ProtectedRoute requiredAccess="tenant-owner">
                 <TenantPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Organizations — todos los usuarios autenticados */}
+          <Route
+            path="/organizations"
+            element={
+              <ProtectedRoute requiredAccess="authenticated">
+                <OrganizationsPage />
               </ProtectedRoute>
             }
           />

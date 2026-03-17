@@ -7,3 +7,6 @@ export { useInviteMember } from './useInviteMember';
 export { useChangeMemberRole } from './useChangeMemberRole';
 export { useRemoveMember } from './useRemoveMember';
 export { useAcceptInvitation } from './useAcceptInvitation';
+export { useRejectInvitation } from './useRejectInvitation';
+export { useGetPendingInvitations } from './useGetPendingInvitations';
+export type { PendingInvitation } from './useGetPendingInvitations';

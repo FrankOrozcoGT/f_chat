@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { LogOut, Building2, RefreshCw, Plus } from 'lucide-react';
-import { useGetMe, useLogout, useSwitchTenant } from '@/features/auth/api';
-
-import { useCreateTenant } from '@/features/tenants/api';
-import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
-import { Button } from '@/shared/ui/Button';
+import { useNavigate } from 'react-router-dom';
+import { LogOut, Building2, Settings } from 'lucide-react';
+import { useGetMe, useLogout } from '@/features/auth/api';
 
 const roleLabel: Record<string, string> = {
   owner: 'Owner',
@@ -14,14 +11,11 @@ const roleLabel: Record<string, string> = {
 
 export const UserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isCreateOrgOpen, setIsCreateOrgOpen] = useState(false);
-  const [newOrgName, setNewOrgName] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const navigate = useNavigate();
   const { data: me, isLoading, isError } = useGetMe();
   const { mutate: logout } = useLogout();
-  const { mutate: switchTenant, isPending: isSwitching } = useSwitchTenant();
-  const { mutate: createTenant, isPending: isCreating } = useCreateTenant();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -51,13 +45,6 @@ export const UserMenu = () => {
   const getPlanBadgeColor = (plan: string) => {
     if (plan === 'full') return 'bg-accent-green/10 text-accent-green';
     return 'bg-bg-tertiary text-text-secondary';
-  };
-
-  const handleCreateOrg = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = newOrgName.trim();
-    if (!trimmed) return;
-    createTenant(trimmed);
   };
 
   if (isLoading) {
@@ -135,36 +122,13 @@ export const UserMenu = () => {
                 Organizaciones
               </p>
 
-              {/* Switch tenant */}
-              {availableTenants
-                .filter((t) => t.id !== tenant.id)
-                .map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setIsOpen(false);
-                      switchTenant(t.id);
-                    }}
-                    disabled={isSwitching}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 min-h-11 text-sm text-text-primary hover:bg-bg-secondary transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw size={14} className="text-text-tertiary shrink-0" />
-                    <span className="truncate flex-1 text-left">{t.name}</span>
-                    <span className="text-xs text-text-tertiary">{roleLabel[t.role] ?? t.role}</span>
-                  </button>
-                ))}
-
-              {/* Nueva organización */}
+              {/* Gestionar organizaciones */}
               <button
-                onClick={() => {
-                  setIsOpen(false);
-                  setNewOrgName('');
-                  setIsCreateOrgOpen(true);
-                }}
+                onClick={() => { setIsOpen(false); navigate('/organizations'); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 min-h-11 text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary transition-colors"
               >
-                <Plus size={14} className="shrink-0" />
-                <span>Nueva organización</span>
+                <Settings size={14} className="shrink-0" />
+                <span>Gestionar organizaciones</span>
               </button>
             </div>
 
@@ -182,41 +146,6 @@ export const UserMenu = () => {
         )}
       </div>
 
-      {/* Modal: crear nueva organización */}
-      <Modal isOpen={isCreateOrgOpen} onClose={() => setIsCreateOrgOpen(false)} size="sm">
-        <form onSubmit={handleCreateOrg}>
-          <ModalHeader onClose={() => setIsCreateOrgOpen(false)}>
-            <ModalTitle>Nueva organización</ModalTitle>
-          </ModalHeader>
-          <ModalBody>
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-1.5">
-                Nombre de la organización
-              </label>
-              <input
-                type="text"
-                value={newOrgName}
-                onChange={(e) => setNewOrgName(e.target.value)}
-                placeholder="Mi empresa"
-                className="w-full px-3 py-2.5 md:py-2 min-h-11 md:min-h-10 text-base bg-bg-secondary border border-border-primary rounded-md text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent"
-                maxLength={80}
-                autoFocus
-              />
-              <p className="mt-1.5 text-xs text-text-tertiary">
-                Se creará la organización y cambiarás a ella automáticamente.
-              </p>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button type="button" variant="ghost" onClick={() => setIsCreateOrgOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={!newOrgName.trim() || isCreating}>
-              {isCreating ? 'Creando...' : 'Crear organización'}
-            </Button>
-          </ModalFooter>
-        </form>
-      </Modal>
     </>
   );
 };

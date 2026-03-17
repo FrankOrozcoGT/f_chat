@@ -2,10 +2,12 @@ import { Menu } from 'lucide-react';
 import { UserMenu } from '@/layouts/components/UserMenu';
 import { ThemeToggle } from '@/layouts/components/ThemeToggle';
 import { useSidebarStore } from '@/stores/useSidebarStore';
+import { useGetMe } from '@/features/auth/api';
 
 export const Header = () => {
   const toggleMobile = useSidebarStore((state) => state.toggleMobile);
   const isCollapsed = useSidebarStore((state) => state.isCollapsed);
+  const { data: me } = useGetMe();
 
   return (
     <header className={`fixed top-0 left-0 right-0 h-16 bg-bg-primary border-b border-border-primary z-30 transition-all duration-300 ${isCollapsed ? 'md:left-16' : 'md:left-60'}`}>
@@ -21,9 +23,16 @@ export const Header = () => {
             <Menu size={20} className="text-text-primary" />
           </button>
 
-          <h2 className="text-xl font-semibold text-text-primary">
-            fcoder
-          </h2>
+          <div className="flex flex-col">
+            <h2 className="text-xl font-semibold text-text-primary leading-tight">
+              fcoder
+            </h2>
+            {me?.tenant.name && (
+              <span className="text-xs text-text-tertiary leading-tight truncate max-w-45">
+                {me.tenant.name}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Right Section: Theme Toggle + User Menu */}
