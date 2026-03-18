@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { ReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { FlaskConical, Plus, List, Tag, Pencil, Trash2, X } from 'lucide-react';
+import { MultiSelect } from '@/shared/ui/MultiSelect';
 import { GlobalRouterNode } from './nodes/GlobalRouterNode';
 import { FlowGroupNode } from './nodes/FlowGroupNode';
 import { ProcessNode } from './nodes/ProcessNode';
@@ -17,6 +18,8 @@ import { useGetTransitions } from '../api/useGetTransitions';
 import { useCreateTransition } from '../api/useCreateTransition';
 import { useDeleteTransition } from '../api/useDeleteTransition';
 import { useGetIntents } from '../api/useGetIntents';
+import { useGetFunctions } from '../api/useGetFunctions';
+import { NodeFunctionType } from '../types';
 import { useCreateIntent } from '../api/useCreateIntent';
 import { useUpdateIntent } from '../api/useUpdateIntent';
 import { useDeleteIntent } from '../api/useDeleteIntent';
@@ -27,7 +30,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
-import type { Flow, Node, ActiveSessionsResponse, Intent } from '../types';
+import type { Flow, Node, ActiveSessionsResponse, Intent, OnErrorStrategy } from '../types';
 
 const nodeTypes = {
   globalRouter: GlobalRouterNode,
@@ -63,13 +66,13 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
 
   // ── Node modals ──────────────────────────────────────────────────────────
   const [editNodeTarget, setEditNodeTarget] = useState<Node | null>(null);
-  const [nodeForm, setNodeForm] = useState({ name: '', systemPrompt: '', tools: '', preCode: '', postCode: '', onError: 'hitl' });
-  const [nodeFormErrors, setNodeFormErrors] = useState<Partial<typeof nodeForm>>({});
+  const [nodeForm, setNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as string[], postCode: [] as string[], onError: 'hitl' });
+  const [nodeFormErrors, setNodeFormErrors] = useState<{ name?: string }>({});
 
   // ── Create node (panel) ──────────────────────────────────────────────────
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
-  const [createNodeForm, setCreateNodeForm] = useState({ name: '', systemPrompt: '', tools: '', preCode: '', postCode: '', onError: 'hitl' });
-  const [createNodeErrors, setCreateNodeErrors] = useState<Partial<typeof createNodeForm>>({});
+  const [createNodeForm, setCreateNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as string[], postCode: [] as string[], onError: 'hitl' });
+  const [createNodeErrors, setCreateNodeErrors] = useState<{ name?: string }>({});
 
   // ── Transition modals ────────────────────────────────────────────────────
   const [transitionFlowId, setTransitionFlowId] = useState<string | null>(null);
@@ -88,6 +91,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
 
   // ── API hooks ────────────────────────────────────────────────────────────
   const { data: intents = [] } = useGetIntents();
+  const { data: functions = [] } = useGetFunctions();
   const { data: transitionsList = [] } = useGetTransitions(transitionsFlowId ?? '');
   const createFlow = useCreateFlow();
   const updateFlow = useUpdateFlow();
@@ -231,9 +235,14 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
   };
 
   // ── Node handlers ────────────────────────────────────────────────────────
+  const parseJsonArr = (val: string | null): string[] => {
+    if (!val) return [];
+    try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
+  };
+
   const openEditNode = useCallback((node: Node) => {
     setEditNodeTarget(node);
-    setNodeForm({ name: node.name, systemPrompt: node.systemPrompt ?? '', tools: node.tools ?? '', preCode: node.preCode ?? '', postCode: node.postCode ?? '', onError: node.onError });
+    setNodeForm({ name: node.name, systemPrompt: node.systemPrompt ?? '', tools: node.tools, preCode: parseJsonArr(node.preCode), postCode: parseJsonArr(node.postCode), onError: node.onError });
     setNodeFormErrors({});
   }, []);
 
@@ -241,7 +250,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
     if (!editNodeTarget) return;
     if (!nodeForm.name.trim()) { setNodeFormErrors({ name: 'El nombre es requerido' }); return; }
     try {
-      await updateNode.mutateAsync({ id: editNodeTarget.id, dto: { name: nodeForm.name.trim(), systemPrompt: nodeForm.systemPrompt || undefined, tools: nodeForm.tools || undefined, preCode: nodeForm.preCode || undefined, postCode: nodeForm.postCode || undefined, onError: nodeForm.onError as 'hitl' | 'retry' | 'ignore' } });
+      await updateNode.mutateAsync({ id: editNodeTarget.id, dto: { name: nodeForm.name.trim(), systemPrompt: nodeForm.systemPrompt || undefined, tools: nodeForm.tools, preCode: nodeForm.preCode.length ? JSON.stringify(nodeForm.preCode) : undefined, postCode: nodeForm.postCode.length ? JSON.stringify(nodeForm.postCode) : undefined, onError: nodeForm.onError as OnErrorStrategy } });
       showToast('Nodo actualizado', 'success');
       setEditNodeTarget(null);
     } catch {
@@ -252,10 +261,10 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
   const handleCreateNodeFromPanel = async () => {
     if (!createNodeForm.name.trim()) { setCreateNodeErrors({ name: 'El nombre es requerido' }); return; }
     try {
-      await createNode.mutateAsync({ name: createNodeForm.name.trim(), systemPrompt: createNodeForm.systemPrompt || undefined, tools: createNodeForm.tools || undefined, preCode: createNodeForm.preCode || undefined, postCode: createNodeForm.postCode || undefined, onError: createNodeForm.onError as 'hitl' | 'retry' | 'ignore' });
+      await createNode.mutateAsync({ name: createNodeForm.name.trim(), systemPrompt: createNodeForm.systemPrompt || undefined, tools: createNodeForm.tools.length ? createNodeForm.tools : undefined, preCode: createNodeForm.preCode.length ? JSON.stringify(createNodeForm.preCode) : undefined, postCode: createNodeForm.postCode.length ? JSON.stringify(createNodeForm.postCode) : undefined, onError: createNodeForm.onError as OnErrorStrategy });
       showToast('Nodo creado', 'success');
       setCreateNodeOpen(false);
-      setCreateNodeForm({ name: '', systemPrompt: '', tools: '', preCode: '', postCode: '', onError: 'hitl' });
+      setCreateNodeForm({ name: '', systemPrompt: '', tools: [], preCode: [], postCode: [], onError: 'hitl' });
     } catch {
       showToast('Error al crear el nodo', 'error');
     }
@@ -561,14 +570,29 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
             <FormField label="System Prompt" optional>
               <Textarea rows={4} placeholder="Instrucciones del sistema..." value={nodeForm.systemPrompt} onChange={(e) => setNodeForm(f => ({ ...f, systemPrompt: e.target.value }))} />
             </FormField>
-            <FormField label="Tools (JSON)" optional>
-              <Input placeholder='["tool1","tool2"]' value={nodeForm.tools} onChange={(e) => setNodeForm(f => ({ ...f, tools: e.target.value }))} />
+            <FormField label="Tools" optional>
+              <MultiSelect
+                value={nodeForm.tools}
+                options={functions.filter(f => f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                onChange={(vals) => setNodeForm(f => ({ ...f, tools: vals }))}
+                placeholder="Seleccionar tools..."
+              />
             </FormField>
-            <FormField label="Pre Code (JSON)" optional>
-              <Input placeholder='["loadIntents"]' value={nodeForm.preCode} onChange={(e) => setNodeForm(f => ({ ...f, preCode: e.target.value }))} />
+            <FormField label="Pre Code" optional>
+              <MultiSelect
+                value={nodeForm.preCode}
+                options={functions.filter(f => f.type === NodeFunctionType.PreCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                onChange={(vals) => setNodeForm(f => ({ ...f, preCode: vals }))}
+                placeholder="Seleccionar pre code..."
+              />
             </FormField>
-            <FormField label="Post Code (JSON)" optional>
-              <Input placeholder='["responder"]' value={nodeForm.postCode} onChange={(e) => setNodeForm(f => ({ ...f, postCode: e.target.value }))} />
+            <FormField label="Post Code" optional>
+              <MultiSelect
+                value={nodeForm.postCode}
+                options={functions.filter(f => f.type === NodeFunctionType.PostCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                onChange={(vals) => setNodeForm(f => ({ ...f, postCode: vals }))}
+                placeholder="Seleccionar post code..."
+              />
             </FormField>
             <FormField label="On Error">
               <Select value={nodeForm.onError} options={onErrorOptions} onChange={(val) => setNodeForm(f => ({ ...f, onError: val }))} className="w-full" />
@@ -592,14 +616,29 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
             <FormField label="System Prompt" optional>
               <Textarea rows={4} placeholder="Instrucciones del sistema..." value={createNodeForm.systemPrompt} onChange={(e) => setCreateNodeForm(f => ({ ...f, systemPrompt: e.target.value }))} />
             </FormField>
-            <FormField label="Tools (JSON)" optional>
-              <Input placeholder='["tool1","tool2"]' value={createNodeForm.tools} onChange={(e) => setCreateNodeForm(f => ({ ...f, tools: e.target.value }))} />
+            <FormField label="Tools" optional>
+              <MultiSelect
+                value={createNodeForm.tools}
+                options={functions.filter(f => f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                onChange={(vals) => setCreateNodeForm(f => ({ ...f, tools: vals }))}
+                placeholder="Seleccionar tools..."
+              />
             </FormField>
-            <FormField label="Pre Code (JSON)" optional>
-              <Input placeholder='["loadIntents"]' value={createNodeForm.preCode} onChange={(e) => setCreateNodeForm(f => ({ ...f, preCode: e.target.value }))} />
+            <FormField label="Pre Code" optional>
+              <MultiSelect
+                value={createNodeForm.preCode}
+                options={functions.filter(f => f.type === NodeFunctionType.PreCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                onChange={(vals) => setCreateNodeForm(f => ({ ...f, preCode: vals }))}
+                placeholder="Seleccionar pre code..."
+              />
             </FormField>
-            <FormField label="Post Code (JSON)" optional>
-              <Input placeholder='["responder"]' value={createNodeForm.postCode} onChange={(e) => setCreateNodeForm(f => ({ ...f, postCode: e.target.value }))} />
+            <FormField label="Post Code" optional>
+              <MultiSelect
+                value={createNodeForm.postCode}
+                options={functions.filter(f => f.type === NodeFunctionType.PostCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                onChange={(vals) => setCreateNodeForm(f => ({ ...f, postCode: vals }))}
+                placeholder="Seleccionar post code..."
+              />
             </FormField>
             <FormField label="On Error">
               <Select value={createNodeForm.onError} options={onErrorOptions} onChange={(val) => setCreateNodeForm(f => ({ ...f, onError: val }))} className="w-full" />

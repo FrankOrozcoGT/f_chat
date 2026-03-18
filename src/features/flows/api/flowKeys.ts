@@ -10,3 +10,8 @@ export const intentKeys = {
   all: ['intents'] as const,
   lists: () => [...intentKeys.all, 'list'] as const,
 };
+
+export const functionKeys = {
+  all: ['node-functions'] as const,
+  lists: () => [...functionKeys.all, 'list'] as const,
+};

@@ -4,7 +4,7 @@ export interface Node {
   id: string;
   name: string;
   systemPrompt: string;
-  tools: string; // JSON string array
+  tools: string[];
   preCode: string | null; // JSON string array e.g. '["loadIntents"]'
   postCode: string | null; // JSON string array e.g. '["responder","findFlowForIntent"]'
   preCodeInputSchema: string | null;
@@ -126,7 +126,7 @@ export interface ConversationTestMessage {
 export interface CreateNodeDto {
   name: string;
   systemPrompt?: string;
-  tools?: string;
+  tools?: string[];
   preCode?: string;
   preCodeInputSchema?: string;
   postCode?: string;
@@ -178,6 +178,26 @@ export interface UpdateIntentDto {
   name?: string;
   flowId?: string;
 }
+
+// === Function Types ===
+
+export const NodeFunctionType = {
+  Tool: 'tool',
+  PreCode: 'preCode',
+  PostCode: 'postCode',
+} as const;
+export type NodeFunctionType = typeof NodeFunctionType[keyof typeof NodeFunctionType];
+
+export interface NodeFunction {
+  code: string;
+  name: string;
+  description: string;
+  toolDefinition: unknown | null;
+  outputSchema: unknown | null;
+  type: NodeFunctionType;
+}
+
+export type NodeFunctionsResponse = NodeFunction[];
 
 export interface Contact {
   id: string;
