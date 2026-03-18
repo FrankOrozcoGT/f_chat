@@ -11,14 +11,13 @@ export interface CostsSummary {
   totalLLM: number;
   totalTTS: number;
   total: number;
-  byUser: CostsByUser[];
+  byTenant: CostsByTenant[];
   byDay: CostsByDay[];
 }
 
-export interface CostsByUser {
-  userId: string;
-  userName: string;
-  email: string;
+export interface CostsByTenant {
+  tenantId: string;
+  tenantName: string;
   total: number;
   totalConversations: number;
   avgCostPerConversation: number;

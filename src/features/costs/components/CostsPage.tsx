@@ -17,9 +17,7 @@ export const CostsPage = () => {
   ];
 
   const handlePeriodChange = (newPeriod: PeriodType) => {
-    console.log('🔵 CostsPage - Period change requested:', { from: period, to: newPeriod });
     setPeriod(newPeriod);
-    console.log('🔵 CostsPage - setPeriod called with:', newPeriod);
   };
 
   const formatCurrency = (value: number) => {
@@ -140,28 +138,27 @@ export const CostsPage = () => {
           </Card>
         </div>
 
-        {/* Costs by User - Basic List */}
-        {costs?.byUser && costs.byUser.length > 0 && (
+        {/* Costs by Tenant - Basic List */}
+        {costs?.byTenant && costs.byTenant.length > 0 && (
           <Card>
             <CardBody>
               <h3 className="text-base md:text-lg font-semibold text-text-primary mb-4">
-                Costos por Usuario
+                Costos por Organización
               </h3>
               <div className="space-y-2">
-                {costs.byUser.map((user) => (
+                {costs.byTenant.map((tenant) => (
                   <div
-                    key={user.userId}
+                    key={tenant.tenantId}
                     className="flex items-center justify-between p-3 bg-bg-primary rounded-md border border-border-primary"
                   >
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-text-primary">{user.userName}</p>
-                      <p className="text-xs text-text-secondary">{user.email}</p>
+                      <p className="text-sm font-medium text-text-primary">{tenant.tenantName}</p>
                       <p className="text-xs text-text-tertiary mt-1">
-                        {user.totalConversations} conversaciones • Promedio: {formatCurrency(user.avgCostPerConversation)}
+                        {tenant.totalConversations} conversaciones • Promedio: {formatCurrency(tenant.avgCostPerConversation)}
                       </p>
                     </div>
                     <p className="text-sm font-semibold text-text-primary">
-                      {formatCurrency(user.total)}
+                      {formatCurrency(tenant.total)}
                     </p>
                   </div>
                 ))}
