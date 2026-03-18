@@ -1,11 +1,11 @@
 import { Loader2 } from 'lucide-react';
 import { Select } from '@/shared/ui/Select';
 import { useUpdatePlan } from '../api/useUpdatePlan';
-import type { User } from '../types';
+import type { AdminTenant } from '../types';
 import type { SelectOption } from '@/shared/ui/Select';
 
 interface PlanSelectorProps {
-  user: User;
+  tenant: AdminTenant;
   onSuccess?: (message: string) => void;
   onError?: (message: string) => void;
 }
@@ -15,14 +15,14 @@ const planOptions: SelectOption<'free' | 'full'>[] = [
   { value: 'full', label: 'Full' },
 ];
 
-export const PlanSelector = ({ user, onSuccess, onError }: PlanSelectorProps) => {
+export const PlanSelector = ({ tenant, onSuccess, onError }: PlanSelectorProps) => {
   const { mutate, isPending } = useUpdatePlan();
 
   const handlePlanChange = (newPlan: 'free' | 'full') => {
-    if (newPlan === user.plan || isPending) return;
+    if (newPlan === tenant.settings.plan || isPending) return;
 
     mutate(
-      { userId: user.id, plan: newPlan },
+      { tenantId: tenant.id, plan: newPlan },
       {
         onSuccess: () => {
           onSuccess?.(`Plan actualizado a ${newPlan === 'free' ? 'Free' : 'Full'}`);
@@ -30,11 +30,9 @@ export const PlanSelector = ({ user, onSuccess, onError }: PlanSelectorProps) =>
         onError: (error: any) => {
           const status = error?.response?.status;
           let message = 'Error de conexión';
-
           if (status === 400) message = 'Plan inválido';
           else if (status === 403) message = 'No autorizado';
-          else if (status === 404) message = 'Usuario no encontrado';
-
+          else if (status === 404) message = 'Organización no encontrada';
           onError?.(message);
         },
       }
@@ -42,9 +40,7 @@ export const PlanSelector = ({ user, onSuccess, onError }: PlanSelectorProps) =>
   };
 
   const getPlanStyles = (plan: 'free' | 'full') => {
-    if (plan === 'free') {
-      return 'bg-bg-secondary text-text-secondary border-border-primary';
-    }
+    if (plan === 'free') return 'bg-bg-secondary text-text-secondary border-border-primary';
     return 'bg-accent-blue/10 text-accent-blue border-accent-blue/30';
   };
 
@@ -59,7 +55,7 @@ export const PlanSelector = ({ user, onSuccess, onError }: PlanSelectorProps) =>
 
   return (
     <Select
-      value={user.plan}
+      value={tenant.settings.plan}
       options={planOptions}
       onChange={handlePlanChange}
       disabled={isPending}

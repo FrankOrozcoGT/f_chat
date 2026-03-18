@@ -1,27 +1,22 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { userKeys } from './userKeys';
-import type { User } from '../types';
+import { adminTenantKeys } from './userKeys';
 
 interface UpdateLimitsParams {
-  userId: string;
-  whatsappLimit?: number;
-  creditsLimit?: number;
+  tenantId: string;
+  whatsappLimit: number;
+  creditsLimit: number;
 }
 
 export const useUpdateLimits = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, whatsappLimit, creditsLimit }: UpdateLimitsParams) => {
-      const response = await apiClient.patch<User>(`/admin/users/${userId}/limits`, {
-        whatsappLimit,
-        creditsLimit,
-      });
-      return response.data;
+    mutationFn: async ({ tenantId, whatsappLimit, creditsLimit }: UpdateLimitsParams) => {
+      await apiClient.patch(`/admin/tenants/${tenantId}/limits`, { whatsappLimit, creditsLimit });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.all });
+      queryClient.invalidateQueries({ queryKey: adminTenantKeys.all });
     },
   });
 };

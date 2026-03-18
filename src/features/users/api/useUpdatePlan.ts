@@ -1,10 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { userKeys } from './userKeys';
-import type { User } from '../types';
+import { adminTenantKeys } from './userKeys';
 
 interface UpdatePlanParams {
-  userId: string;
+  tenantId: string;
   plan: 'free' | 'full';
 }
 
@@ -12,14 +11,11 @@ export const useUpdatePlan = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, plan }: UpdatePlanParams) => {
-      const response = await apiClient.patch<User>(`/admin/users/${userId}/plan`, {
-        plan,
-      });
-      return response.data;
+    mutationFn: async ({ tenantId, plan }: UpdatePlanParams) => {
+      await apiClient.patch(`/admin/tenants/${tenantId}/plan`, { plan });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.all });
+      queryClient.invalidateQueries({ queryKey: adminTenantKeys.all });
     },
   });
 };

@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { userKeys } from './userKeys';
-import type { User } from '../types';
+import { adminTenantKeys } from './userKeys';
+import type { AdminTenant } from '../types';
 
-export const useGetUsers = () => {
+export const useGetAdminTenants = () => {
   return useQuery({
-    queryKey: userKeys.all,
+    queryKey: adminTenantKeys.all,
     queryFn: async () => {
-      const response = await apiClient.get<User[]>('/api/users');
+      const response = await apiClient.get<AdminTenant[]>('/admin/tenants');
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 5 * 60 * 1000,
   });
 };
