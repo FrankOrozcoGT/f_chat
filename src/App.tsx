@@ -13,6 +13,9 @@ import { SettingsPage } from '@/features/settings/components/SettingsPage';
 import { TenantPage } from '@/features/tenants/components/TenantPage';
 import { OrganizationsPage } from '@/features/tenants/components/OrganizationsPage';
 import { AcceptInvitationPage } from '@/features/tenants/components/AcceptInvitationPage';
+import { ProductsPage } from '@/features/catalog/products/components/ProductsPage';
+import { PromotionsPage } from '@/features/catalog/promotions/components/PromotionsPage';
+import { ShippingPage } from '@/features/catalog/shipping/components/ShippingPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { ToastContainer } from '@/shared/ui/Toast';
 import { useToast } from '@/shared/hooks/useToast';
@@ -277,6 +280,32 @@ function App() {
             element={
               <ProtectedRoute requiredAccess="authenticated">
                 <OrganizationsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* CRM routes */}
+          <Route
+            path="/crm/catalog/products"
+            element={
+              <ProtectedRoute requiredAccess="conversations">
+                <ProductsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/crm/catalog/promotions"
+            element={
+              <ProtectedRoute requiredAccess="conversations">
+                <PromotionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/crm/catalog/shipping"
+            element={
+              <ProtectedRoute requiredAccess="conversations">
+                <ShippingPage />
               </ProtectedRoute>
             }
           />

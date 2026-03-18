@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X, Workflow, Building2 } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X, Workflow, Building2, ShoppingBag } from 'lucide-react';
 import { useGetMe } from '@/features/auth/api';
 import { useSidebarStore } from '@/stores/useSidebarStore';
 import type { AuthMe } from '@/features/auth/types';
@@ -31,6 +31,13 @@ const menuItems = [
     path: '/flows',
     visibleFor: (me: AuthMe) =>
       me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'tecnico'),
+  },
+  {
+    icon: ShoppingBag,
+    label: 'CRM / Catálogo',
+    path: '/crm/catalog/products',
+    visibleFor: (me: AuthMe) =>
+      me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'user'),
   },
   {
     icon: Building2,
