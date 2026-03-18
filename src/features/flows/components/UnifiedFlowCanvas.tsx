@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
-import { ReactFlow } from '@xyflow/react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { ReactFlow, useReactFlow, useNodes } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { FlaskConical, Plus, List, Tag, Pencil, Trash2, X } from 'lucide-react';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
@@ -31,6 +31,29 @@ import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
 import type { Flow, Node, ActiveSessionsResponse, Intent, OnErrorStrategy } from '../types';
+
+function NodeCenterEffect({ highlightedNodeId }: { highlightedNodeId: string | null }) {
+  const { setCenter, getZoom } = useReactFlow();
+  const nodes = useNodes();
+
+  useEffect(() => {
+    if (!highlightedNodeId) return;
+    const rfNode = nodes.find((n) => n.id.includes(`__node__${highlightedNodeId}`));
+    if (!rfNode) return;
+    let x = rfNode.position.x + (rfNode.measured?.width ?? 200) / 2;
+    let y = rfNode.position.y + (rfNode.measured?.height ?? 100) / 2;
+    if (rfNode.parentId) {
+      const parent = nodes.find((n) => n.id === rfNode.parentId);
+      if (parent) {
+        x += parent.position.x;
+        y += parent.position.y;
+      }
+    }
+    setCenter(x, y, { zoom: getZoom(), duration: 500 });
+  }, [highlightedNodeId, nodes, setCenter]);
+
+  return null;
+}
 
 const nodeTypes = {
   globalRouter: GlobalRouterNode,
@@ -394,7 +417,9 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
           nodesConnectable={false}
           panOnDrag
           zoomOnScroll
-        />
+        >
+          <NodeCenterEffect highlightedNodeId={highlightedNodeId} />
+        </ReactFlow>
       </div>
 
       {/* Detail panel (original) */}
