@@ -26,7 +26,7 @@ function parseJsonArray(value: string | null): string[] {
 
 function getTotalSessions(flow: Flow, activeSessions: ActiveSessionsResponse): number {
   let total = activeSessions[flow.routerNode.id] || 0;
-  for (const fn of flow.nodes) {
+  for (const fn of (flow.nodes ?? [])) {
     total += activeSessions[fn.node.id] || 0;
   }
   return total;
@@ -39,6 +39,12 @@ interface LayoutOptions {
   highlightedNodeId: string | null;
   onToggleExpand: (flowId: string) => void;
   onSelectNode: (node: Node, isRouter: boolean) => void;
+  onCreateFlow: () => void;
+  onEditFlow: (flow: Flow) => void;
+  onDeleteFlow: (flow: Flow) => void;
+  onFlowTransitions: (flow: Flow) => void;
+  onEditNode: (node: Node) => void;
+  onAddTransition: (flowId: string, fromNode: Node) => void;
 }
 
 export function useFlowCanvasLayout({
@@ -48,6 +54,12 @@ export function useFlowCanvasLayout({
   highlightedNodeId,
   onToggleExpand,
   onSelectNode,
+  onCreateFlow,
+  onEditFlow,
+  onDeleteFlow,
+  onFlowTransitions,
+  onEditNode,
+  onAddTransition,
 }: LayoutOptions): { nodes: RFNode[]; edges: Edge[] } {
   return useMemo(() => {
     const rfNodes: RFNode[] = [];
@@ -63,27 +75,27 @@ export function useFlowCanvasLayout({
       }
       totalHeight += FLOW_GAP;
     }
-    totalHeight -= FLOW_GAP; // remove last gap
+    totalHeight -= FLOW_GAP;
 
     // Global router node
     rfNodes.push({
       id: 'global-router',
       type: 'globalRouter',
       position: { x: 0, y: Math.max(0, totalHeight / 2 - 40) },
-      data: {},
+      data: { onCreateFlow },
     });
 
-    // Flows
     let currentY = 0;
 
     for (const flow of flows) {
       const isExpanded = expandedFlowIds.has(flow.id);
-      const nodeCount = flow.nodes.length;
+      const nodeCount = flow.nodes?.length ?? 0;
       const nodeSpacing = INTERNAL_PROCESS_X - INTERNAL_ROUTER_X + 50;
-      const expandedWidth = INTERNAL_ROUTER_X + nodeCount * nodeSpacing + 150;
+      const NODE_WIDTH = 160;
+      const lastNodeX = INTERNAL_ROUTER_X + Math.max(0, nodeCount - 1) * nodeSpacing;
+      const expandedWidth = lastNodeX + NODE_WIDTH + 50;
       const expandedHeight = EXPANDED_PADDING_TOP + NODE_GAP_Y + EXPANDED_PADDING_BOTTOM;
 
-      // Flow group node
       rfNodes.push({
         id: flow.id,
         type: 'flowGroup',
@@ -94,13 +106,15 @@ export function useFlowCanvasLayout({
           nodeCount: flow.nodes.length + 1,
           isExpanded,
           onToggleExpand: () => onToggleExpand(flow.id),
+          onEdit: () => onEditFlow(flow),
+          onDelete: () => onDeleteFlow(flow),
+          onTransitions: () => onFlowTransitions(flow),
         },
         style: isExpanded
           ? { width: expandedWidth, height: expandedHeight }
           : { width: COLLAPSED_WIDTH, height: COLLAPSED_HEIGHT },
       });
 
-      // Edge from global router to flow
       rfEdges.push({
         id: `global-router-${flow.id}`,
         source: 'global-router',
@@ -112,11 +126,10 @@ export function useFlowCanvasLayout({
       });
 
       if (isExpanded) {
-        // All nodes as process nodes (routerNode is just the entry node, not a special type)
         const nodeIdToRfId: Record<string, string> = {};
         const startY = EXPANDED_PADDING_TOP;
 
-        flow.nodes.forEach((flowNode, i) => {
+        (flow.nodes ?? []).forEach((flowNode, i) => {
           const tools = parseJsonArray(flowNode.node.tools);
           const rfId = `${flow.id}__node__${flowNode.node.id}`;
           nodeIdToRfId[flowNode.node.id] = rfId;
@@ -136,22 +149,21 @@ export function useFlowCanvasLayout({
               onError: flowNode.node.onError,
               isHighlighted: highlightedNodeId === flowNode.node.id,
               onSelect: () => onSelectNode(flowNode.node, false),
+              onEdit: () => onEditNode(flowNode.node),
+              onAddTransition: () => onAddTransition(flow.id, flowNode.node),
             },
           });
         });
 
-        // Edge from global router to the entry node (routerNode)
         const entryRfId = nodeIdToRfId[flow.routerNode.id];
         if (entryRfId) {
-          // Update the external edge to point to the entry node directly
           rfEdges[rfEdges.length - 1] = {
             ...rfEdges[rfEdges.length - 1],
             target: entryRfId,
           };
         }
 
-        // Edges from transitions
-        for (const transition of flow.transitions) {
+        for (const transition of (flow.transitions ?? [])) {
           const sourceRfId = nodeIdToRfId[transition.fromNodeId];
           const targetRfId = nodeIdToRfId[transition.toNodeId];
           if (sourceRfId && targetRfId) {
@@ -176,5 +188,5 @@ export function useFlowCanvasLayout({
     }
 
     return { nodes: rfNodes, edges: rfEdges };
-  }, [flows, expandedFlowIds, activeSessions, highlightedNodeId, onToggleExpand, onSelectNode]);
+  }, [flows, expandedFlowIds, activeSessions, highlightedNodeId, onToggleExpand, onSelectNode, onCreateFlow, onEditFlow, onDeleteFlow, onFlowTransitions, onEditNode, onAddTransition]);
 }

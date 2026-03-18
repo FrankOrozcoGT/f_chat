@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Bot, Users, Wrench, Code, AlertTriangle } from 'lucide-react';
+import { Bot, Users, Wrench, Code, AlertTriangle, Pencil, Plus } from 'lucide-react';
 
 interface ProcessNodeData {
   label: string;
@@ -11,6 +11,8 @@ interface ProcessNodeData {
   onError: string;
   isHighlighted?: boolean;
   onSelect: () => void;
+  onEdit?: () => void;
+  onAddTransition?: () => void;
   [key: string]: unknown;
 }
 
@@ -23,12 +25,32 @@ export const ProcessNode = memo(({ data }: { data: ProcessNodeData }) => {
         className={`bg-bg-secondary border-2 border-border-primary rounded-xl p-4 min-w-40 cursor-pointer
                    hover:border-accent-purple hover:shadow-lg transition-all group ${data.isHighlighted ? 'ring-4 ring-accent-green shadow-lg shadow-accent-green/20 border-accent-green' : ''}`}
       >
+        {/* Action buttons on hover */}
+        <div
+          className="absolute -top-3 right-2 hidden group-hover:flex items-center gap-0.5 bg-bg-secondary border border-border-primary rounded-lg px-1 py-0.5 shadow-md"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => data.onAddTransition?.()}
+            className="p-1 rounded hover:bg-bg-tertiary transition-colors"
+            title="Nueva transición"
+          >
+            <Plus size={12} className="text-accent-purple" />
+          </button>
+          <button
+            onClick={() => data.onEdit?.()}
+            className="p-1 rounded hover:bg-bg-tertiary transition-colors"
+            title="Editar nodo"
+          >
+            <Pencil size={12} className="text-text-secondary" />
+          </button>
+        </div>
+
         <div className="flex items-center gap-2 mb-2">
           <Bot size={18} className="text-accent-purple" />
           <p className="text-sm font-medium text-text-primary">{data.label}</p>
         </div>
 
-        {/* Badges */}
         <div className="flex flex-wrap gap-1.5 mb-2">
           {data.toolsCount > 0 && (
             <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-bg-tertiary text-text-secondary">

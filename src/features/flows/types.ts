@@ -121,6 +121,64 @@ export interface ConversationTestMessage {
   mediaUrl?: string;
 }
 
+// === Node CRUD DTOs ===
+
+export interface CreateNodeDto {
+  name: string;
+  systemPrompt?: string;
+  tools?: string;
+  preCode?: string;
+  preCodeInputSchema?: string;
+  postCode?: string;
+  postCodeInputSchema?: string;
+  onError?: OnErrorStrategy;
+}
+
+export type UpdateNodeDto = Partial<CreateNodeDto>;
+
+// === Flow CRUD DTOs ===
+
+export interface CreateFlowDto {
+  name: string;
+  routerNodeId: string;
+}
+
+export interface UpdateFlowDto {
+  name?: string;
+  routerNodeId?: string;
+}
+
+// === Transition DTOs ===
+
+export interface CreateTransitionDto {
+  fromNodeId: string;
+  toNodeId: string;
+  transitionCode: string;
+}
+
+// === Intent Types ===
+
+export interface Intent {
+  id: string;
+  name: string;
+  flowId: string | null;
+  flow?: Flow | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type IntentsResponse = Intent[];
+
+export interface CreateIntentDto {
+  name: string;
+  flowId?: string;
+}
+
+export interface UpdateIntentDto {
+  name?: string;
+  flowId?: string;
+}
+
 export interface Contact {
   id: string;
   name: string;
