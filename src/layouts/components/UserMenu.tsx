@@ -53,7 +53,7 @@ export const UserMenu = () => {
 
   if (!me || isError) return null;
 
-  const { user, tenant, tenantRole, availableTenants } = me;
+  const { user, tenant, tenantRole } = me;
 
   return (
     <>

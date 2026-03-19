@@ -19,7 +19,7 @@ interface NodeDetailPanelProps {
 }
 
 export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: NodeDetailPanelProps) => {
-  const tools = parseJsonArray(node.tools);
+  const tools = node.tools ?? [];
   const preCodeItems = parseJsonArray(node.preCode);
   const postCodeItems = parseJsonArray(node.postCode);
 

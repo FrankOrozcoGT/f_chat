@@ -14,15 +14,6 @@ const FLOW_GAP = 50;
 const EDGE_STYLE = { stroke: 'var(--color-border-primary)', strokeWidth: 2 };
 const EDGE_MARKER = { type: MarkerType.ArrowClosed as const, color: 'var(--color-text-tertiary)' };
 
-function parseJsonArray(value: string | null): string[] {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
 
 function getTotalSessions(flow: Flow, activeSessions: ActiveSessionsResponse): number {
   let total = activeSessions[flow.routerNode.id] || 0;
@@ -130,7 +121,7 @@ export function useFlowCanvasLayout({
         const startY = EXPANDED_PADDING_TOP;
 
         (flow.nodes ?? []).forEach((flowNode, i) => {
-          const tools = parseJsonArray(flowNode.node.tools);
+          const tools = flowNode.node.tools ?? [];
           const rfId = `${flow.id}__node__${flowNode.node.id}`;
           nodeIdToRfId[flowNode.node.id] = rfId;
 

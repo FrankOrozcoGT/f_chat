@@ -70,7 +70,7 @@ export const MembersTable = ({ tenantId, members, currentUserId }: MembersTableP
         {members.map((member) => (
           <div key={member.id} className="border border-border-primary rounded-lg p-4 bg-bg-secondary">
             <div className="flex items-start gap-3">
-              <Avatar src={member.picture} name={member.name} size="md" />
+              <Avatar src={member.picture} initials={member.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)} size="md" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text-primary truncate">{member.name}</p>
                 <p className="text-xs text-text-secondary truncate">{member.email}</p>
@@ -115,7 +115,7 @@ export const MembersTable = ({ tenantId, members, currentUserId }: MembersTableP
               <tr key={member.id} className="border-b border-border-primary hover:bg-bg-tertiary transition-colors">
                 <td className="p-3">
                   <div className="flex items-center gap-3">
-                    <Avatar src={member.picture} name={member.name} size="sm" />
+                    <Avatar src={member.picture} initials={member.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)} size="sm" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-text-primary truncate">{member.name}</p>
                       <p className="text-xs text-text-secondary truncate">{member.email}</p>

@@ -44,7 +44,7 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
         className={cn(
           baseStyles,
           sizes[size],
-          'bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold',
+          'bg-linear-to-br from-blue-500 to-purple-600 text-white font-semibold',
           className
         )}
       >

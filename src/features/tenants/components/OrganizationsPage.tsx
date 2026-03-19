@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Check, Plus, Loader2 } from 'lucide-react';
+import { Building2, Check, Plus } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useGetMe, useSwitchTenant } from '@/features/auth/api';
 import { useCreateTenant } from '../api';

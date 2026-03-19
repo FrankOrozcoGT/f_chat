@@ -100,7 +100,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
         nodeTransitions: result.nodeTransitions,
       };
       setMessages((prev) => [...prev, assistantMsg]);
-      const lastTransition = result.nodeTransitions?.findLast((t) => t.to !== null);
+      const lastTransition = result.nodeTransitions?.slice().reverse().find((t: { to: string | null }) => t.to !== null);
       onNodeHighlight(lastTransition?.to ?? result.currentNodeId);
       isSendingRef.current = false;
 
