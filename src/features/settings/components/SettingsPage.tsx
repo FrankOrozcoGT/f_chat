@@ -16,6 +16,8 @@ import { useGetLabels } from '@/features/queue/labels/api/useGetLabels';
 import { useCreateLabel } from '@/features/queue/labels/api/useCreateLabel';
 import { useUpdateLabel } from '@/features/queue/labels/api/useUpdateLabel';
 import { useDeleteLabel } from '@/features/queue/labels/api/useDeleteLabel';
+import { useGetContactsSelect } from '@/features/contacts/api/useGetContactsSelect';
+import { useGetGroupsSelect } from '@/features/conversations/api/useGetGroupsSelect';
 import type { AnalysisMode } from '../types';
 import type { ContactLabel, CreateContactLabelDto, UpdateContactLabelDto } from '@/features/queue/labels/types';
 
@@ -39,6 +41,8 @@ export const SettingsPage = () => {
   const createLabel = useCreateLabel();
   const updateLabel = useUpdateLabel();
   const deleteLabel = useDeleteLabel();
+  const { data: contactsSelect = [] } = useGetContactsSelect();
+  const { data: groupsSelect = [] } = useGetGroupsSelect();
   const [labelModalOpen, setLabelModalOpen] = useState(false);
   const [editingLabel, setEditingLabel] = useState<ContactLabel | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ContactLabel | null>(null);
@@ -148,12 +152,20 @@ export const SettingsPage = () => {
     {
       key: 'clientId',
       header: 'Cliente',
-      render: (lbl) => <span className="text-sm text-text-secondary">{lbl.clientId ?? '—'}</span>,
+      render: (lbl) => {
+        if (!lbl.clientId) return <span className="text-sm text-text-secondary">—</span>;
+        const contact = contactsSelect.find((c) => c.id === lbl.clientId);
+        return <span className="text-sm text-text-secondary">{contact ? contact.name || contact.phoneNumber : lbl.clientId}</span>;
+      },
     },
     {
       key: 'groupJid',
-      header: 'Grupo JID',
-      render: (lbl) => <span className="text-sm text-text-secondary">{lbl.groupJid ?? '—'}</span>,
+      header: 'Grupo',
+      render: (lbl) => {
+        if (!lbl.groupJid) return <span className="text-sm text-text-secondary">—</span>;
+        const group = groupsSelect.find((g) => g.groupJid === lbl.groupJid);
+        return <span className="text-sm text-text-secondary">{group ? group.groupName : lbl.groupJid}</span>;
+      },
     },
     {
       key: 'actions',
@@ -301,9 +313,9 @@ export const SettingsPage = () => {
                           <p className="font-medium text-text-primary text-sm truncate">{lbl.label}</p>
                           {(lbl.clientId || lbl.groupJid) && (
                             <p className="text-xs text-text-secondary truncate">
-                              {lbl.clientId && `Cliente: ${lbl.clientId}`}
+                              {lbl.clientId && `Cliente: ${contactsSelect.find((c) => c.id === lbl.clientId)?.name || contactsSelect.find((c) => c.id === lbl.clientId)?.phoneNumber || lbl.clientId}`}
                               {lbl.clientId && lbl.groupJid && ' · '}
-                              {lbl.groupJid && `Grupo: ${lbl.groupJid}`}
+                              {lbl.groupJid && `Grupo: ${groupsSelect.find((g) => g.groupJid === lbl.groupJid)?.groupName || lbl.groupJid}`}
                             </p>
                           )}
                         </div>
@@ -345,18 +357,26 @@ export const SettingsPage = () => {
               error={!!labelErrors.label}
             />
           </FormField>
-          <FormField label="Cliente ID" optional>
-            <Input
-              placeholder="ID del cliente (opcional)"
+          <FormField label="Cliente" optional>
+            <Select
               value={labelForm.clientId}
-              onChange={(e) => setLabelForm((f) => ({ ...f, clientId: e.target.value }))}
+              options={[
+                { value: '', label: 'Sin cliente' },
+                ...contactsSelect.map((c) => ({ value: c.id, label: c.name || c.phoneNumber })),
+              ]}
+              onChange={(val) => setLabelForm((f) => ({ ...f, clientId: val }))}
+              size="md"
             />
           </FormField>
-          <FormField label="Grupo JID" optional>
-            <Input
-              placeholder="JID del grupo (opcional)"
+          <FormField label="Grupo" optional>
+            <Select
               value={labelForm.groupJid}
-              onChange={(e) => setLabelForm((f) => ({ ...f, groupJid: e.target.value }))}
+              options={[
+                { value: '', label: 'Sin grupo' },
+                ...groupsSelect.map((g) => ({ value: g.groupJid, label: g.groupName })),
+              ]}
+              onChange={(val) => setLabelForm((f) => ({ ...f, groupJid: val }))}
+              size="md"
             />
           </FormField>
         </div>
