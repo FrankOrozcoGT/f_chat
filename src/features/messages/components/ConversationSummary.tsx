@@ -3,7 +3,7 @@
 // Click to load historical messages in the main panel
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, MessageSquare, History } from 'lucide-react';
+import { ChevronDown, ChevronUp, MessageSquare, History, Search } from 'lucide-react';
 import { Card } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
 import type { AnalyzedConversation } from '../types';
@@ -18,6 +18,13 @@ export const ConversationSummary = ({
   onSelectConversation,
 }: ConversationSummaryProps) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState('');
+
+  const filtered = search.trim()
+    ? analyzedConversations.filter((c) =>
+        (c.summary ?? '').toLowerCase().includes(search.toLowerCase())
+      )
+    : analyzedConversations;
 
   const toggleExpanded = (id: string) => {
     setExpandedIds((prev) => {
@@ -49,9 +56,24 @@ export const ConversationSummary = ({
         </h4>
       </div>
 
+      {/* Search */}
+      <div className="relative mb-3">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar en resúmenes..."
+          className="w-full pl-8 pr-3 py-1.5 text-xs bg-bg-primary border border-border-primary rounded-md text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-blue"
+        />
+      </div>
+
       {/* Sub-conversations list */}
       <div className="space-y-1.5">
-        {analyzedConversations.map((conv) => {
+        {filtered.length === 0 && (
+          <p className="text-xs text-text-tertiary text-center py-2">Sin resultados</p>
+        )}
+        {filtered.map((conv) => {
           const isExpanded = expandedIds.has(conv.id);
           const summary = conv.summary || 'Sin resumen';
           const shouldTruncate = summary.length > 100;
