@@ -3,4 +3,5 @@ export const tenantKeys = {
   mine: () => [...tenantKeys.all, 'mine'] as const,
   members: (tenantId: string) => [...tenantKeys.all, tenantId, 'members'] as const,
   pendingInvitations: () => [...tenantKeys.all, 'pending-invitations'] as const,
+  memory: () => [...tenantKeys.all, 'memory'] as const,
 };

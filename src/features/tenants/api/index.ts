@@ -10,3 +10,6 @@ export { useAcceptInvitation } from './useAcceptInvitation';
 export { useRejectInvitation } from './useRejectInvitation';
 export { useGetPendingInvitations } from './useGetPendingInvitations';
 export type { PendingInvitation } from './useGetPendingInvitations';
+export { useGetTenantMemory } from './useGetTenantMemory';
+export { useSetTenantMemory } from './useSetTenantMemory';
+export { useDeleteTenantMemory } from './useDeleteTenantMemory';
