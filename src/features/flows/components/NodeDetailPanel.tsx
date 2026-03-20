@@ -1,7 +1,8 @@
-import { X, Wrench, Code, AlertTriangle, Users } from 'lucide-react';
-import type { Node } from '../types';
+import { X, Wrench, Code, AlertTriangle, Users, SlidersHorizontal } from 'lucide-react';
+import type { Node, PreCodeItem } from '../types';
+import { preCodeItemCode } from '../types';
 
-function parseJsonArray(value: string | null): string[] {
+function parseJsonArray(value: string | null): PreCodeItem[] {
   if (!value) return [];
   try {
     const parsed = JSON.parse(value);
@@ -86,12 +87,25 @@ export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: Nod
             <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2 flex items-center gap-1">
               <Code size={12} /> Pre Code
             </h4>
-            <div className="flex flex-wrap gap-1.5">
-              {preCodeItems.map((item) => (
-                <span key={item} className="px-2 py-1 text-xs rounded bg-accent-purple/10 text-accent-purple">
-                  {item}
-                </span>
-              ))}
+            <div className="flex flex-col gap-1.5">
+              {preCodeItems.map((item) => {
+                const code = preCodeItemCode(item);
+                const hasArgs = typeof item === 'object';
+                const keys = hasArgs ? ((item as { code: string; args: { keys?: string[] } }).args.keys ?? []) : [];
+                return (
+                  <div key={code} className="flex flex-wrap items-center gap-1.5">
+                    <span className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-accent-purple/10 text-accent-purple">
+                      {hasArgs && <SlidersHorizontal size={10} />}
+                      {code}
+                    </span>
+                    {keys.map((k) => (
+                      <span key={k} className="px-2 py-0.5 text-xs rounded bg-bg-tertiary text-text-secondary">
+                        {k}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
             {node.preCodeInputSchema && (
               <pre className="text-xs text-text-tertiary bg-bg-tertiary rounded-md p-2 mt-2 whitespace-pre-wrap max-h-40 overflow-y-auto">
@@ -107,12 +121,25 @@ export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: Nod
             <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2 flex items-center gap-1">
               <Code size={12} /> Post Code
             </h4>
-            <div className="flex flex-wrap gap-1.5">
-              {postCodeItems.map((item) => (
-                <span key={item} className="px-2 py-1 text-xs rounded bg-accent-orange/10 text-accent-orange">
-                  {item}
-                </span>
-              ))}
+            <div className="flex flex-col gap-1.5">
+              {postCodeItems.map((item) => {
+                const code = preCodeItemCode(item);
+                const hasArgs = typeof item === 'object';
+                const keys = hasArgs ? ((item as { code: string; args: { keys?: string[] } }).args.keys ?? []) : [];
+                return (
+                  <div key={code} className="flex flex-wrap items-center gap-1.5">
+                    <span className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-accent-orange/10 text-accent-orange">
+                      {hasArgs && <SlidersHorizontal size={10} />}
+                      {code}
+                    </span>
+                    {keys.map((k) => (
+                      <span key={k} className="px-2 py-0.5 text-xs rounded bg-bg-tertiary text-text-secondary">
+                        {k}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
             {node.postCodeInputSchema && (
               <pre className="text-xs text-text-tertiary bg-bg-tertiary rounded-md p-2 mt-2 whitespace-pre-wrap max-h-40 overflow-y-auto">
