@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ReactFlow, useReactFlow, useNodes } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { FlaskConical, Settings2 } from 'lucide-react';
+import { FlaskConical, Settings2, SlidersHorizontal, X } from 'lucide-react';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
 import { GlobalRouterNode } from './nodes/GlobalRouterNode';
 import { FlowGroupNode } from './nodes/FlowGroupNode';
@@ -31,7 +31,8 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
-import type { Flow, Node, ActiveSessionsResponse, Intent, OnErrorStrategy } from '../types';
+import type { Flow, Node, ActiveSessionsResponse, Intent, OnErrorStrategy, PreCodeItem } from '../types';
+import { preCodeItemCode } from '../types';
 
 function NodeCenterEffect({ highlightedNodeId }: { highlightedNodeId: string | null }) {
   const { setCenter, getZoom } = useReactFlow();
@@ -90,13 +91,19 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
 
   // ── Node modals ──────────────────────────────────────────────────────────
   const [editNodeTarget, setEditNodeTarget] = useState<Node | null>(null);
-  const [nodeForm, setNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as string[], postCode: [] as string[], onError: 'hitl' });
+  const [nodeForm, setNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as PreCodeItem[], postCode: [] as PreCodeItem[], onError: 'hitl' });
   const [nodeFormErrors, setNodeFormErrors] = useState<{ name?: string }>({});
 
   // ── Create node (panel) ──────────────────────────────────────────────────
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
-  const [createNodeForm, setCreateNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as string[], postCode: [] as string[], onError: 'hitl' });
+  const [createNodeForm, setCreateNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as PreCodeItem[], postCode: [] as PreCodeItem[], onError: 'hitl' });
   const [createNodeErrors, setCreateNodeErrors] = useState<{ name?: string }>({});
+
+  // ── PreCode args modal ───────────────────────────────────────────────────
+  type ArgsModalCtx = { field: 'preCode' | 'postCode'; form: 'edit' | 'create'; code: string };
+  const [argsModal, setArgsModal] = useState<ArgsModalCtx | null>(null);
+  const [argsKeys, setArgsKeys] = useState<string[]>([]);
+  const [argsKeyInput, setArgsKeyInput] = useState('');
 
   // ── Transition modals ────────────────────────────────────────────────────
   const [transitionFlowId, setTransitionFlowId] = useState<string | null>(null);
@@ -258,9 +265,60 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
   };
 
   // ── Node handlers ────────────────────────────────────────────────────────
-  const parseJsonArr = (val: string | null): string[] => {
+  const parseJsonArr = (val: string | null): PreCodeItem[] => {
     if (!val) return [];
     try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
+  };
+
+  // Funciones que requieren configuración de args
+  const FUNCTIONS_WITH_ARGS: Record<string, { label: string; argsField: string; argsFieldLabel: string }> = {
+    getMemories: { label: 'getMemories', argsField: 'keys', argsFieldLabel: 'Keys de memoria' },
+  };
+
+  const openArgsModal = (field: 'preCode' | 'postCode', form: 'edit' | 'create', code: string) => {
+    const items = form === 'edit' ? nodeForm[field] : createNodeForm[field];
+    const existing = items.find((i) => preCodeItemCode(i) === code);
+    const keys = existing && typeof existing === 'object' && Array.isArray((existing as { code: string; args: { keys?: string[] } }).args.keys)
+      ? (existing as { code: string; args: { keys: string[] } }).args.keys
+      : [];
+    setArgsModal({ field, form, code });
+    setArgsKeys(keys);
+    setArgsKeyInput('');
+  };
+
+  const saveArgsModal = () => {
+    if (!argsModal) return;
+    const { field, form, code } = argsModal;
+    const updatedItem: PreCodeItem = { code, args: { keys: argsKeys } };
+    const setter = form === 'edit' ? setNodeForm : setCreateNodeForm;
+    setter((f) => ({
+      ...f,
+      [field]: f[field].map((i) => preCodeItemCode(i) === code ? updatedItem : i),
+    }));
+    setArgsModal(null);
+  };
+
+  // Al seleccionar en el MultiSelect, si la función requiere args abre el modal automáticamente
+  const handlePreCodeChange = (field: 'preCode' | 'postCode', form: 'edit' | 'create', newCodes: string[]) => {
+    const currentItems: PreCodeItem[] = form === 'edit' ? nodeForm[field] : createNodeForm[field];
+    const currentCodes = currentItems.map(preCodeItemCode);
+    const added = newCodes.find((c) => !currentCodes.includes(c));
+
+    // Construir nueva lista preservando items con args existentes
+    const newItems: PreCodeItem[] = newCodes.map((code) => {
+      const existing = currentItems.find((i) => preCodeItemCode(i) === code);
+      if (existing) return existing;
+      // nuevo item: si necesita args, lo creamos como objeto vacío; si no, string
+      return FUNCTIONS_WITH_ARGS[code] ? { code, args: { keys: [] } } : code;
+    });
+
+    const setter = form === 'edit' ? setNodeForm : setCreateNodeForm;
+    setter((f) => ({ ...f, [field]: newItems }));
+
+    // Si el item recién agregado requiere args, abrir modal
+    if (added && FUNCTIONS_WITH_ARGS[added]) {
+      openArgsModal(field, form, added);
+    }
   };
 
   const openEditNode = useCallback((node: Node) => {
@@ -528,19 +586,41 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
             </FormField>
             <FormField label="Pre Code" optional>
               <MultiSelect
-                value={nodeForm.preCode}
+                value={nodeForm.preCode.map(preCodeItemCode)}
                 options={functions.filter(f => f.type === NodeFunctionType.PreCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => setNodeForm(f => ({ ...f, preCode: vals }))}
+                onChange={(vals) => handlePreCodeChange('preCode', 'edit', vals)}
                 placeholder="Seleccionar pre code..."
               />
+              {nodeForm.preCode.filter(i => typeof i === 'object').map((item) => {
+                const obj = item as { code: string; args: { keys?: string[] } };
+                return (
+                  <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
+                    <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
+                    <span className="font-medium text-text-primary">{obj.code}</span>
+                    <span className="text-text-tertiary">{(obj.args.keys ?? []).join(', ') || '(sin keys)'}</span>
+                    <button type="button" onClick={() => openArgsModal('preCode', 'edit', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity">Editar</button>
+                  </div>
+                );
+              })}
             </FormField>
             <FormField label="Post Code" optional>
               <MultiSelect
-                value={nodeForm.postCode}
+                value={nodeForm.postCode.map(preCodeItemCode)}
                 options={functions.filter(f => f.type === NodeFunctionType.PostCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => setNodeForm(f => ({ ...f, postCode: vals }))}
+                onChange={(vals) => handlePreCodeChange('postCode', 'edit', vals)}
                 placeholder="Seleccionar post code..."
               />
+              {nodeForm.postCode.filter(i => typeof i === 'object').map((item) => {
+                const obj = item as { code: string; args: { keys?: string[] } };
+                return (
+                  <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
+                    <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
+                    <span className="font-medium text-text-primary">{obj.code}</span>
+                    <span className="text-text-tertiary">{(obj.args.keys ?? []).join(', ') || '(sin keys)'}</span>
+                    <button type="button" onClick={() => openArgsModal('postCode', 'edit', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity">Editar</button>
+                  </div>
+                );
+              })}
             </FormField>
             <FormField label="On Error">
               <Select value={nodeForm.onError} options={onErrorOptions} onChange={(val) => setNodeForm(f => ({ ...f, onError: val }))} className="w-full" />
@@ -574,19 +654,41 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
             </FormField>
             <FormField label="Pre Code" optional>
               <MultiSelect
-                value={createNodeForm.preCode}
+                value={createNodeForm.preCode.map(preCodeItemCode)}
                 options={functions.filter(f => f.type === NodeFunctionType.PreCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => setCreateNodeForm(f => ({ ...f, preCode: vals }))}
+                onChange={(vals) => handlePreCodeChange('preCode', 'create', vals)}
                 placeholder="Seleccionar pre code..."
               />
+              {createNodeForm.preCode.filter(i => typeof i === 'object').map((item) => {
+                const obj = item as { code: string; args: { keys?: string[] } };
+                return (
+                  <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
+                    <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
+                    <span className="font-medium text-text-primary">{obj.code}</span>
+                    <span className="text-text-tertiary">{(obj.args.keys ?? []).join(', ') || '(sin keys)'}</span>
+                    <button type="button" onClick={() => openArgsModal('preCode', 'create', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity">Editar</button>
+                  </div>
+                );
+              })}
             </FormField>
             <FormField label="Post Code" optional>
               <MultiSelect
-                value={createNodeForm.postCode}
+                value={createNodeForm.postCode.map(preCodeItemCode)}
                 options={functions.filter(f => f.type === NodeFunctionType.PostCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => setCreateNodeForm(f => ({ ...f, postCode: vals }))}
+                onChange={(vals) => handlePreCodeChange('postCode', 'create', vals)}
                 placeholder="Seleccionar post code..."
               />
+              {createNodeForm.postCode.filter(i => typeof i === 'object').map((item) => {
+                const obj = item as { code: string; args: { keys?: string[] } };
+                return (
+                  <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
+                    <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
+                    <span className="font-medium text-text-primary">{obj.code}</span>
+                    <span className="text-text-tertiary">{(obj.args.keys ?? []).join(', ') || '(sin keys)'}</span>
+                    <button type="button" onClick={() => openArgsModal('postCode', 'create', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity">Editar</button>
+                  </div>
+                );
+              })}
             </FormField>
             <FormField label="On Error">
               <Select value={createNodeForm.onError} options={onErrorOptions} onChange={(val) => setCreateNodeForm(f => ({ ...f, onError: val }))} className="w-full" />
@@ -596,6 +698,61 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
         <ModalFooter>
           <Button variant="secondary" onClick={() => setCreateNodeOpen(false)} disabled={createNode.isPending}>Cancelar</Button>
           <Button onClick={handleCreateNodeFromPanel} isLoading={createNode.isPending}>Crear nodo</Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Args modal — configurar parámetros de funciones como getMemories */}
+      <Modal isOpen={!!argsModal} onClose={() => setArgsModal(null)} size="sm">
+        <ModalHeader onClose={() => setArgsModal(null)}>
+          <ModalTitle>Configurar {argsModal?.code}</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-3">
+            <p className="text-sm text-text-secondary">
+              {argsModal && FUNCTIONS_WITH_ARGS[argsModal.code]?.argsFieldLabel}
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ej: banking_info.banrural.cuenta"
+                value={argsKeyInput}
+                onChange={(e) => setArgsKeyInput(e.target.value.toLowerCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && argsKeyInput.trim() && !argsKeys.includes(argsKeyInput.trim())) {
+                    setArgsKeys((k) => [...k, argsKeyInput.trim()]);
+                    setArgsKeyInput('');
+                  }
+                }}
+              />
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const v = argsKeyInput.trim();
+                  if (v && !argsKeys.includes(v)) {
+                    setArgsKeys((k) => [...k, v]);
+                    setArgsKeyInput('');
+                  }
+                }}
+              >
+                Agregar
+              </Button>
+            </div>
+            {argsKeys.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {argsKeys.map((k) => (
+                  <span key={k} className="flex items-center gap-1 px-2 py-0.5 bg-accent-purple/15 text-accent-purple text-xs font-medium rounded-md">
+                    {k}
+                    <button type="button" onClick={() => setArgsKeys((prev) => prev.filter((x) => x !== k))} className="hover:opacity-60 transition-opacity">
+                      <X size={10} strokeWidth={2.5} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setArgsModal(null)}>Cancelar</Button>
+          <Button onClick={saveArgsModal}>Guardar</Button>
         </ModalFooter>
       </Modal>
 
