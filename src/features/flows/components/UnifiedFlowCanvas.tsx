@@ -1,13 +1,14 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ReactFlow, useReactFlow, useNodes } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { FlaskConical, Plus, List, Tag, Pencil, Trash2, X } from 'lucide-react';
+import { FlaskConical, Settings2 } from 'lucide-react';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
 import { GlobalRouterNode } from './nodes/GlobalRouterNode';
 import { FlowGroupNode } from './nodes/FlowGroupNode';
 import { ProcessNode } from './nodes/ProcessNode';
 import { NodeDetailPanel } from './NodeDetailPanel';
 import { TestPanel } from './TestPanel';
+import { ToolsPanel } from './ToolsPanel';
 import { useFlowCanvasLayout } from './useFlowCanvasLayout';
 import { useCreateFlow } from '../api/useCreateFlow';
 import { useUpdateFlow } from '../api/useUpdateFlow';
@@ -66,7 +67,7 @@ interface UnifiedFlowCanvasProps {
   activeSessions: ActiveSessionsResponse;
 }
 
-type ActivePanel = 'nodes' | 'intents' | 'transitions' | null;
+type ActivePanel = 'tools' | null;
 
 export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasProps) => {
   // ── Canvas state (original) ──────────────────────────────────────────────
@@ -148,7 +149,6 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
   }, [flows]);
 
   const transitionsFlow = flows.find((f) => f.id === transitionsFlowId);
-  const transitionsFlowNodes = transitionsFlow?.nodes?.map((fn) => fn.node) ?? [];
 
   // ── Canvas handlers (original) ───────────────────────────────────────────
   const handleToggleExpand = useCallback((flowId: string) => {
@@ -209,7 +209,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
   const openFlowTransitions = useCallback((flow: Flow) => {
     setTransitionsFlowId(flow.id);
     setTransitionFlowId(flow.id);
-    setActivePanel('transitions');
+    setActivePanel('tools');
   }, []);
 
   const handleCreateFlow = async () => {
@@ -386,16 +386,10 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
       {/* Toolbar top-right */}
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
         <button
-          onClick={() => setActivePanel(activePanel === 'nodes' ? null : 'nodes')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${activePanel === 'nodes' ? 'bg-accent-blue/10 border-accent-blue text-accent-blue' : 'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-tertiary'}`}
+          onClick={() => setActivePanel(activePanel === 'tools' ? null : 'tools')}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${activePanel === 'tools' ? 'bg-accent-blue/10 border-accent-blue text-accent-blue' : 'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-tertiary'}`}
         >
-          <List size={16} /> Nodos
-        </button>
-        <button
-          onClick={() => setActivePanel(activePanel === 'intents' ? null : 'intents')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${activePanel === 'intents' ? 'bg-accent-blue/10 border-accent-blue text-accent-blue' : 'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-tertiary'}`}
-        >
-          <Tag size={16} /> Intents
+          <Settings2 size={16} /> Herramientas
         </button>
         <button
           onClick={handleToggleTestPanel}
@@ -440,93 +434,22 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
         />
       )}
 
-      {/* Nodes panel */}
-      {activePanel === 'nodes' && (
-        <div className="absolute right-0 top-0 h-full w-80 bg-bg-secondary border-l border-border-primary z-10 flex flex-col shadow-xl">
-          <div className="flex items-center justify-between p-4 border-b border-border-primary">
-            <h3 className="text-sm font-semibold text-text-primary">Nodos ({existingNodes.length})</h3>
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => setCreateNodeOpen(true)}><Plus size={14} /> Nuevo</Button>
-              <button onClick={() => setActivePanel(null)} className="p-1.5 rounded hover:bg-bg-tertiary transition-colors">
-                <X size={16} className="text-text-secondary" />
-              </button>
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {existingNodes.length === 0 && <p className="text-sm text-text-secondary text-center py-8">No hay nodos.</p>}
-            {existingNodes.map((node) => (
-              <div key={node.id} className="flex items-center justify-between gap-2 p-3 bg-bg-tertiary rounded-lg">
-                <p className="text-sm font-medium text-text-primary truncate">{node.name}</p>
-                <button onClick={() => openEditNode(node)} className="p-1 rounded hover:bg-bg-secondary transition-colors shrink-0" title="Editar">
-                  <Pencil size={14} className="text-text-secondary" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Intents panel */}
-      {activePanel === 'intents' && (
-        <div className="absolute right-0 top-0 h-full w-80 bg-bg-secondary border-l border-border-primary z-10 flex flex-col shadow-xl">
-          <div className="flex items-center justify-between p-4 border-b border-border-primary">
-            <h3 className="text-sm font-semibold text-text-primary">Intents ({intents.length})</h3>
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={openCreateIntent}><Plus size={14} /> Nuevo</Button>
-              <button onClick={() => setActivePanel(null)} className="p-1.5 rounded hover:bg-bg-tertiary transition-colors">
-                <X size={16} className="text-text-secondary" />
-              </button>
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {intents.length === 0 && <p className="text-sm text-text-secondary text-center py-8">No hay intents.</p>}
-            {intents.map((intent) => (
-              <div key={intent.id} className="flex items-center justify-between gap-2 p-3 bg-bg-tertiary rounded-lg">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">{intent.name}</p>
-                  {intent.flowId && <p className="text-xs text-text-secondary truncate">{flows.find((f) => f.id === intent.flowId)?.name ?? ''}</p>}
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <button onClick={() => openEditIntent(intent)} className="p-1 rounded hover:bg-bg-secondary transition-colors" title="Editar"><Pencil size={13} className="text-text-secondary" /></button>
-                  <button onClick={() => setDeleteIntentTarget(intent)} className="p-1 rounded hover:bg-bg-secondary transition-colors" title="Eliminar"><Trash2 size={13} className="text-accent-red" /></button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Transitions panel */}
-      {activePanel === 'transitions' && transitionsFlow && (
-        <div className="absolute right-0 top-0 h-full w-80 bg-bg-secondary border-l border-border-primary z-10 flex flex-col shadow-xl">
-          <div className="flex items-center justify-between p-4 border-b border-border-primary">
-            <div>
-              <h3 className="text-sm font-semibold text-text-primary">Transiciones</h3>
-              <p className="text-xs text-text-secondary">{transitionsFlow.name}</p>
-            </div>
-            <button onClick={() => setActivePanel(null)} className="p-1.5 rounded hover:bg-bg-tertiary transition-colors">
-              <X size={16} className="text-text-secondary" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {transitionsList.length === 0 && <p className="text-sm text-text-secondary text-center py-8">No hay transiciones.</p>}
-            {transitionsList.map((t) => {
-              const fromNode = transitionsFlowNodes.find((n) => n.id === t.fromNodeId);
-              const toNode = transitionsFlowNodes.find((n) => n.id === t.toNodeId);
-              return (
-                <div key={t.id} className="flex items-center justify-between gap-2 p-3 bg-bg-tertiary rounded-lg">
-                  <div className="min-w-0">
-                    <p className="text-xs text-text-secondary">{fromNode?.name ?? t.fromNodeId} → {toNode?.name ?? t.toNodeId}</p>
-                    <p className="text-sm font-medium text-text-primary truncate">{t.transitionCode}</p>
-                  </div>
-                  <button onClick={() => setDeleteTransitionTarget(t.id)} className="p-1 rounded hover:bg-bg-secondary transition-colors shrink-0" title="Eliminar">
-                    <Trash2 size={13} className="text-accent-red" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Tools panel */}
+      {activePanel === 'tools' && (
+        <ToolsPanel
+          onClose={() => setActivePanel(null)}
+          existingNodes={existingNodes}
+          onEditNode={openEditNode}
+          onCreateNode={() => setCreateNodeOpen(true)}
+          intents={intents}
+          flows={flows}
+          onCreateIntent={openCreateIntent}
+          onEditIntent={openEditIntent}
+          onDeleteIntent={(intent) => setDeleteIntentTarget(intent)}
+          transitionsFlow={transitionsFlow}
+          transitionsList={transitionsList}
+          onDeleteTransition={(id) => setDeleteTransitionTarget(id)}
+        />
       )}
 
       {/* ── Modales ── */}
