@@ -9,10 +9,12 @@ const API_DISPLAY_NAMES: Record<string, string> = {
   evolution: 'Evolution API',
   qwen_stt: 'Qwen STT',
   qwen_tts: 'Qwen TTS',
+  kimi_llm: 'Kimi LLM',
   kimi: 'Kimi K2.5',
 };
 
-const formatTimeSince = (isoTimestamp: string): string => {
+const formatTimeSince = (isoTimestamp: string | null): string => {
+  if (!isoTimestamp) return 'Nunca';
   const now = new Date();
   const then = new Date(isoTimestamp);
   const diffMs = now.getTime() - then.getTime();
@@ -54,23 +56,20 @@ export const HealthCard = ({ health }: HealthCardProps) => {
 
       <CardBody>
         <div className="space-y-2 text-sm">
-          {/* Latencia */}
           <div className="flex justify-between items-center">
             <span className="text-text-secondary">Latencia:</span>
             <span className="font-mono text-text-primary">
-              {health.responseTime}ms
+              {health.responseTimeMs != null ? `${health.responseTimeMs}ms` : '—'}
             </span>
           </div>
 
-          {/* Última verificación */}
           <div className="flex justify-between items-center">
             <span className="text-text-secondary">Última verificación:</span>
             <span className="text-text-primary">
-              {formatTimeSince(health.lastCheck)}
+              {formatTimeSince(health.lastCheckAt)}
             </span>
           </div>
 
-          {/* Monitoreo activo */}
           <div className="flex justify-between items-center">
             <span className="text-text-secondary">Monitoreo:</span>
             <span className="text-text-primary">
@@ -78,12 +77,11 @@ export const HealthCard = ({ health }: HealthCardProps) => {
             </span>
           </div>
 
-          {/* Error (si está DOWN) */}
-          {!isUp && health.lastError && (
+          {!isUp && health.errorMessage && (
             <div className="mt-3 pt-3 border-t border-border-primary">
               <span className="text-text-secondary block mb-1">Error:</span>
               <p className="text-red-600 dark:text-red-400 text-xs font-mono wrap-break-words">
-                {health.lastError}
+                {health.errorMessage}
               </p>
             </div>
           )}

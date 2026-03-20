@@ -1,14 +1,15 @@
-export type ApiName = 'evolution' | 'qwen_stt' | 'qwen_tts' | 'kimi';
-
 export type ApiStatus = 'up' | 'down';
 
 export interface ApiHealth {
-  apiName: ApiName;
+  id: string;
+  apiName: string;
   status: ApiStatus;
-  responseTime: number; // ms
-  lastCheck: string; // ISO timestamp
-  lastError?: string; // Si status=down
-  monitoringActive: boolean; // Si health check está corriendo
+  monitoringActive: boolean;
+  responseTimeMs: number | null;
+  errorMessage: string | null;
+  lastErrorAt: string | null;
+  lastCheckAt: string | null;
+  recoveredAt: string | null;
 }
 
 export type HealthResponse = ApiHealth[];
