@@ -275,6 +275,9 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
     getMemories: { label: 'getMemories', argsField: 'keys', argsFieldLabel: 'Keys de memoria' },
   };
 
+  // Funciones con type "tool" que también son válidas en preCode/postCode
+  const ALSO_PRECODE = ['getMemories'];
+
   const openArgsModal = (field: 'preCode' | 'postCode', form: 'edit' | 'create', code: string) => {
     const items = form === 'edit' ? nodeForm[field] : createNodeForm[field];
     const existing = items.find((i) => preCodeItemCode(i) === code);
@@ -587,7 +590,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
             <FormField label="Pre Code" optional>
               <MultiSelect
                 value={nodeForm.preCode.map(preCodeItemCode)}
-                options={functions.filter(f => f.type === NodeFunctionType.PreCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                options={functions.filter(f => f.type === NodeFunctionType.PreCode || f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
                 onChange={(vals) => handlePreCodeChange('preCode', 'edit', vals)}
                 placeholder="Seleccionar pre code..."
               />
@@ -655,7 +658,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
             <FormField label="Pre Code" optional>
               <MultiSelect
                 value={createNodeForm.preCode.map(preCodeItemCode)}
-                options={functions.filter(f => f.type === NodeFunctionType.PreCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                options={functions.filter(f => f.type === NodeFunctionType.PreCode || f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
                 onChange={(vals) => handlePreCodeChange('preCode', 'create', vals)}
                 placeholder="Seleccionar pre code..."
               />
