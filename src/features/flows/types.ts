@@ -1,5 +1,12 @@
 export type OnErrorStrategy = 'hitl' | 'retry' | 'ignore';
 
+// Un item de preCode/postCode puede ser un string simple o un objeto con args
+export type PreCodeItem = string | { code: string; args: Record<string, unknown> };
+
+export function preCodeItemCode(item: PreCodeItem): string {
+  return typeof item === 'string' ? item : item.code;
+}
+
 export interface Node {
   id: string;
   name: string;
