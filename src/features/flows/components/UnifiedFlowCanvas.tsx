@@ -31,7 +31,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
-import type { Flow, Node, ActiveSessionsResponse, Intent, OnErrorStrategy, PreCodeItem } from '../types';
+import type { Flow, Node, ActiveSessionsResponse, Intent, OnErrorStrategy, PreCodeItem, NodeTodo, NodeFunction } from '../types';
 import { preCodeItemCode } from '../types';
 
 function NodeCenterEffect({ highlightedNodeId }: { highlightedNodeId: string | null }) {
@@ -91,19 +91,23 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
 
   // ── Node modals ──────────────────────────────────────────────────────────
   const [editNodeTarget, setEditNodeTarget] = useState<Node | null>(null);
-  const [nodeForm, setNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as PreCodeItem[], postCode: [] as PreCodeItem[], onError: 'hitl' });
+  const [nodeForm, setNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as PreCodeItem[], postCode: [] as PreCodeItem[], todos: [] as NodeTodo[], onError: 'hitl' });
   const [nodeFormErrors, setNodeFormErrors] = useState<{ name?: string }>({});
+  const [nodeFormTab, setNodeFormTab] = useState<'general' | 'precode' | 'todos' | 'tools' | 'postcode'>('general');
 
   // ── Create node (panel) ──────────────────────────────────────────────────
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
-  const [createNodeForm, setCreateNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as PreCodeItem[], postCode: [] as PreCodeItem[], onError: 'hitl' });
+  const [createNodeForm, setCreateNodeForm] = useState({ name: '', systemPrompt: '', tools: [] as string[], preCode: [] as PreCodeItem[], postCode: [] as PreCodeItem[], todos: [] as NodeTodo[], onError: 'hitl' });
   const [createNodeErrors, setCreateNodeErrors] = useState<{ name?: string }>({});
+  const [createNodeTab, setCreateNodeTab] = useState<'general' | 'precode' | 'todos' | 'tools' | 'postcode'>('general');
 
   // ── PreCode args modal ───────────────────────────────────────────────────
   type ArgsModalCtx = { field: 'preCode' | 'postCode'; form: 'edit' | 'create'; code: string };
   const [argsModal, setArgsModal] = useState<ArgsModalCtx | null>(null);
-  const [argsKeys, setArgsKeys] = useState<string[]>([]);
-  const [argsKeyInput, setArgsKeyInput] = useState('');
+  // argsValues: un valor por parámetro. Arrays = string[], strings = string
+  const [argsValues, setArgsValues] = useState<Record<string, unknown>>({});
+  // argsArrayInputs: input temporal por cada parámetro array
+  const [argsArrayInputs, setArgsArrayInputs] = useState<Record<string, string>>({});
 
   // ── Transition modals ────────────────────────────────────────────────────
   const [transitionFlowId, setTransitionFlowId] = useState<string | null>(null);
@@ -270,34 +274,31 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
     try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
   };
 
-  // Funciones que requieren configuración de args
-  const FUNCTIONS_WITH_ARGS: Record<string, { label: string; argsField: string; argsFieldLabel: string }> = {
-    getMemories: { label: 'getMemories', argsField: 'keys', argsFieldLabel: 'Keys de memoria' },
+  // Una función necesita args si tiene toolDefinition con parámetros requeridos
+  const fnHasArgs = (code: string) => {
+    const fn = functions.find((f: NodeFunction) => f.code === code);
+    return !!fn?.toolDefinition?.function?.parameters?.required?.length;
   };
-
-  // Funciones con type "tool" que también son válidas en preCode/postCode
-  const ALSO_PRECODE = ['getMemories'];
 
   const openArgsModal = (field: 'preCode' | 'postCode', form: 'edit' | 'create', code: string) => {
     const items = form === 'edit' ? nodeForm[field] : createNodeForm[field];
     const existing = items.find((i) => preCodeItemCode(i) === code);
-    const keys = existing && typeof existing === 'object' && Array.isArray((existing as { code: string; args: { keys?: string[] } }).args.keys)
-      ? (existing as { code: string; args: { keys: string[] } }).args.keys
-      : [];
+    const existingArgs = existing && typeof existing === 'object' ? (existing as { code: string; args: Record<string, unknown> }).args : {};
     setArgsModal({ field, form, code });
-    setArgsKeys(keys);
-    setArgsKeyInput('');
+    setArgsValues(existingArgs ?? {});
+    setArgsArrayInputs({});
   };
 
   const saveArgsModal = () => {
     if (!argsModal) return;
     const { field, form, code } = argsModal;
-    const updatedItem: PreCodeItem = { code, args: { keys: argsKeys } };
-    const setter = form === 'edit' ? setNodeForm : setCreateNodeForm;
-    setter((f) => ({
+    const updatedItem: PreCodeItem = { code, args: argsValues };
+    const applyUpdate = (f: typeof nodeForm) => ({
       ...f,
-      [field]: f[field].map((i) => preCodeItemCode(i) === code ? updatedItem : i),
-    }));
+      [field]: (f[field] as PreCodeItem[]).map((i) => preCodeItemCode(i) === code ? updatedItem : i),
+    });
+    if (form === 'edit') setNodeForm(applyUpdate);
+    else setCreateNodeForm(applyUpdate);
     setArgsModal(null);
   };
 
@@ -312,29 +313,30 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
       const existing = currentItems.find((i) => preCodeItemCode(i) === code);
       if (existing) return existing;
       // nuevo item: si necesita args, lo creamos como objeto vacío; si no, string
-      return FUNCTIONS_WITH_ARGS[code] ? { code, args: { keys: [] } } : code;
+      return fnHasArgs(code) ? { code, args: {} } : code;
     });
 
     const setter = form === 'edit' ? setNodeForm : setCreateNodeForm;
     setter((f) => ({ ...f, [field]: newItems }));
 
     // Si el item recién agregado requiere args, abrir modal
-    if (added && FUNCTIONS_WITH_ARGS[added]) {
+    if (added && fnHasArgs(added)) {
       openArgsModal(field, form, added);
     }
   };
 
   const openEditNode = useCallback((node: Node) => {
     setEditNodeTarget(node);
-    setNodeForm({ name: node.name, systemPrompt: node.systemPrompt ?? '', tools: node.tools, preCode: parseJsonArr(node.preCode), postCode: parseJsonArr(node.postCode), onError: node.onError });
+    setNodeForm({ name: node.name, systemPrompt: node.systemPrompt ?? '', tools: node.tools, preCode: parseJsonArr(node.preCode), postCode: parseJsonArr(node.postCode), todos: node.todos ?? [], onError: node.onError });
     setNodeFormErrors({});
+    setNodeFormTab('general');
   }, []);
 
   const handleUpdateNode = async () => {
     if (!editNodeTarget) return;
     if (!nodeForm.name.trim()) { setNodeFormErrors({ name: 'El nombre es requerido' }); return; }
     try {
-      await updateNode.mutateAsync({ id: editNodeTarget.id, dto: { name: nodeForm.name.trim(), systemPrompt: nodeForm.systemPrompt || undefined, tools: nodeForm.tools, preCode: nodeForm.preCode.length ? JSON.stringify(nodeForm.preCode) : undefined, postCode: nodeForm.postCode.length ? JSON.stringify(nodeForm.postCode) : undefined, onError: nodeForm.onError as OnErrorStrategy } });
+      await updateNode.mutateAsync({ id: editNodeTarget.id, dto: { name: nodeForm.name.trim(), systemPrompt: nodeForm.systemPrompt || undefined, tools: nodeForm.tools, preCode: nodeForm.preCode.length ? JSON.stringify(nodeForm.preCode) : undefined, postCode: nodeForm.postCode.length ? JSON.stringify(nodeForm.postCode) : undefined, todos: nodeForm.todos.length ? nodeForm.todos : undefined, onError: nodeForm.onError as OnErrorStrategy } });
       showToast('Nodo actualizado', 'success');
       setEditNodeTarget(null);
     } catch {
@@ -345,10 +347,10 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
   const handleCreateNodeFromPanel = async () => {
     if (!createNodeForm.name.trim()) { setCreateNodeErrors({ name: 'El nombre es requerido' }); return; }
     try {
-      await createNode.mutateAsync({ name: createNodeForm.name.trim(), systemPrompt: createNodeForm.systemPrompt || undefined, tools: createNodeForm.tools.length ? createNodeForm.tools : undefined, preCode: createNodeForm.preCode.length ? JSON.stringify(createNodeForm.preCode) : undefined, postCode: createNodeForm.postCode.length ? JSON.stringify(createNodeForm.postCode) : undefined, onError: createNodeForm.onError as OnErrorStrategy });
+      await createNode.mutateAsync({ name: createNodeForm.name.trim(), systemPrompt: createNodeForm.systemPrompt || undefined, tools: createNodeForm.tools.length ? createNodeForm.tools : undefined, preCode: createNodeForm.preCode.length ? JSON.stringify(createNodeForm.preCode) : undefined, postCode: createNodeForm.postCode.length ? JSON.stringify(createNodeForm.postCode) : undefined, todos: createNodeForm.todos.length ? createNodeForm.todos : undefined, onError: createNodeForm.onError as OnErrorStrategy });
       showToast('Nodo creado', 'success');
       setCreateNodeOpen(false);
-      setCreateNodeForm({ name: '', systemPrompt: '', tools: [], preCode: [], postCode: [], onError: 'hitl' });
+      setCreateNodeForm({ name: '', systemPrompt: '', tools: [], preCode: [], postCode: [], todos: [], onError: 'hitl' });
     } catch {
       showToast('Error al crear el nodo', 'error');
     }
@@ -501,7 +503,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
           onClose={() => setActivePanel(null)}
           existingNodes={existingNodes}
           onEditNode={openEditNode}
-          onCreateNode={() => setCreateNodeOpen(true)}
+          onCreateNode={() => { setCreateNodeOpen(true); setCreateNodeTab('general'); }}
           intents={intents}
           flows={flows}
           onCreateIntent={openCreateIntent}
@@ -572,62 +574,110 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
       <Modal isOpen={!!editNodeTarget} onClose={() => setEditNodeTarget(null)} size="md">
         <ModalHeader onClose={() => setEditNodeTarget(null)}><ModalTitle>Editar nodo</ModalTitle></ModalHeader>
         <ModalBody>
+          {/* Tabs */}
+          <div className="flex gap-1 mb-4 border-b border-border-primary">
+            {(['general', 'precode', 'todos', 'tools', 'postcode'] as const).map((tab) => {
+              const labels = { general: 'General', precode: 'Pre Code', todos: `Todos${nodeForm.todos.length ? ` (${nodeForm.todos.length})` : ''}`, tools: 'Tools', postcode: 'Post Code' };
+              return (
+                <button key={tab} type="button" onClick={() => setNodeFormTab(tab)}
+                  className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${nodeFormTab === tab ? 'border-accent-blue text-accent-blue' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+                  {labels[tab]}
+                </button>
+              );
+            })}
+          </div>
           <div className="space-y-4">
-            <FormField label="Nombre" required error={nodeFormErrors.name}>
-              <Input value={nodeForm.name} onChange={(e) => setNodeForm(f => ({ ...f, name: e.target.value }))} error={!!nodeFormErrors.name} />
-            </FormField>
-            <FormField label="System Prompt" optional>
-              <Textarea rows={4} placeholder="Instrucciones del sistema..." value={nodeForm.systemPrompt} onChange={(e) => setNodeForm(f => ({ ...f, systemPrompt: e.target.value }))} />
-            </FormField>
-            <FormField label="Tools" optional>
-              <MultiSelect
-                value={nodeForm.tools}
-                options={functions.filter(f => f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => setNodeForm(f => ({ ...f, tools: vals }))}
-                placeholder="Seleccionar tools..."
-              />
-            </FormField>
-            <FormField label="Pre Code" optional>
-              <MultiSelect
-                value={nodeForm.preCode.map(preCodeItemCode)}
-                options={functions.filter(f => f.type === NodeFunctionType.PreCode || f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => handlePreCodeChange('preCode', 'edit', vals)}
-                placeholder="Seleccionar pre code..."
-              />
-              {nodeForm.preCode.filter(i => typeof i === 'object').map((item) => {
-                const obj = item as { code: string; args: { keys?: string[] } };
-                return (
-                  <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
-                    <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
-                    <span className="font-medium text-text-primary">{obj.code}</span>
-                    <span className="text-text-tertiary">{(obj.args.keys ?? []).join(', ') || '(sin keys)'}</span>
-                    <button type="button" onClick={() => openArgsModal('preCode', 'edit', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity">Editar</button>
+            {nodeFormTab === 'general' && <>
+              <FormField label="Nombre" required error={nodeFormErrors.name}>
+                <Input value={nodeForm.name} onChange={(e) => setNodeForm(f => ({ ...f, name: e.target.value }))} error={!!nodeFormErrors.name} />
+              </FormField>
+              <FormField label="System Prompt" optional>
+                <Textarea rows={8} placeholder="Instrucciones del sistema..." value={nodeForm.systemPrompt} onChange={(e) => setNodeForm(f => ({ ...f, systemPrompt: e.target.value }))} />
+              </FormField>
+              <FormField label="On Error">
+                <Select value={nodeForm.onError} options={onErrorOptions} onChange={(val) => setNodeForm(f => ({ ...f, onError: val }))} className="w-full" />
+              </FormField>
+            </>}
+            {nodeFormTab === 'precode' && <>
+              <FormField label="Pre Code" optional>
+                <MultiSelect
+                  value={nodeForm.preCode.map(preCodeItemCode)}
+                  options={functions.filter(f => f.type === NodeFunctionType.PreCode || f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                  onChange={(vals) => handlePreCodeChange('preCode', 'edit', vals)}
+                  placeholder="Seleccionar pre code..."
+                />
+                {nodeForm.preCode.filter(i => typeof i === 'object').map((item) => {
+                  const obj = item as { code: string; args: Record<string, unknown> };
+                  const preview = Object.values(obj.args).flat().filter(Boolean).join(', ');
+                  return (
+                    <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
+                      <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
+                      <span className="font-medium text-text-primary">{obj.code}</span>
+                      <span className="text-text-tertiary truncate">{preview || '(sin args)'}</span>
+                      <button type="button" onClick={() => openArgsModal('preCode', 'edit', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity shrink-0">Editar</button>
+                    </div>
+                  );
+                })}
+              </FormField>
+            </>}
+            {nodeFormTab === 'todos' && <>
+              <div className="space-y-2">
+                {nodeForm.todos.map((todo, idx) => (
+                  <div key={todo.id} className="border border-border-primary rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input placeholder="Nombre del todo" value={todo.name}
+                        onChange={(e) => setNodeForm(f => ({ ...f, todos: f.todos.map((t, i) => i === idx ? { ...t, name: e.target.value } : t) }))} />
+                      <button type="button" onClick={() => setNodeForm(f => ({ ...f, todos: f.todos.filter((_, i) => i !== idx) }))} className="p-1.5 text-text-tertiary hover:text-accent-red transition-colors shrink-0">
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <Textarea rows={2} placeholder="Descripción..." value={todo.description ?? ''}
+                      onChange={(e) => setNodeForm(f => ({ ...f, todos: f.todos.map((t, i) => i === idx ? { ...t, description: e.target.value } : t) }))} />
+                    <MultiSelect
+                      value={todo.functions}
+                      options={nodeForm.tools.map(code => { const fn = functions.find((f: NodeFunction) => f.code === code); return { value: code, label: fn?.name ?? code }; })}
+                      onChange={(vals) => setNodeForm(f => ({ ...f, todos: f.todos.map((t, i) => i === idx ? { ...t, functions: vals } : t) }))}
+                      placeholder="Tools de este todo..."
+                    />
                   </div>
-                );
-              })}
-            </FormField>
-            <FormField label="Post Code" optional>
-              <MultiSelect
-                value={nodeForm.postCode.map(preCodeItemCode)}
-                options={functions.filter(f => f.type === NodeFunctionType.PostCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => handlePreCodeChange('postCode', 'edit', vals)}
-                placeholder="Seleccionar post code..."
-              />
-              {nodeForm.postCode.filter(i => typeof i === 'object').map((item) => {
-                const obj = item as { code: string; args: { keys?: string[] } };
-                return (
-                  <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
-                    <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
-                    <span className="font-medium text-text-primary">{obj.code}</span>
-                    <span className="text-text-tertiary">{(obj.args.keys ?? []).join(', ') || '(sin keys)'}</span>
-                    <button type="button" onClick={() => openArgsModal('postCode', 'edit', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity">Editar</button>
-                  </div>
-                );
-              })}
-            </FormField>
-            <FormField label="On Error">
-              <Select value={nodeForm.onError} options={onErrorOptions} onChange={(val) => setNodeForm(f => ({ ...f, onError: val }))} className="w-full" />
-            </FormField>
+                ))}
+                <Button variant="secondary" onClick={() => setNodeForm(f => ({ ...f, todos: [...f.todos, { id: crypto.randomUUID(), name: '', description: '', functions: [] }] }))}>
+                  + Agregar todo
+                </Button>
+              </div>
+            </>}
+            {nodeFormTab === 'tools' && <>
+              <FormField label="Tools" optional>
+                <MultiSelect
+                  value={nodeForm.tools}
+                  options={functions.filter(f => f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                  onChange={(vals) => setNodeForm(f => ({ ...f, tools: vals }))}
+                  placeholder="Seleccionar tools..."
+                />
+              </FormField>
+            </>}
+            {nodeFormTab === 'postcode' && <>
+              <FormField label="Post Code" optional>
+                <MultiSelect
+                  value={nodeForm.postCode.map(preCodeItemCode)}
+                  options={functions.filter(f => f.type === NodeFunctionType.PostCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                  onChange={(vals) => handlePreCodeChange('postCode', 'edit', vals)}
+                  placeholder="Seleccionar post code..."
+                />
+                {nodeForm.postCode.filter(i => typeof i === 'object').map((item) => {
+                  const obj = item as { code: string; args: Record<string, unknown> };
+                  const preview = Object.values(obj.args).flat().filter(Boolean).join(', ');
+                  return (
+                    <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
+                      <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
+                      <span className="font-medium text-text-primary">{obj.code}</span>
+                      <span className="text-text-tertiary truncate">{preview || '(sin args)'}</span>
+                      <button type="button" onClick={() => openArgsModal('postCode', 'edit', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity shrink-0">Editar</button>
+                    </div>
+                  );
+                })}
+              </FormField>
+            </>}
           </div>
         </ModalBody>
         <ModalFooter>
@@ -640,62 +690,110 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
       <Modal isOpen={createNodeOpen} onClose={() => setCreateNodeOpen(false)} size="md">
         <ModalHeader onClose={() => setCreateNodeOpen(false)}><ModalTitle>Nuevo nodo</ModalTitle></ModalHeader>
         <ModalBody>
+          {/* Tabs */}
+          <div className="flex gap-1 mb-4 border-b border-border-primary">
+            {(['general', 'precode', 'todos', 'tools', 'postcode'] as const).map((tab) => {
+              const labels = { general: 'General', precode: 'Pre Code', todos: `Todos${createNodeForm.todos.length ? ` (${createNodeForm.todos.length})` : ''}`, tools: 'Tools', postcode: 'Post Code' };
+              return (
+                <button key={tab} type="button" onClick={() => setCreateNodeTab(tab)}
+                  className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${createNodeTab === tab ? 'border-accent-blue text-accent-blue' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+                  {labels[tab]}
+                </button>
+              );
+            })}
+          </div>
           <div className="space-y-4">
-            <FormField label="Nombre" required error={createNodeErrors.name}>
-              <Input placeholder="Ej: Soporte técnico" value={createNodeForm.name} onChange={(e) => setCreateNodeForm(f => ({ ...f, name: e.target.value }))} error={!!createNodeErrors.name} />
-            </FormField>
-            <FormField label="System Prompt" optional>
-              <Textarea rows={4} placeholder="Instrucciones del sistema..." value={createNodeForm.systemPrompt} onChange={(e) => setCreateNodeForm(f => ({ ...f, systemPrompt: e.target.value }))} />
-            </FormField>
-            <FormField label="Tools" optional>
-              <MultiSelect
-                value={createNodeForm.tools}
-                options={functions.filter(f => f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => setCreateNodeForm(f => ({ ...f, tools: vals }))}
-                placeholder="Seleccionar tools..."
-              />
-            </FormField>
-            <FormField label="Pre Code" optional>
-              <MultiSelect
-                value={createNodeForm.preCode.map(preCodeItemCode)}
-                options={functions.filter(f => f.type === NodeFunctionType.PreCode || f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => handlePreCodeChange('preCode', 'create', vals)}
-                placeholder="Seleccionar pre code..."
-              />
-              {createNodeForm.preCode.filter(i => typeof i === 'object').map((item) => {
-                const obj = item as { code: string; args: { keys?: string[] } };
-                return (
-                  <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
-                    <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
-                    <span className="font-medium text-text-primary">{obj.code}</span>
-                    <span className="text-text-tertiary">{(obj.args.keys ?? []).join(', ') || '(sin keys)'}</span>
-                    <button type="button" onClick={() => openArgsModal('preCode', 'create', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity">Editar</button>
+            {createNodeTab === 'general' && <>
+              <FormField label="Nombre" required error={createNodeErrors.name}>
+                <Input placeholder="Ej: Soporte técnico" value={createNodeForm.name} onChange={(e) => setCreateNodeForm(f => ({ ...f, name: e.target.value }))} error={!!createNodeErrors.name} />
+              </FormField>
+              <FormField label="System Prompt" optional>
+                <Textarea rows={8} placeholder="Instrucciones del sistema..." value={createNodeForm.systemPrompt} onChange={(e) => setCreateNodeForm(f => ({ ...f, systemPrompt: e.target.value }))} />
+              </FormField>
+              <FormField label="On Error">
+                <Select value={createNodeForm.onError} options={onErrorOptions} onChange={(val) => setCreateNodeForm(f => ({ ...f, onError: val }))} className="w-full" />
+              </FormField>
+            </>}
+            {createNodeTab === 'precode' && <>
+              <FormField label="Pre Code" optional>
+                <MultiSelect
+                  value={createNodeForm.preCode.map(preCodeItemCode)}
+                  options={functions.filter(f => f.type === NodeFunctionType.PreCode || f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                  onChange={(vals) => handlePreCodeChange('preCode', 'create', vals)}
+                  placeholder="Seleccionar pre code..."
+                />
+                {createNodeForm.preCode.filter(i => typeof i === 'object').map((item) => {
+                  const obj = item as { code: string; args: Record<string, unknown> };
+                  const preview = Object.values(obj.args).flat().filter(Boolean).join(', ');
+                  return (
+                    <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
+                      <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
+                      <span className="font-medium text-text-primary">{obj.code}</span>
+                      <span className="text-text-tertiary truncate">{preview || '(sin args)'}</span>
+                      <button type="button" onClick={() => openArgsModal('preCode', 'create', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity shrink-0">Editar</button>
+                    </div>
+                  );
+                })}
+              </FormField>
+            </>}
+            {createNodeTab === 'todos' && <>
+              <div className="space-y-2">
+                {createNodeForm.todos.map((todo, idx) => (
+                  <div key={todo.id} className="border border-border-primary rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input placeholder="Nombre del todo" value={todo.name}
+                        onChange={(e) => setCreateNodeForm(f => ({ ...f, todos: f.todos.map((t, i) => i === idx ? { ...t, name: e.target.value } : t) }))} />
+                      <button type="button" onClick={() => setCreateNodeForm(f => ({ ...f, todos: f.todos.filter((_, i) => i !== idx) }))} className="p-1.5 text-text-tertiary hover:text-accent-red transition-colors shrink-0">
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <Textarea rows={2} placeholder="Descripción..." value={todo.description ?? ''}
+                      onChange={(e) => setCreateNodeForm(f => ({ ...f, todos: f.todos.map((t, i) => i === idx ? { ...t, description: e.target.value } : t) }))} />
+                    <MultiSelect
+                      value={todo.functions}
+                      options={createNodeForm.tools.map(code => { const fn = functions.find((f: NodeFunction) => f.code === code); return { value: code, label: fn?.name ?? code }; })}
+                      onChange={(vals) => setCreateNodeForm(f => ({ ...f, todos: f.todos.map((t, i) => i === idx ? { ...t, functions: vals } : t) }))}
+                      placeholder="Tools de este todo..."
+                    />
                   </div>
-                );
-              })}
-            </FormField>
-            <FormField label="Post Code" optional>
-              <MultiSelect
-                value={createNodeForm.postCode.map(preCodeItemCode)}
-                options={functions.filter(f => f.type === NodeFunctionType.PostCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
-                onChange={(vals) => handlePreCodeChange('postCode', 'create', vals)}
-                placeholder="Seleccionar post code..."
-              />
-              {createNodeForm.postCode.filter(i => typeof i === 'object').map((item) => {
-                const obj = item as { code: string; args: { keys?: string[] } };
-                return (
-                  <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
-                    <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
-                    <span className="font-medium text-text-primary">{obj.code}</span>
-                    <span className="text-text-tertiary">{(obj.args.keys ?? []).join(', ') || '(sin keys)'}</span>
-                    <button type="button" onClick={() => openArgsModal('postCode', 'create', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity">Editar</button>
-                  </div>
-                );
-              })}
-            </FormField>
-            <FormField label="On Error">
-              <Select value={createNodeForm.onError} options={onErrorOptions} onChange={(val) => setCreateNodeForm(f => ({ ...f, onError: val }))} className="w-full" />
-            </FormField>
+                ))}
+                <Button variant="secondary" onClick={() => setCreateNodeForm(f => ({ ...f, todos: [...f.todos, { id: crypto.randomUUID(), name: '', description: '', functions: [] }] }))}>
+                  + Agregar todo
+                </Button>
+              </div>
+            </>}
+            {createNodeTab === 'tools' && <>
+              <FormField label="Tools" optional>
+                <MultiSelect
+                  value={createNodeForm.tools}
+                  options={functions.filter(f => f.type === NodeFunctionType.Tool).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                  onChange={(vals) => setCreateNodeForm(f => ({ ...f, tools: vals }))}
+                  placeholder="Seleccionar tools..."
+                />
+              </FormField>
+            </>}
+            {createNodeTab === 'postcode' && <>
+              <FormField label="Post Code" optional>
+                <MultiSelect
+                  value={createNodeForm.postCode.map(preCodeItemCode)}
+                  options={functions.filter(f => f.type === NodeFunctionType.PostCode).map(f => ({ value: f.code, label: f.name, sublabel: f.description }))}
+                  onChange={(vals) => handlePreCodeChange('postCode', 'create', vals)}
+                  placeholder="Seleccionar post code..."
+                />
+                {createNodeForm.postCode.filter(i => typeof i === 'object').map((item) => {
+                  const obj = item as { code: string; args: Record<string, unknown> };
+                  const preview = Object.values(obj.args).flat().filter(Boolean).join(', ');
+                  return (
+                    <div key={obj.code} className="mt-1.5 flex items-center gap-2 px-2 py-1 bg-bg-tertiary rounded-md text-xs text-text-secondary">
+                      <SlidersHorizontal size={11} className="shrink-0 text-accent-purple" />
+                      <span className="font-medium text-text-primary">{obj.code}</span>
+                      <span className="text-text-tertiary truncate">{preview || '(sin args)'}</span>
+                      <button type="button" onClick={() => openArgsModal('postCode', 'create', obj.code)} className="ml-auto text-accent-blue hover:opacity-70 transition-opacity shrink-0">Editar</button>
+                    </div>
+                  );
+                })}
+              </FormField>
+            </>}
           </div>
         </ModalBody>
         <ModalFooter>
@@ -704,53 +802,73 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
         </ModalFooter>
       </Modal>
 
-      {/* Args modal — configurar parámetros de funciones como getMemories */}
+      {/* Args modal — configurar parámetros dinámicos de funciones */}
       <Modal isOpen={!!argsModal} onClose={() => setArgsModal(null)} size="sm">
         <ModalHeader onClose={() => setArgsModal(null)}>
           <ModalTitle>Configurar {argsModal?.code}</ModalTitle>
         </ModalHeader>
         <ModalBody>
-          <div className="space-y-3">
-            <p className="text-sm text-text-secondary">
-              {argsModal && FUNCTIONS_WITH_ARGS[argsModal.code]?.argsFieldLabel}
-            </p>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ej: banking_info.banrural.cuenta"
-                value={argsKeyInput}
-                onChange={(e) => setArgsKeyInput(e.target.value.toLowerCase())}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && argsKeyInput.trim() && !argsKeys.includes(argsKeyInput.trim())) {
-                    setArgsKeys((k) => [...k, argsKeyInput.trim()]);
-                    setArgsKeyInput('');
-                  }
-                }}
-              />
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  const v = argsKeyInput.trim();
-                  if (v && !argsKeys.includes(v)) {
-                    setArgsKeys((k) => [...k, v]);
-                    setArgsKeyInput('');
-                  }
-                }}
-              >
-                Agregar
-              </Button>
-            </div>
-            {argsKeys.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {argsKeys.map((k) => (
-                  <span key={k} className="flex items-center gap-1 px-2 py-0.5 bg-accent-purple/15 text-accent-purple text-xs font-medium rounded-md">
-                    {k}
-                    <button type="button" onClick={() => setArgsKeys((prev) => prev.filter((x) => x !== k))} className="hover:opacity-60 transition-opacity">
-                      <X size={10} strokeWidth={2.5} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+          <div className="space-y-4">
+            {argsModal && (() => {
+              const fn = functions.find((f: NodeFunction) => f.code === argsModal.code);
+              const params = fn?.toolDefinition?.function?.parameters?.properties ?? {};
+              const required = fn?.toolDefinition?.function?.parameters?.required ?? [];
+              return Object.entries(params).map(([paramName, param]) => {
+                const isArray = param.type === 'array';
+                const currentArr = (argsValues[paramName] as string[] | undefined) ?? [];
+                const currentStr = (argsValues[paramName] as string | undefined) ?? '';
+                const inputVal = argsArrayInputs[paramName] ?? '';
+                return (
+                  <FormField key={paramName} label={paramName} optional={!required.includes(paramName)}>
+                    {param.description && <p className="text-xs text-text-tertiary mb-1.5">{param.description}</p>}
+                    {isArray ? (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Ej: banking_info.banrural.cuenta"
+                            value={inputVal}
+                            onChange={(e) => setArgsArrayInputs((prev) => ({ ...prev, [paramName]: e.target.value.toLowerCase() }))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const v = inputVal.trim();
+                                if (v && !currentArr.includes(v)) {
+                                  setArgsValues((prev) => ({ ...prev, [paramName]: [...currentArr, v] }));
+                                  setArgsArrayInputs((prev) => ({ ...prev, [paramName]: '' }));
+                                }
+                              }
+                            }}
+                          />
+                          <Button variant="secondary" onClick={() => {
+                            const v = inputVal.trim();
+                            if (v && !currentArr.includes(v)) {
+                              setArgsValues((prev) => ({ ...prev, [paramName]: [...currentArr, v] }));
+                              setArgsArrayInputs((prev) => ({ ...prev, [paramName]: '' }));
+                            }
+                          }}>Agregar</Button>
+                        </div>
+                        {currentArr.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {currentArr.map((item: string) => (
+                              <span key={item} className="flex items-center gap-1 px-2 py-0.5 bg-accent-purple/15 text-accent-purple text-xs font-medium rounded-md">
+                                {item}
+                                <button type="button" onClick={() => setArgsValues((prev) => ({ ...prev, [paramName]: currentArr.filter((x: string) => x !== item) }))} className="hover:opacity-60 transition-opacity">
+                                  <X size={10} strokeWidth={2.5} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Input
+                        value={currentStr}
+                        onChange={(e) => setArgsValues((prev) => ({ ...prev, [paramName]: e.target.value }))}
+                      />
+                    )}
+                  </FormField>
+                );
+              });
+            })()}
           </div>
         </ModalBody>
         <ModalFooter>
