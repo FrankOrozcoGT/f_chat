@@ -1,17 +1,23 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Users, CalendarDays, MessageSquare, TrendingUp, Activity } from 'lucide-react';
+import { format } from 'date-fns';
 import { MainLayout } from '@/layouts/MainLayout';
+import { StatCard } from '@/shared/ui/StatCard';
+import { DateRangePicker } from '@/shared/ui/DateRangePicker';
+import type { DateRange } from '@/shared/ui/DateRangePicker';
 import { useGetMe } from '@/features/auth/api';
-
-const roleLabel: Record<string, string> = {
-  owner: 'Owner',
-  user: 'Usuario',
-  tecnico: 'Técnico',
-};
+import { useGetDashboard } from '../api/useGetDashboard';
 
 export const DashboardPage = () => {
   const { data: me } = useGetMe();
   const navigate = useNavigate();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+  const from = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
+  const to = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
+
+  const { data: stats, isLoading } = useGetDashboard(from, to);
 
   useEffect(() => {
     const pendingToken = sessionStorage.getItem('pending_invitation_token');
@@ -24,56 +30,69 @@ export const DashboardPage = () => {
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-semibold text-text-primary mb-2">
-          Dashboard
-        </h1>
-        <p className="text-text-secondary mb-8">
-          Bienvenido de nuevo, {me?.user.name}
-        </p>
-
-        {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-bg-secondary border border-border-primary rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-semibold text-text-primary mb-2">
-              Plan Actual
-            </h3>
-            <p className="text-2xl font-bold text-accent-blue capitalize">
-              {me?.tenant.plan || 'Free'}
-            </p>
-            <p className="text-sm text-text-tertiary mt-1">
-              Rol: {me?.tenantRole ? (roleLabel[me.tenantRole] ?? me.tenantRole) : '—'}
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-semibold text-text-primary mb-1">Dashboard</h1>
+            <p className="text-sm md:text-base text-text-secondary">
+              Bienvenido de nuevo, {me?.user.name}
             </p>
           </div>
-
-          <div className="bg-bg-secondary border border-border-primary rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-semibold text-text-primary mb-2">
-              Estado
-            </h3>
-            <p className="text-accent-green font-medium">Activo</p>
-            <p className="text-sm text-text-tertiary mt-1">
-              Sesión verificada
-            </p>
-          </div>
-
-          <div className="bg-bg-secondary border border-border-primary rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-semibold text-text-primary mb-2">
-              Organización
-            </h3>
-            <p className="text-text-primary font-medium truncate">
-              {me?.tenant.name ?? '—'}
-            </p>
-            <p className="text-sm text-text-tertiary mt-1">
-              {me?.systemRole === 'super_admin' ? 'Super Admin' : 'Miembro'}
-            </p>
-          </div>
+          <DateRangePicker
+            value={dateRange}
+            onChange={setDateRange}
+            placeholder="Últimos 30 días"
+          />
         </div>
 
-        {/* Info Message */}
-        <div className="mt-8 bg-accent-blue/10 border border-accent-blue/20 rounded-lg p-4">
-          <p className="text-sm text-text-primary">
-            <span className="font-semibold">Funcionalidad en desarrollo:</span> El dashboard completo estará disponible próximamente.
+        {/* Período activo */}
+        {stats && (
+          <p className="text-xs text-text-tertiary mb-4">
+            Período: {stats.from} → {stats.to}
           </p>
-        </div>
+        )}
+
+        {/* Stats grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-bg-secondary border border-border-primary rounded-lg p-4 md:p-6 animate-pulse h-28 md:h-32"
+              />
+            ))}
+          </div>
+        ) : stats ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+            <StatCard
+              label="Clientes totales"
+              value={stats.totalClients}
+              icon={<Users size={18} />}
+            />
+            <StatCard
+              label="Suma de días activos"
+              value={stats.totalActiveDays}
+              icon={<CalendarDays size={18} />}
+            />
+            <StatCard
+              label="Mensajes totales"
+              value={stats.totalMessages}
+              icon={<MessageSquare size={18} />}
+            />
+            <StatCard
+              label="Días prom. por cliente"
+              value={stats.avgDaysPerClient.toFixed(2)}
+              subtext="promedio de días"
+              icon={<TrendingUp size={18} />}
+            />
+            <StatCard
+              label="Msgs prom. por día activo"
+              value={stats.avgMessagesPerActiveDay.toFixed(2)}
+              subtext="promedio de mensajes"
+              icon={<Activity size={18} />}
+            />
+          </div>
+        ) : null}
       </div>
     </MainLayout>
   );
