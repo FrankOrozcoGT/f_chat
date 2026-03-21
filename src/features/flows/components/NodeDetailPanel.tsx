@@ -1,4 +1,4 @@
-import { X, Wrench, Code, AlertTriangle, Users, SlidersHorizontal } from 'lucide-react';
+import { X, Wrench, Code, AlertTriangle, Users, SlidersHorizontal, ListTodo } from 'lucide-react';
 import type { Node, PreCodeItem } from '../types';
 import { preCodeItemCode } from '../types';
 
@@ -146,6 +146,32 @@ export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: Nod
                 {node.postCodeInputSchema}
               </pre>
             )}
+          </section>
+        )}
+
+        {/* Todos */}
+        {node.todos && node.todos.length > 0 && (
+          <section>
+            <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2 flex items-center gap-1">
+              <ListTodo size={12} /> Todos ({node.todos.length})
+            </h4>
+            <div className="space-y-2">
+              {node.todos.map((todo) => (
+                <div key={todo.id} className="border border-border-primary rounded-lg p-3 space-y-1.5">
+                  <p className="text-sm font-medium text-text-primary">{todo.name}</p>
+                  {todo.description && (
+                    <p className="text-xs text-text-secondary">{todo.description}</p>
+                  )}
+                  {todo.functions.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {todo.functions.map((fn) => (
+                        <span key={fn} className="px-1.5 py-0.5 text-xs rounded bg-accent-blue/10 text-accent-blue">{fn}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </section>
         )}
 
