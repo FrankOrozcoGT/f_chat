@@ -7,6 +7,13 @@ export function preCodeItemCode(item: PreCodeItem): string {
   return typeof item === 'string' ? item : item.code;
 }
 
+export interface NodeTodo {
+  id: string;
+  name: string;
+  description?: string;
+  functions: string[];
+}
+
 export interface Node {
   id: string;
   name: string;
@@ -16,6 +23,7 @@ export interface Node {
   postCode: string | null; // JSON string array e.g. '["responder","findFlowForIntent"]'
   preCodeInputSchema: string | null;
   postCodeInputSchema: string | null;
+  todos: NodeTodo[] | null;
   onError: OnErrorStrategy;
   createdAt: string;
   updatedAt: string;
@@ -138,6 +146,7 @@ export interface CreateNodeDto {
   preCodeInputSchema?: string;
   postCode?: string;
   postCodeInputSchema?: string;
+  todos?: NodeTodo[];
   onError?: OnErrorStrategy;
 }
 
@@ -195,11 +204,31 @@ export const NodeFunctionType = {
 } as const;
 export type NodeFunctionType = typeof NodeFunctionType[keyof typeof NodeFunctionType];
 
+export interface ToolParameter {
+  type: string;
+  description?: string;
+  items?: { type: string };
+  enum?: string[];
+}
+
+export interface ToolDefinition {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: 'object';
+      properties: Record<string, ToolParameter>;
+      required?: string[];
+    };
+  };
+}
+
 export interface NodeFunction {
   code: string;
   name: string;
   description: string;
-  toolDefinition: unknown | null;
+  toolDefinition: ToolDefinition | null;
   outputSchema: unknown | null;
   type: NodeFunctionType;
 }
