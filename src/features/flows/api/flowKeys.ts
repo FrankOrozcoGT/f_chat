@@ -4,6 +4,7 @@ export const flowKeys = {
   activeSessions: () => [...flowKeys.all, 'active-sessions'] as const,
   contacts: (search: string) => [...flowKeys.all, 'contacts', search] as const,
   transitions: (flowId: string) => [...flowKeys.all, 'transitions', flowId] as const,
+  versions: (flowId: string) => [...flowKeys.all, 'versions', flowId] as const,
 };
 
 export const intentKeys = {

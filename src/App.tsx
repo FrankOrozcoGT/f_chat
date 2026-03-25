@@ -9,6 +9,8 @@ import { PhonesPage } from '@/features/phones/components/PhonesPage';
 import { ConversationsPage } from '@/features/conversations/components/ConversationsPage';
 import { HealthPage } from '@/features/health/components/HealthPage';
 import { FlowsPage } from '@/features/flows/components/FlowsPage';
+import { AiSetupPage } from '@/features/ai-setup/components/AiSetupPage';
+import { FlowReviewPage } from '@/features/ai-setup/components/FlowReviewPage';
 import { SettingsPage } from '@/features/settings/components/SettingsPage';
 import { TenantPage } from '@/features/tenants/components/TenantPage';
 import { OrganizationsPage } from '@/features/tenants/components/OrganizationsPage';
@@ -260,6 +262,24 @@ function App() {
             element={
               <ProtectedRoute requiredAccess="flows">
                 <FlowsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* AI Setup routes */}
+          <Route
+            path="/ai-setup"
+            element={
+              <ProtectedRoute requiredAccess="ai-setup">
+                <AiSetupPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ai-setup/flows/:flowId"
+            element={
+              <ProtectedRoute requiredAccess="ai-setup">
+                <FlowReviewPage />
               </ProtectedRoute>
             }
           />

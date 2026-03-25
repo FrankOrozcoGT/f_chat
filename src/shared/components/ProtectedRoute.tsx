@@ -4,7 +4,7 @@ import { useGetMe } from '@/features/auth/api';
 import { ComingSoonPage } from '@/features/dashboard/components/ComingSoonPage';
 import { ForbiddenPage } from '@/features/dashboard/components/ForbiddenPage';
 
-export type AppAccess = 'authenticated' | 'full-plan' | 'conversations' | 'flows' | 'super-admin' | 'tenant-owner';
+export type AppAccess = 'authenticated' | 'full-plan' | 'conversations' | 'flows' | 'ai-setup' | 'super-admin' | 'tenant-owner';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -36,6 +36,8 @@ export const ProtectedRoute = ({ children, requiredAccess = 'authenticated' }: P
     if (requiredAccess === 'conversations')
       return me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'user');
     if (requiredAccess === 'flows')
+      return me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'tecnico');
+    if (requiredAccess === 'ai-setup')
       return me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'tecnico');
     if (requiredAccess === 'tenant-owner') return me.tenantRole === 'owner';
     return false;

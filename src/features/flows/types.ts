@@ -18,7 +18,7 @@ export interface Node {
   id: string;
   name: string;
   systemPrompt: string;
-  tools: string[];
+  tools: (string | { code: string; args: Record<string, unknown> })[];
   preCode: string | null; // JSON string array e.g. '["loadIntents"]'
   postCode: string | null; // JSON string array e.g. '["responder","findFlowForIntent"]'
   preCodeInputSchema: string | null;
@@ -44,9 +44,12 @@ export interface FlowTransition {
   transitionCode: string;
 }
 
+export type FlowStatus = 'draft' | 'active' | 'archived';
+
 export interface Flow {
   id: string;
   name: string;
+  status: FlowStatus;
   routerNodeId: string;
   userId: string;
   createdAt: string;
@@ -54,6 +57,20 @@ export interface Flow {
   routerNode: Node;
   nodes: FlowNode[];
   transitions: FlowTransition[];
+}
+
+export interface FlowVersion {
+  id: string;
+  flowId: string;
+  version: number;
+  isPromoted: boolean;
+  nodesSnapshot: {
+    nodes: { id: string; name: string; systemPrompt: string; todos: NodeTodo[]; tools: string[] }[];
+    transitions: { fromNodeId: string; toNodeId: string; transitionCode: string }[];
+  };
+  proposedTools: { name: string; description: string }[];
+  contentHash?: string;
+  createdAt: string;
 }
 
 export type FlowsResponse = Flow[];

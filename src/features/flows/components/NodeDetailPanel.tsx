@@ -72,11 +72,14 @@ export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: Nod
               <Wrench size={12} /> Tools ({tools.length})
             </h4>
             <div className="flex flex-wrap gap-1.5">
-              {tools.map((tool) => (
-                <span key={tool} className="px-2 py-1 text-xs rounded bg-bg-tertiary text-text-secondary">
-                  {tool}
-                </span>
-              ))}
+              {tools.map((tool) => {
+                const label = typeof tool === 'string' ? tool : tool.code;
+                return (
+                  <span key={label} className="px-2 py-1 text-xs rounded bg-bg-tertiary text-text-secondary">
+                    {label}
+                  </span>
+                );
+              })}
             </div>
           </section>
         )}
@@ -162,9 +165,9 @@ export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: Nod
                   {todo.description && (
                     <p className="text-xs text-text-secondary">{todo.description}</p>
                   )}
-                  {todo.functions.length > 0 && (
+                  {(todo.functions ?? []).length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {todo.functions.map((fn) => (
+                      {(todo.functions ?? []).map((fn) => (
                         <span key={fn} className="px-1.5 py-0.5 text-xs rounded bg-accent-blue/10 text-accent-blue">{fn}</span>
                       ))}
                     </div>

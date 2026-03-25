@@ -28,6 +28,7 @@ import { useToast } from '@/shared/hooks/useToast';
 import { Button } from '@/shared/ui/Button';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { FlowHistoryModal } from './FlowHistoryModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
@@ -85,6 +86,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
   const [createFlowOpen, setCreateFlowOpen] = useState(false);
   const [editFlowTarget, setEditFlowTarget] = useState<Flow | null>(null);
   const [deleteFlowTarget, setDeleteFlowTarget] = useState<Flow | null>(null);
+  const [historyFlowTarget, setHistoryFlowTarget] = useState<Flow | null>(null);
   const [flowForm, setFlowForm] = useState({ name: '', routerNodeId: '', newNodeName: '' });
   const [flowFormErrors, setFlowFormErrors] = useState<Partial<typeof flowForm>>({});
   const [createNewRouterNode, setCreateNewRouterNode] = useState(false);
@@ -216,6 +218,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
   }, []);
 
   const openDeleteFlow = useCallback((flow: Flow) => setDeleteFlowTarget(flow), []);
+  const openFlowHistory = useCallback((flow: Flow) => setHistoryFlowTarget(flow), []);
 
   const openFlowTransitions = useCallback((flow: Flow) => {
     setTransitionsFlowId(flow.id);
@@ -431,6 +434,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
     onEditFlow: openEditFlow,
     onDeleteFlow: openDeleteFlow,
     onFlowTransitions: openFlowTransitions,
+    onFlowHistory: openFlowHistory,
     onEditNode: openEditNode,
     onAddTransition: openAddTransition,
   });
@@ -964,6 +968,9 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
 
       {/* Delete intent */}
       <ConfirmModal isOpen={!!deleteIntentTarget} onClose={() => setDeleteIntentTarget(null)} onConfirm={handleDeleteIntent} title="Eliminar intent" message={`¿Eliminar el intent "${deleteIntentTarget?.name}"?`} confirmText="Eliminar" isLoading={deleteIntent.isPending} />
+
+      {/* Flow history */}
+      <FlowHistoryModal flow={historyFlowTarget} onClose={() => setHistoryFlowTarget(null)} />
     </div>
   );
 };

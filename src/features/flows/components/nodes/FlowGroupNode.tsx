@@ -1,9 +1,17 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Workflow, Users, Minimize2, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
+import { Workflow, Users, Minimize2, Pencil, Trash2, ArrowRightLeft, History } from 'lucide-react';
+import type { FlowStatus } from '../../types';
+
+const statusConfig: Record<FlowStatus, { label: string; className: string }> = {
+  draft:    { label: 'Borrador', className: 'bg-accent-yellow/15 text-accent-yellow border border-accent-yellow/30' },
+  active:   { label: 'Activo',   className: 'bg-accent-green/15 text-accent-green border border-accent-green/30' },
+  archived: { label: 'Archivado', className: 'bg-bg-tertiary text-text-secondary border border-border-primary' },
+};
 
 interface FlowGroupNodeData {
   label: string;
+  status: FlowStatus;
   totalActiveSessions: number;
   nodeCount: number;
   isExpanded: boolean;
@@ -11,12 +19,21 @@ interface FlowGroupNodeData {
   onEdit?: () => void;
   onDelete?: () => void;
   onTransitions?: () => void;
+  onHistory?: () => void;
   [key: string]: unknown;
 }
 
 export const FlowGroupNode = memo(({ data }: { data: FlowGroupNodeData }) => {
+  const badge = statusConfig[data.status];
   const actionButtons = (
     <div className="flex items-center gap-0.5">
+      <button
+        onClick={(e) => { e.stopPropagation(); data.onHistory?.(); }}
+        className="p-1 rounded hover:bg-bg-tertiary transition-colors"
+        title="Historial de versiones"
+      >
+        <History size={13} className="text-text-secondary" />
+      </button>
       <button
         onClick={(e) => { e.stopPropagation(); data.onTransitions?.(); }}
         className="p-1 rounded hover:bg-bg-tertiary transition-colors"
@@ -50,6 +67,9 @@ export const FlowGroupNode = memo(({ data }: { data: FlowGroupNodeData }) => {
             <div className="flex items-center gap-2">
               <Workflow size={16} className="text-accent-blue" />
               <span className="text-sm font-semibold text-text-primary">{data.label}</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${badge.className}`}>
+                {badge.label}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               {actionButtons}
@@ -86,7 +106,7 @@ export const FlowGroupNode = memo(({ data }: { data: FlowGroupNodeData }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-text-secondary">
+        <div className="flex items-center gap-3 text-xs text-text-secondary">
           <span>{data.nodeCount} nodos</span>
           {data.totalActiveSessions > 0 && (
             <span className="flex items-center gap-1 text-accent-green">
@@ -94,6 +114,9 @@ export const FlowGroupNode = memo(({ data }: { data: FlowGroupNodeData }) => {
               {data.totalActiveSessions}
             </span>
           )}
+          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${badge.className}`}>
+            {badge.label}
+          </span>
         </div>
 
         <div className="mt-2 text-[10px] text-text-tertiary group-hover:text-accent-blue transition-colors">

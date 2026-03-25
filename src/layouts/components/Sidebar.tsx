@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X, Workflow, Building2, ShoppingBag } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X, Workflow, Building2, ShoppingBag, BrainCircuit } from 'lucide-react';
 import { useGetMe } from '@/features/auth/api';
 import { useSidebarStore } from '@/stores/useSidebarStore';
 import type { AuthMe } from '@/features/auth/types';
@@ -29,6 +29,13 @@ const menuItems = [
     icon: Workflow,
     label: 'Automatizacion',
     path: '/flows',
+    visibleFor: (me: AuthMe) =>
+      me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'tecnico'),
+  },
+  {
+    icon: BrainCircuit,
+    label: 'AI Setup',
+    path: '/ai-setup',
     visibleFor: (me: AuthMe) =>
       me.tenant.plan === 'full' && (me.tenantRole === 'owner' || me.tenantRole === 'tecnico'),
   },

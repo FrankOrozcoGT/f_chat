@@ -34,6 +34,7 @@ interface LayoutOptions {
   onEditFlow: (flow: Flow) => void;
   onDeleteFlow: (flow: Flow) => void;
   onFlowTransitions: (flow: Flow) => void;
+  onFlowHistory: (flow: Flow) => void;
   onEditNode: (node: Node) => void;
   onAddTransition: (flowId: string, fromNode: Node) => void;
 }
@@ -49,6 +50,7 @@ export function useFlowCanvasLayout({
   onEditFlow,
   onDeleteFlow,
   onFlowTransitions,
+  onFlowHistory,
   onEditNode,
   onAddTransition,
 }: LayoutOptions): { nodes: RFNode[]; edges: Edge[] } {
@@ -93,6 +95,7 @@ export function useFlowCanvasLayout({
         position: { x: FLOW_COL_X, y: currentY },
         data: {
           label: flow.name,
+          status: flow.status,
           totalActiveSessions: getTotalSessions(flow, activeSessions),
           nodeCount: flow.nodes.length + 1,
           isExpanded,
@@ -100,6 +103,7 @@ export function useFlowCanvasLayout({
           onEdit: () => onEditFlow(flow),
           onDelete: () => onDeleteFlow(flow),
           onTransitions: () => onFlowTransitions(flow),
+          onHistory: () => onFlowHistory(flow),
         },
         style: isExpanded
           ? { width: expandedWidth, height: expandedHeight }
@@ -179,5 +183,5 @@ export function useFlowCanvasLayout({
     }
 
     return { nodes: rfNodes, edges: rfEdges };
-  }, [flows, expandedFlowIds, activeSessions, highlightedNodeId, onToggleExpand, onSelectNode, onCreateFlow, onEditFlow, onDeleteFlow, onFlowTransitions, onEditNode, onAddTransition]);
+  }, [flows, expandedFlowIds, activeSessions, highlightedNodeId, onToggleExpand, onSelectNode, onCreateFlow, onEditFlow, onDeleteFlow, onFlowTransitions, onFlowHistory, onEditNode, onAddTransition]);
 }
