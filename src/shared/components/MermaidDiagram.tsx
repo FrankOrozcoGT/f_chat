@@ -5,6 +5,8 @@ import { X, ZoomIn, ZoomOut, Maximize2, RotateCcw } from 'lucide-react';
 mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
+  // htmlLabels: false fixes foreignObject/clipPath text clipping (mermaid v11+)
+  htmlLabels: false,
   themeVariables: {
     background: '#1a1a2e',
     primaryColor: '#3b82f6',
@@ -17,7 +19,7 @@ mermaid.initialize({
     fontFamily: 'ui-monospace, monospace',
     fontSize: '14px',
   },
-  flowchart: { curve: 'basis', padding: 20 },
+  flowchart: { curve: 'basis', padding: 20, useMaxWidth: false },
 });
 
 let idCounter = 0;
@@ -51,16 +53,23 @@ const DiagramViewer = ({
     x: 0, y: 0, scale: 1, dragging: false, startX: 0, startY: 0,
   });
 
-  // Fix SVG dimensions so it doesn't clip
+  // Fix SVG dimensions: use viewBox to set explicit px dimensions
   useEffect(() => {
     if (!innerRef.current) return;
     const svgEl = innerRef.current.querySelector('svg');
     if (!svgEl) return;
-    svgEl.removeAttribute('width');
-    svgEl.removeAttribute('height');
-    svgEl.style.width = 'auto';
-    svgEl.style.height = 'auto';
+    const viewBox = svgEl.getAttribute('viewBox');
+    if (viewBox) {
+      const parts = viewBox.split(/\s+|,/).map(Number);
+      if (parts.length >= 4) {
+        const w = parts[2];
+        const h = parts[3];
+        svgEl.setAttribute('width', String(w));
+        svgEl.setAttribute('height', String(h));
+      }
+    }
     svgEl.style.maxWidth = 'none';
+    svgEl.style.overflow = 'visible';
     svgEl.style.display = 'block';
   }, [svg]);
 

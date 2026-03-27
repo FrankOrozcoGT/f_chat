@@ -50,11 +50,12 @@ export interface Flow {
   id: string;
   name: string;
   status: FlowStatus;
-  routerNodeId: string;
-  userId: string;
+  routerNodeId: string | null;
+  tenantId: string;
   createdAt: string;
   updatedAt: string;
-  routerNode: Node;
+  analysisCount: number;
+  routerNode: Node | null;
   nodes: FlowNode[];
   transitions: FlowTransition[];
 }

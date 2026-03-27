@@ -6,11 +6,19 @@ interface BatchAnalysisParams {
   messageLimit: number;
 }
 
-interface BatchAnalysisResult {
+export interface BatchAnalysisInternal {
+  conversationId: string;
+  clientId: string | null;
+  groupJid: string | null;
+  internalPurpose: string;
+}
+
+export interface BatchAnalysisResult {
   analyzed: number;
   internalsDetected: number;
   totalCostUsd: number;
   intents: { intent: string; count: number }[];
+  internals: BatchAnalysisInternal[];
 }
 
 const runBatchAnalysis = async (params: BatchAnalysisParams): Promise<BatchAnalysisResult> => {

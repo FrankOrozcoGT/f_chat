@@ -10,7 +10,8 @@ export const DraftFlowsSection = () => {
   const { mutate: promote, isPending: isPromoting, variables: promotingId } = usePromoteFlow();
   const { mutate: discard, isPending: isDiscarding, variables: discardingId } = useDeleteFlow();
 
-  const drafts = flows?.filter((f) => f.status === 'draft') ?? [];
+  const drafts = (flows?.filter((f) => f.status === 'draft') ?? [])
+    .sort((a, b) => (b.analysisCount ?? 0) - (a.analysisCount ?? 0));
 
   if (isLoading) {
     return (
@@ -68,6 +69,9 @@ export const DraftFlowsSection = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text-primary truncate">{flow.name}</p>
                 <p className="text-xs text-text-secondary">
+                  {flow.analysisCount > 0 && (
+                    <span className="text-accent-blue font-medium">{flow.analysisCount} conversación{flow.analysisCount !== 1 ? 'es' : ''} · </span>
+                  )}
                   {flow.nodes.length} nodo{flow.nodes.length !== 1 ? 's' : ''}
                   {' · '}
                   {flow.transitions.length} transición{flow.transitions.length !== 1 ? 'es' : ''}

@@ -8,6 +8,7 @@ import { usePromoteFlow } from '@/features/flows/api/usePromoteFlow';
 import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
 import { useGetFlowAnalyses } from '../api/useGetFlowAnalyses';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
+import { TestPanel } from '@/features/flows/components/TestPanel';
 
 type Tab = 'version' | 'conversations' | 'test';
 
@@ -318,11 +319,12 @@ export const FlowReviewPage = () => {
 
         {/* Tab: Probar */}
         {activeTab === 'test' && (
-          <div className="flex items-center justify-center py-16">
-            <div className="text-center">
-              <FlaskConical size={32} className="text-text-tertiary mx-auto mb-3" />
-              <p className="text-sm text-text-secondary">Testing contra conversaciones reales — próximamente</p>
-            </div>
+          <div className="relative h-150 rounded-lg overflow-hidden border border-border-primary">
+            <TestPanel
+              flowId={flowId}
+              onClose={() => setActiveTab('version')}
+              onNodeHighlight={() => {}}
+            />
           </div>
         )}
       </div>

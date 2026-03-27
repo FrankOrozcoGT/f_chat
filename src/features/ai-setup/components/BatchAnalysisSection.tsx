@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, CheckCircle, AlertCircle, Layers, Tag, DollarSign, GitBranch } from 'lucide-react';
+import { Play, CheckCircle, AlertCircle, Layers, Tag, DollarSign, GitBranch, Users } from 'lucide-react';
 import { StatCard } from '@/shared/ui/StatCard';
 import { useBatchAnalysis } from '../api/useBatchAnalysis';
 import { useGenerateFlows } from '../api/useGenerateFlows';
@@ -113,16 +113,43 @@ export const BatchAnalysisSection = () => {
             />
           </div>
 
-          {/* Intents */}
+          {/* Intents ordenados por count */}
           {result.intents && result.intents.length > 0 && (
             <div className="mb-4">
               <p className="text-xs font-semibold text-text-tertiary uppercase mb-2">Intents detectados</p>
-              <div className="flex flex-wrap gap-2">
-                {result.intents.map(({ intent, count }) => (
-                  <span key={intent} className="flex items-center gap-1.5 px-2.5 py-1 bg-bg-primary border border-border-primary rounded-md text-xs text-text-secondary">
-                    <span className="font-medium text-text-primary">{intent}</span>
-                    <span className="text-text-tertiary">{count}</span>
-                  </span>
+              <div className="flex flex-col gap-1.5">
+                {[...result.intents].sort((a, b) => b.count - a.count).map(({ intent, count }) => {
+                  const max = Math.max(...result.intents.map((i) => i.count));
+                  const pct = Math.round((count / max) * 100);
+                  return (
+                    <div key={intent} className="flex items-center gap-2">
+                      <span className="text-xs text-text-secondary w-32 truncate shrink-0">{intent}</span>
+                      <div className="flex-1 h-1.5 bg-bg-primary rounded-full overflow-hidden">
+                        <div className="h-full bg-accent-blue rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-xs text-text-tertiary w-6 text-right shrink-0">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Internals detectados */}
+          {result.internals && result.internals.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-text-tertiary uppercase mb-2">Canales internos detectados</p>
+              <div className="flex flex-col gap-2">
+                {result.internals.map((internal) => (
+                  <div key={internal.conversationId} className="flex items-start gap-2 p-2.5 bg-bg-primary border border-border-primary rounded-md">
+                    <Users size={14} className="text-accent-blue shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-text-secondary leading-snug">{internal.internalPurpose}</p>
+                      {internal.groupJid && (
+                        <p className="text-[10px] text-text-tertiary mt-0.5 font-mono truncate">{internal.groupJid}</p>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -140,11 +167,24 @@ export const BatchAnalysisSection = () => {
                 </div>
               )}
               {flowsResult ? (
-                <div className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-accent-green" />
-                  <p className="text-sm text-accent-green font-medium">
-                    {flowsResult.flowsGenerated} flujo{flowsResult.flowsGenerated !== 1 ? 's' : ''} generado{flowsResult.flowsGenerated !== 1 ? 's' : ''}
-                  </p>
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle size={16} className="text-accent-green" />
+                    <p className="text-sm text-accent-green font-medium">
+                      {flowsResult.flowsGenerated} flujo{flowsResult.flowsGenerated !== 1 ? 's' : ''} generado{flowsResult.flowsGenerated !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {flowsResult.flows.map((f) => (
+                      <span key={f.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-bg-primary border border-border-primary rounded-md text-xs text-text-secondary">
+                        <GitBranch size={11} />
+                        {f.name}
+                        {f.refined && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent-blue/15 text-accent-blue border border-accent-blue/30">refinado</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <button
