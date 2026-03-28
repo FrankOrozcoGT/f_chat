@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -20,11 +20,11 @@ import {
   getBezierPath,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Trash2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Save, X, Undo2 } from 'lucide-react';
 import { parseMermaidFlowchart, toMermaidFlowchart } from '../utils/parseMermaid';
 import type { NodeMappingEntry } from '../api/useGetFlowDiagram';
 
-// Custom node with editable label
+// --- Custom Node ---
 const EditableNode = ({ id, data, selected }: { id: string; data: { label: string; coverageClass?: string; onLabelChange: (id: string, label: string) => void }; selected?: boolean }) => {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(data.label);
@@ -37,7 +37,6 @@ const EditableNode = ({ id, data, selected }: { id: string; data: { label: strin
     highlighted: 'border-accent-yellow bg-accent-yellow/15 ring-2 ring-accent-yellow/50',
     '': 'border-border-primary bg-bg-secondary',
   };
-
   const cls = coverageColors[data.coverageClass ?? ''] ?? coverageColors[''];
 
   const handleDoubleClick = () => {
@@ -75,7 +74,7 @@ const EditableNode = ({ id, data, selected }: { id: string; data: { label: strin
   );
 };
 
-// Custom edge with delete button
+// --- Custom Edge ---
 const DeletableEdge = ({
   id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, markerEnd,
 }: {
@@ -120,6 +119,11 @@ interface DiagramEditorProps {
   isSaving?: boolean;
 }
 
+interface HistoryEntry {
+  nodes: Node[];
+  edges: Edge[];
+}
+
 let nodeIdCounter = 0;
 
 export const DiagramEditor = ({
@@ -136,24 +140,21 @@ export const DiagramEditor = ({
     if (!nodeMapping) return '';
     const sources = nodeMapping[nodeId];
     if (!sources) return '';
-
-    // If a conversation is selected, highlight matching nodes
     if (selectedConversationId) {
-      const isInConversation = sources.some((s) => s.conversationId === selectedConversationId);
-      return isInConversation ? 'highlighted' : '';
+      return sources.some((s) => s.conversationId === selectedConversationId) ? 'highlighted' : '';
     }
-
-    // Default coverage coloring
     if (sources.length === 0) return 'ai-suggested';
     if (sources.length >= 3) return 'high-coverage';
     return 'low-coverage';
   }, [nodeMapping, selectedConversationId]);
 
   const onLabelChange = useCallback((id: string, label: string) => {
+    pushHistory();
     setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, label } } : n));
   }, []);
 
   const onDeleteEdge = useCallback((edgeId: string) => {
+    pushHistory();
     setEdges((eds) => eds.filter((e) => e.id !== edgeId));
   }, []);
 
@@ -176,18 +177,60 @@ export const DiagramEditor = ({
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Update coverage classes when selectedConversationId changes
-  useMemo(() => {
+  // --- Undo history ---
+  const historyRef = useRef<HistoryEntry[]>([]);
+  const isUndoingRef = useRef(false);
+
+  const pushHistory = useCallback(() => {
+    if (isUndoingRef.current) return;
+    historyRef.current.push({
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
+    });
+    // Limit history
+    if (historyRef.current.length > 50) historyRef.current.shift();
+  }, [nodes, edges]);
+
+  const undo = useCallback(() => {
+    const prev = historyRef.current.pop();
+    if (!prev) return;
+    isUndoingRef.current = true;
+    setNodes(prev.nodes.map((n) => ({ ...n, data: { ...n.data, onLabelChange, coverageClass: getCoverageClass(n.id) } })));
+    setEdges(prev.edges.map((e) => ({ ...e, data: { ...e.data, onDelete: onDeleteEdge } })));
+    setTimeout(() => { isUndoingRef.current = false; }, 0);
+  }, [getCoverageClass, onLabelChange, onDeleteEdge]);
+
+  // Ctrl+Z handler
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo]);
+
+  // Escape to cancel
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onCancel]);
+
+  // Update coverage when selection changes
+  useEffect(() => {
     setNodes((nds) =>
-      nds.map((n) => ({
-        ...n,
-        data: { ...n.data, coverageClass: getCoverageClass(n.id) },
-      }))
+      nds.map((n) => ({ ...n, data: { ...n.data, coverageClass: getCoverageClass(n.id) } }))
     );
   }, [selectedConversationId, getCoverageClass]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      pushHistory();
       setEdges((eds) =>
         addEdge(
           {
@@ -200,17 +243,18 @@ export const DiagramEditor = ({
         ),
       );
     },
-    [onDeleteEdge],
+    [onDeleteEdge, pushHistory],
   );
 
   const addNode = () => {
+    pushHistory();
     const id = `N${++nodeIdCounter}_${Date.now()}`;
     setNodes((nds) => [
       ...nds,
       {
         id,
         type: 'editable',
-        position: { x: 250, y: (nds.length) * 100 },
+        position: { x: 250, y: nds.length * 100 },
         data: { label: 'Nuevo nodo', coverageClass: '', onLabelChange },
       },
     ]);
@@ -219,6 +263,7 @@ export const DiagramEditor = ({
   const deleteSelectedNodes = () => {
     const selectedIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
     if (selectedIds.size === 0) return;
+    pushHistory();
     setNodes((nds) => nds.filter((n) => !selectedIds.has(n.id)));
     setEdges((eds) => eds.filter((e) => !selectedIds.has(e.source) && !selectedIds.has(e.target)));
   };
@@ -232,40 +277,49 @@ export const DiagramEditor = ({
   };
 
   return (
-    <div className="flex flex-col h-[500px] border border-border-primary rounded-lg overflow-hidden">
+    <div className="fixed inset-0 z-50 flex flex-col bg-bg-primary">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 py-2 bg-bg-primary border-b border-border-primary shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-bg-secondary border-b border-border-primary shrink-0">
         <div className="flex items-center gap-2">
           <button
             onClick={addNode}
-            className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-bg-secondary border border-border-primary rounded text-text-secondary hover:text-text-primary transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-bg-primary border border-border-primary rounded text-text-secondary hover:text-text-primary transition-colors"
           >
-            <Plus size={12} />
+            <Plus size={13} />
             Agregar nodo
           </button>
           <button
             onClick={deleteSelectedNodes}
-            className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-bg-secondary border border-border-primary rounded text-text-secondary hover:text-accent-red transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-bg-primary border border-border-primary rounded text-text-secondary hover:text-accent-red transition-colors"
           >
-            <Trash2 size={12} />
-            Eliminar seleccionados
+            <Trash2 size={13} />
+            Eliminar
+          </button>
+          <button
+            onClick={undo}
+            disabled={historyRef.current.length === 0}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-bg-primary border border-border-primary rounded text-text-secondary hover:text-text-primary transition-colors disabled:opacity-30"
+            title="Deshacer (Ctrl+Z)"
+          >
+            <Undo2 size={13} />
+            Deshacer
           </button>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-1 px-3 py-1 bg-accent-blue text-white rounded text-xs font-medium hover:opacity-90 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-accent-blue text-white rounded text-xs font-medium hover:opacity-90 disabled:opacity-50"
           >
-            <Save size={12} />
+            <Save size={13} />
             {isSaving ? 'Guardando...' : 'Guardar'}
           </button>
           <button
             onClick={onCancel}
-            className="flex items-center gap-1 px-3 py-1 border border-border-primary text-text-secondary rounded text-xs hover:bg-bg-tertiary"
+            className="flex items-center gap-1.5 px-4 py-1.5 border border-border-primary text-text-secondary rounded text-xs font-medium hover:bg-bg-tertiary"
           >
-            <X size={12} />
-            Cancelar
+            <X size={13} />
+            Cerrar
           </button>
         </div>
       </div>
@@ -281,6 +335,7 @@ export const DiagramEditor = ({
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
+          deleteKeyCode="Delete"
           proOptions={{ hideAttribution: true }}
           className="bg-bg-primary"
         >
@@ -296,7 +351,7 @@ export const DiagramEditor = ({
 
       {/* Legend */}
       {nodeMapping && (
-        <div className="flex items-center gap-4 px-3 py-1.5 bg-bg-primary border-t border-border-primary text-[10px] text-text-tertiary">
+        <div className="flex items-center gap-4 px-4 py-2 bg-bg-secondary border-t border-border-primary text-[10px] text-text-tertiary shrink-0">
           <span className="flex items-center gap-1">
             <span className="w-3 h-3 rounded border-2 border-accent-green bg-accent-green/10" />
             Alta cobertura (3+)
@@ -309,10 +364,13 @@ export const DiagramEditor = ({
             <span className="w-3 h-3 rounded border-2 border-dashed border-text-tertiary bg-bg-tertiary" />
             Sugerido por IA
           </span>
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded border-2 border-accent-yellow bg-accent-yellow/15 ring-1 ring-accent-yellow/50" />
-            En conversación seleccionada
-          </span>
+          {selectedConversationId && (
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded border-2 border-accent-yellow bg-accent-yellow/15 ring-1 ring-accent-yellow/50" />
+              En conversación seleccionada
+            </span>
+          )}
+          <span className="ml-auto text-text-tertiary">Doble click para editar nodo · Arrastra handles para conectar · Ctrl+Z deshacer</span>
         </div>
       )}
     </div>

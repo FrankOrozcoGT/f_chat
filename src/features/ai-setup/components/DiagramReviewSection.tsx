@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Pencil, Eye, Layers, ChevronDown, ChevronRight, AlertCircle, Trash2, GitBranch, Loader2, Rocket } from 'lucide-react';
+import { CheckCircle, Pencil, Eye, Layers, ChevronDown, ChevronRight, AlertCircle, Trash2, GitBranch, Loader2, Rocket, MessageSquare } from 'lucide-react';
 import { useGetFlows } from '@/features/flows/api/useGetFlows';
 import { usePromoteFlow } from '@/features/flows/api/usePromoteFlow';
 import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
@@ -11,6 +11,7 @@ import { useApproveDiagram } from '../api/useApproveDiagram';
 import { useGenerateFlows } from '../api/useGenerateFlows';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
 import { DiagramEditor } from './DiagramEditor';
+import { ConversationDrawer } from './ConversationDrawer';
 import type { Flow } from '@/features/flows/types';
 
 const FlowCard = ({ flow }: { flow: Flow }) => {
@@ -25,6 +26,7 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
   const [editing, setEditing] = useState(false);
   const [showIndividuals, setShowIndividuals] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [viewingConversationId, setViewingConversationId] = useState<string | null>(null);
 
   const isBusy = isPromoting || isDiscarding;
   const hasNodes = flow.nodes.length > 0;
@@ -252,20 +254,32 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
                 {analyses.map((a) => {
                   const isSelected = selectedConversationId === a.conversationId;
                   return (
-                    <button
-                      key={a.analysisId}
-                      onClick={() => handleSelectAnalysis(a.conversationId)}
-                      className={`px-2 py-1 rounded text-[11px] border transition-colors ${
-                        isSelected
-                          ? 'bg-accent-yellow/15 text-accent-yellow border-accent-yellow/30'
-                          : 'bg-bg-primary text-text-secondary border-border-primary hover:border-accent-blue/50'
-                      }`}
-                    >
-                      {a.intent}
-                      <span className="text-text-tertiary ml-1 text-[10px]">
-                        {new Date(a.analyzedAt).toLocaleDateString()}
-                      </span>
-                    </button>
+                    <div key={a.analysisId} className="flex items-center gap-0.5">
+                      <button
+                        onClick={() => handleSelectAnalysis(a.conversationId)}
+                        className={`px-2 py-1 rounded-l text-[11px] border border-r-0 transition-colors ${
+                          isSelected
+                            ? 'bg-accent-yellow/15 text-accent-yellow border-accent-yellow/30'
+                            : 'bg-bg-primary text-text-secondary border-border-primary hover:border-accent-blue/50'
+                        }`}
+                      >
+                        {a.intent}
+                        <span className="text-text-tertiary ml-1 text-[10px]">
+                          {new Date(a.analyzedAt).toLocaleDateString()}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setViewingConversationId(a.conversationId)}
+                        className={`px-1.5 py-1 rounded-r text-[11px] border transition-colors ${
+                          isSelected
+                            ? 'bg-accent-yellow/15 text-accent-yellow border-accent-yellow/30'
+                            : 'bg-bg-primary text-text-tertiary border-border-primary hover:text-accent-blue hover:border-accent-blue/50'
+                        }`}
+                        title="Ver conversación"
+                      >
+                        <MessageSquare size={11} />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -287,6 +301,19 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
           )}
         </div>
       )}
+
+      {/* Conversation drawer */}
+      {viewingConversationId && (() => {
+        const analysis = analyses?.find((a) => a.conversationId === viewingConversationId);
+        return (
+          <ConversationDrawer
+            conversationId={viewingConversationId}
+            title={analysis?.intent ?? 'Conversación'}
+            subtitle={analysis?.flowSummary}
+            onClose={() => setViewingConversationId(null)}
+          />
+        );
+      })()}
     </div>
   );
 };
