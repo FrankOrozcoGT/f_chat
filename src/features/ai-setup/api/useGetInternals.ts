@@ -9,10 +9,12 @@ export interface InternalReview {
   clientId: string | null;
   groupJid: string | null;
   internalPurpose: string;
+  channelName: string | null;
   status: InternalStatus;
   modifiedPurpose: string | null;
   reviewedAt: string | null;
   createdAt: string;
+  updatedAt: string;
   conversationIds: string[];
 }
 

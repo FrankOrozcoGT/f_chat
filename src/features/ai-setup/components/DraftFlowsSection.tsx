@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useGetFlows } from '@/features/flows/api/useGetFlows';
 import { usePromoteFlow } from '@/features/flows/api/usePromoteFlow';
 import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
+import { useGenerateFlows } from '../api/useGenerateFlows';
 
 export const DraftFlowsSection = () => {
   const navigate = useNavigate();
   const { data: flows, isLoading } = useGetFlows();
   const { mutate: promote, isPending: isPromoting, variables: promotingId } = usePromoteFlow();
   const { mutate: discard, isPending: isDiscarding, variables: discardingId } = useDeleteFlow();
+  const { mutate: generateFlows, isPending: isGeneratingFlows } = useGenerateFlows();
 
   const drafts = (flows?.filter((f) => f.status === 'draft') ?? [])
     .sort((a, b) => (b.analysisCount ?? 0) - (a.analysisCount ?? 0));
@@ -42,13 +44,27 @@ export const DraftFlowsSection = () => {
 
   return (
     <div className="bg-bg-secondary border border-border-primary rounded-lg p-4 md:p-6 shadow-sm">
-      <div className="mb-4">
-        <h2 className="text-base md:text-lg font-semibold text-text-primary mb-1">
-          Flujos pendientes de aprobación
-        </h2>
-        <p className="text-sm text-text-secondary">
-          {drafts.length} flujo{drafts.length !== 1 ? 's' : ''} generado{drafts.length !== 1 ? 's' : ''} por el análisis — revisalos y apruébalos o descártalos
-        </p>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h2 className="text-base md:text-lg font-semibold text-text-primary mb-1">
+            Flujos pendientes de aprobación
+          </h2>
+          <p className="text-sm text-text-secondary">
+            {drafts.length} flujo{drafts.length !== 1 ? 's' : ''} generado{drafts.length !== 1 ? 's' : ''} por el análisis — revisalos y apruébalos o descártalos
+          </p>
+        </div>
+        <button
+          onClick={() => generateFlows()}
+          disabled={isGeneratingFlows}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue text-white rounded-md text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {isGeneratingFlows ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <GitBranch size={14} />
+          )}
+          Generar nodos
+        </button>
       </div>
 
       <div className="flex flex-col gap-3">

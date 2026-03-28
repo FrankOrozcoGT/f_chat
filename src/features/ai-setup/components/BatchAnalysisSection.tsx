@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Play, CheckCircle, AlertCircle, Layers, Tag, DollarSign, GitBranch, Users } from 'lucide-react';
+import { Play, CheckCircle, AlertCircle, Layers, Tag, DollarSign, Users } from 'lucide-react';
 import { StatCard } from '@/shared/ui/StatCard';
 import { useBatchAnalysis } from '../api/useBatchAnalysis';
-import { useGenerateFlows } from '../api/useGenerateFlows';
-import { InternalsReviewSection } from './InternalsReviewSection';
 
 export const BatchAnalysisSection = () => {
   const [channelCount, setChannelCount] = useState(10);
@@ -12,8 +10,6 @@ export const BatchAnalysisSection = () => {
   const queryClient = useQueryClient();
 
   const { mutate, data: result, isPending, isError, error } = useBatchAnalysis();
-  const { mutate: generateFlows, data: flowsResult, isPending: isGenerating, isError: isFlowsError, error: flowsError } = useGenerateFlows();
-
   const handleRun = () => {
     mutate({ channelCount, messageLimit }, {
       onSuccess: () => {
@@ -165,60 +161,9 @@ export const BatchAnalysisSection = () => {
             </div>
           )}
 
-          {/* Generate Flows */}
-          {result.internalsDetected > 0 && (
-            <div className="border-t border-border-primary pt-4">
-              {isFlowsError && (
-                <div className="flex items-center gap-2 p-3 bg-accent-red/10 border border-accent-red/30 rounded-md mb-3">
-                  <AlertCircle size={16} className="text-accent-red shrink-0" />
-                  <p className="text-sm text-accent-red">
-                    {(flowsError as Error)?.message ?? 'Error al generar flujos'}
-                  </p>
-                </div>
-              )}
-              {flowsResult ? (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle size={16} className="text-accent-green" />
-                    <p className="text-sm text-accent-green font-medium">
-                      {flowsResult.flowsGenerated} flujo{flowsResult.flowsGenerated !== 1 ? 's' : ''} generado{flowsResult.flowsGenerated !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {flowsResult.flows.map((f) => (
-                      <span key={f.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-bg-primary border border-border-primary rounded-md text-xs text-text-secondary">
-                        <GitBranch size={11} />
-                        {f.name}
-                        {f.refined && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent-blue/15 text-accent-blue border border-accent-blue/30">refinado</span>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => generateFlows()}
-                  disabled={isGenerating}
-                  className="min-h-11 md:min-h-10 px-5 py-2.5 bg-accent-green text-white rounded-md text-sm font-medium flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Generando flujos...
-                    </>
-                  ) : (
-                    <>
-                      <GitBranch size={16} />
-                      Generar flujos ({result.internalsDetected})
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          )}
         </div>
       )}
+
     </div>
   );
 };

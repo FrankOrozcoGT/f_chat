@@ -64,6 +64,9 @@ const InternalRow = ({ internal, onViewConversation }: { internal: InternalRevie
             )}
           </div>
         )}
+        {internal.channelName && (
+          <p className="text-[10px] text-accent-blue mt-0.5 truncate">{internal.channelName}</p>
+        )}
         {internal.groupJid && (
           <p className="text-[10px] text-text-tertiary mt-0.5 font-mono truncate">grupo: {internal.groupJid}</p>
         )}

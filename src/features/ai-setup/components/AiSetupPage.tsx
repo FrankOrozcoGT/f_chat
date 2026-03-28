@@ -1,7 +1,8 @@
 import { MainLayout } from '@/layouts/MainLayout';
 import { BatchAnalysisSection } from './BatchAnalysisSection';
-import { DraftFlowsSection } from './DraftFlowsSection';
 import { InternalsReviewSection } from './InternalsReviewSection';
+import { GenerateDiagramsSection } from './GenerateDiagramsSection';
+import { DiagramReviewSection } from './DiagramReviewSection';
 
 export const AiSetupPage = () => {
   return (
@@ -15,7 +16,10 @@ export const AiSetupPage = () => {
         </div>
 
         <div className="flex flex-col gap-6">
+          {/* Paso 1: Análisis de conversaciones */}
           <BatchAnalysisSection />
+
+          {/* Paso 2: Supervisión de canales internos */}
           <div className="bg-bg-secondary border border-border-primary rounded-lg p-4 md:p-6 shadow-sm">
             <div className="mb-4">
               <h2 className="text-base md:text-lg font-semibold text-text-primary mb-1">
@@ -27,7 +31,12 @@ export const AiSetupPage = () => {
             </div>
             <InternalsReviewSection />
           </div>
-          <DraftFlowsSection />
+
+          {/* Paso 3: Generar diagramas */}
+          <GenerateDiagramsSection />
+
+          {/* Paso 4-7: Revisión de diagramas + nodos + promover */}
+          <DiagramReviewSection />
         </div>
       </div>
     </MainLayout>
