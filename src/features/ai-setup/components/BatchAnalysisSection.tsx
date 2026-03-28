@@ -1,18 +1,25 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Play, CheckCircle, AlertCircle, Layers, Tag, DollarSign, GitBranch, Users } from 'lucide-react';
 import { StatCard } from '@/shared/ui/StatCard';
 import { useBatchAnalysis } from '../api/useBatchAnalysis';
 import { useGenerateFlows } from '../api/useGenerateFlows';
+import { InternalsReviewSection } from './InternalsReviewSection';
 
 export const BatchAnalysisSection = () => {
   const [channelCount, setChannelCount] = useState(10);
   const [messageLimit, setMessageLimit] = useState(75);
+  const queryClient = useQueryClient();
 
   const { mutate, data: result, isPending, isError, error } = useBatchAnalysis();
   const { mutate: generateFlows, data: flowsResult, isPending: isGenerating, isError: isFlowsError, error: flowsError } = useGenerateFlows();
 
   const handleRun = () => {
-    mutate({ channelCount, messageLimit });
+    mutate({ channelCount, messageLimit }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['batch-analysis-internals'] });
+      },
+    });
   };
 
   return (
@@ -146,7 +153,10 @@ export const BatchAnalysisSection = () => {
                     <div className="min-w-0">
                       <p className="text-xs text-text-secondary leading-snug">{internal.internalPurpose}</p>
                       {internal.groupJid && (
-                        <p className="text-[10px] text-text-tertiary mt-0.5 font-mono truncate">{internal.groupJid}</p>
+                        <p className="text-[10px] text-text-tertiary mt-0.5 font-mono truncate">grupo: {internal.groupJid}</p>
+                      )}
+                      {internal.clientId && (
+                        <p className="text-[10px] text-text-tertiary mt-0.5 font-mono truncate">cliente: {internal.clientId}</p>
                       )}
                     </div>
                   </div>
