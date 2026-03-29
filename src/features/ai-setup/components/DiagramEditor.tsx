@@ -182,26 +182,44 @@ export const DiagramEditor = ({
       el.addEventListener('click', handler);
     });
 
-    // Click on edges
-    const edgeEls = container.querySelectorAll('.edgePath, .edgeLabel');
-    edgeEls.forEach((el) => {
+    // Click on edges — match by ID patterns or by DOM order
+    // Mermaid generates edge paths with IDs like "L_C1_C2_0" or "L-C1-C2-0"
+    // and edge labels with IDs like "edgeLabel-L_C1_C2_0" or class "edgeLabel"
+    const findEdgeKey = (el: Element): string | null => {
+      // Check the element itself and parent for edge ID patterns
+      const candidates = [el.id, el.closest('[id]')?.id ?? ''];
+      for (const id of candidates) {
+        // Pattern: L_C1_C2 or L-C1-C2
+        const m = id.match(/L[_-]([A-Za-z0-9_]+)[_-]([A-Za-z0-9_]+)/);
+        if (m) return `${m[1]}->${m[2]}`;
+      }
+      return null;
+    };
+
+    // edgePaths for the lines
+    const edgePathEls = container.querySelectorAll('.edgePath');
+    edgePathEls.forEach((el, idx) => {
       (el as HTMLElement).style.cursor = 'pointer';
-      // Try to get edge info from id or nearby elements
       const handler = (e: Event) => {
         e.stopPropagation();
-        // Find which edge this corresponds to by position/id
-        const edgeId = el.id || '';
-        // Mermaid edge ids are like L-C1-C2-0
-        const m = edgeId.match(/L-([A-Za-z0-9_]+)-([A-Za-z0-9_]+)/);
-        if (m) {
-          const edgeKey = `${m[1]}->${m[2]}`;
-          setSelection({ type: 'edge', id: edgeKey });
-          setContextMenu({
-            x: (e as MouseEvent).clientX,
-            y: (e as MouseEvent).clientY,
-            selection: { type: 'edge', id: edgeKey },
-          });
-        }
+        const key = findEdgeKey(el) ?? (parsed.edges[idx] ? `${parsed.edges[idx].source}->${parsed.edges[idx].target}` : null);
+        if (!key) return;
+        setSelection({ type: 'edge', id: key });
+        setContextMenu({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, selection: { type: 'edge', id: key } });
+      };
+      el.addEventListener('click', handler);
+    });
+
+    // edgeLabels for the text on arrows
+    const edgeLabelEls = container.querySelectorAll('.edgeLabel');
+    edgeLabelEls.forEach((el, idx) => {
+      (el as HTMLElement).style.cursor = 'pointer';
+      const handler = (e: Event) => {
+        e.stopPropagation();
+        const key = findEdgeKey(el) ?? (parsed.edges[idx] ? `${parsed.edges[idx].source}->${parsed.edges[idx].target}` : null);
+        if (!key) return;
+        setSelection({ type: 'edge', id: key });
+        setContextMenu({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, selection: { type: 'edge', id: key } });
       };
       el.addEventListener('click', handler);
     });
