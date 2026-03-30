@@ -1,11 +1,31 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import mermaid from 'mermaid';
-import { Plus, Trash2, Save, X, Undo2, Pencil, ArrowRight, Diamond, Square, Circle, Eye, MessageSquare, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Save, X, Undo2, Pencil, ArrowRight, Diamond, Square, Circle, Eye, MessageSquare, ChevronRight, Copy, Check } from 'lucide-react';
 import type { NodeMappingEntry } from '../api/useGetFlowDiagram';
 import type { FlowAnalysis } from '../api/useGetFlowAnalyses';
 import { parseMermaidFlowchart, type ParsedNode, type ParsedEdge } from '../utils/parseMermaid';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
 import { ConversationDrawer } from './ConversationDrawer';
+
+// --- CopyId ---
+const CopyId = ({ value }: { value: string }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1 px-3 pb-1 text-[10px] font-mono text-text-tertiary hover:text-accent-blue truncate w-full text-left transition-colors"
+      title="Copiar conversationId"
+    >
+      {copied ? <Check size={10} className="text-accent-green shrink-0" /> : <Copy size={10} className="shrink-0" />}
+      <span className="truncate">{copied ? 'Copiado' : value}</span>
+    </button>
+  );
+};
 
 // --- Types ---
 type NodeShape = '[]' | '{}' | '()';
@@ -492,13 +512,7 @@ export const DiagramEditor = ({
                     </div>
                     {/* Conversation ID — copiable */}
                     {isSelected && (
-                      <button
-                        onClick={() => navigator.clipboard.writeText(a.conversationId)}
-                        className="px-3 pb-1 text-[10px] font-mono text-text-tertiary hover:text-accent-blue truncate block w-full text-left transition-colors"
-                        title="Copiar conversationId"
-                      >
-                        {a.conversationId}
-                      </button>
+                      <CopyId value={a.conversationId} />
                     )}
                     {/* Show individual diagram when selected */}
                     {isSelected && a.flowDiagram && (
