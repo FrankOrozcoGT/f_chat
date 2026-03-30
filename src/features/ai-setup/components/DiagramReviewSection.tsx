@@ -201,6 +201,7 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
           <DiagramEditor
             mermaidChart={diagram.consolidatedDiagram}
             nodeMapping={diagram.nodeMapping}
+            analyses={analyses}
             selectedConversationId={selectedConversationId}
             onSave={handleSave}
             onCancel={() => setEditing(false)}

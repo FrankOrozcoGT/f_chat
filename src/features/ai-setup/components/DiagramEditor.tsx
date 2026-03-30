@@ -1,8 +1,11 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import mermaid from 'mermaid';
-import { Plus, Trash2, Save, X, Undo2, Pencil, ArrowRight, Diamond, Square, Circle } from 'lucide-react';
+import { Plus, Trash2, Save, X, Undo2, Pencil, ArrowRight, Diamond, Square, Circle, Eye, MessageSquare, ChevronRight } from 'lucide-react';
 import type { NodeMappingEntry } from '../api/useGetFlowDiagram';
+import type { FlowAnalysis } from '../api/useGetFlowAnalyses';
 import { parseMermaidFlowchart, type ParsedNode, type ParsedEdge } from '../utils/parseMermaid';
+import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
+import { ConversationDrawer } from './ConversationDrawer';
 
 // --- Types ---
 type NodeShape = '[]' | '{}' | '()';
@@ -55,6 +58,7 @@ function nextNodeId(nodes: ParsedNode[]): string {
 interface DiagramEditorProps {
   mermaidChart: string;
   nodeMapping?: Record<string, NodeMappingEntry[]>;
+  analyses?: FlowAnalysis[];
   selectedConversationId?: string | null;
   onSave: (newMermaid: string) => void;
   onCancel: () => void;
@@ -65,7 +69,8 @@ interface DiagramEditorProps {
 export const DiagramEditor = ({
   mermaidChart,
   nodeMapping,
-  selectedConversationId,
+  analyses,
+  selectedConversationId: externalSelectedConv,
   onSave,
   onCancel,
   isSaving,
@@ -76,6 +81,10 @@ export const DiagramEditor = ({
   const [selection, setSelection] = useState<Selection | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [selectMode, setSelectMode] = useState<SelectionMode>('none');
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [localSelectedConv, setLocalSelectedConv] = useState<string | null>(externalSelectedConv ?? null);
+  const [viewingConversationId, setViewingConversationId] = useState<string | null>(null);
+  const selectedConversationId = localSelectedConv;
   const [selectModeEdge, setSelectModeEdge] = useState<{ source: string; target: string; field: 'source' | 'target' } | null>(null);
   const [editingLabel, setEditingLabel] = useState<{ id: string; type: 'node' | 'edge'; value: string } | null>(null);
 
@@ -407,6 +416,19 @@ export const DiagramEditor = ({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {analyses && analyses.length > 0 && (
+            <button
+              onClick={() => setShowSidebar((v) => !v)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium border rounded transition-colors ${
+                showSidebar
+                  ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
+                  : 'bg-bg-primary text-text-secondary border-border-primary hover:text-text-primary'
+              }`}
+            >
+              <Eye size={13} />
+              Conversaciones ({analyses.length})
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={isSaving}
@@ -425,13 +447,62 @@ export const DiagramEditor = ({
         </div>
       </div>
 
-      {/* SVG canvas */}
-      <div className="flex-1 overflow-auto relative" onClick={() => { setContextMenu(null); setSelection(null); }}>
-        <div
-          ref={svgContainerRef}
-          className="min-h-full flex items-center justify-center p-8"
-          dangerouslySetInnerHTML={{ __html: svg }}
-        />
+      {/* Main area: canvas + optional sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* SVG canvas */}
+        <div className="flex-1 overflow-auto relative" onClick={() => { setContextMenu(null); setSelection(null); }}>
+          <div
+            ref={svgContainerRef}
+            className="min-h-full flex items-center justify-center p-8"
+            dangerouslySetInnerHTML={{ __html: svg }}
+          />
+        </div>
+
+        {/* Sidebar: conversations */}
+        {showSidebar && analyses && (
+          <div className="w-80 shrink-0 border-l border-border-primary bg-bg-secondary flex flex-col overflow-hidden">
+            <div className="px-3 py-2.5 border-b border-border-primary shrink-0">
+              <p className="text-xs font-semibold text-text-tertiary uppercase">Conversaciones individuales</p>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {analyses.map((a) => {
+                const isSelected = selectedConversationId === a.conversationId;
+                return (
+                  <div key={a.analysisId} className={`border-b border-border-primary ${isSelected ? 'bg-accent-yellow/5' : ''}`}>
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <button
+                        onClick={() => setLocalSelectedConv(isSelected ? null : a.conversationId)}
+                        className={`flex-1 text-left text-xs truncate transition-colors ${
+                          isSelected ? 'text-accent-yellow font-medium' : 'text-text-secondary hover:text-text-primary'
+                        }`}
+                      >
+                        <ChevronRight size={10} className={`inline mr-1 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+                        {a.intent}
+                        <span className="text-text-tertiary ml-1 text-[10px]">
+                          {new Date(a.analyzedAt).toLocaleDateString()}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setViewingConversationId(a.conversationId)}
+                        className="p-1 rounded text-text-tertiary hover:text-accent-blue transition-colors shrink-0"
+                        title="Ver mensajes"
+                      >
+                        <MessageSquare size={12} />
+                      </button>
+                    </div>
+                    {/* Show individual diagram when selected */}
+                    {isSelected && a.flowDiagram && (
+                      <div className="px-3 pb-2">
+                        <p className="text-[10px] text-text-tertiary mb-1 line-clamp-2">{a.flowSummary}</p>
+                        <MermaidDiagram chart={a.flowDiagram} className="max-h-48" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Context menu */}
@@ -552,6 +623,19 @@ export const DiagramEditor = ({
         )}
         <span className="ml-auto">Click en nodo o flecha para acciones · Delete para eliminar · Ctrl+Z deshacer · Esc cerrar</span>
       </div>
+
+      {/* Conversation drawer */}
+      {viewingConversationId && (() => {
+        const analysis = analyses?.find((a) => a.conversationId === viewingConversationId);
+        return (
+          <ConversationDrawer
+            conversationId={viewingConversationId}
+            title={analysis?.intent ?? 'Conversación'}
+            subtitle={analysis?.flowSummary}
+            onClose={() => setViewingConversationId(null)}
+          />
+        );
+      })()}
     </div>
   );
 };

@@ -54,6 +54,7 @@ export interface BackendMessage {
   senderType: BackendSenderType;
   status: BackendMessageStatus;
   metadata?: Record<string, unknown>;
+  transcription?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,6 +83,8 @@ export interface Message {
   // Group message sender info (from metadata, only for group conversations)
   senderName?: string | null;
   senderJid?: string | null;
+  // Voice message transcription
+  transcription?: string | null;
 }
 
 // Backend client structure
@@ -219,6 +222,7 @@ export const mapBackendMessage = (msg: BackendMessage): Message => {
     quotedKeyId: meta?.quotedMessageId ?? null,
     senderName: meta?.senderName ?? null,
     senderJid: meta?.senderJid ?? null,
+    transcription: msg.transcription ?? null,
   };
 };
 

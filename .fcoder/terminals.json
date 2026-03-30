@@ -1,9 +1,9 @@
 {
-  "normal": {
-    "id": "normal",
-    "pid": 27981,
+  "git": {
+    "id": "git",
+    "pid": 25544,
     "command": "persistent-shell",
-    "type": "normal",
-    "startedAt": "2026-03-28T22:23:59.759Z"
+    "type": "server",
+    "startedAt": "2026-03-30T09:28:26.146Z"
   }
 }

@@ -54,7 +54,10 @@ export const ConversationDrawer = ({ conversationId, title, subtitle, onClose }:
                     ? 'bg-bg-tertiary text-text-primary rounded-tl-none'
                     : 'bg-accent-blue/20 text-text-primary rounded-tr-none'
                 }`}>
-                  {msg.content || (msg.type !== 'text' ? `[${msg.type}]` : '')}
+                  {msg.content || msg.transcription || (msg.type !== 'text' ? `[${msg.type}]` : '')}
+                  {msg.type === 'voice' && msg.transcription && !msg.content && (
+                    <span className="text-[10px] text-text-tertiary italic block mt-0.5">🎤 transcripción</span>
+                  )}
                   <p className="text-[10px] text-text-tertiary mt-1 text-right">
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
