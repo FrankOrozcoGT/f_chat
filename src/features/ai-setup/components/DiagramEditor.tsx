@@ -490,6 +490,16 @@ export const DiagramEditor = ({
                         <MessageSquare size={12} />
                       </button>
                     </div>
+                    {/* Conversation ID — copiable */}
+                    {isSelected && (
+                      <button
+                        onClick={() => navigator.clipboard.writeText(a.conversationId)}
+                        className="px-3 pb-1 text-[10px] font-mono text-text-tertiary hover:text-accent-blue truncate block w-full text-left transition-colors"
+                        title="Copiar conversationId"
+                      >
+                        {a.conversationId}
+                      </button>
+                    )}
                     {/* Show individual diagram when selected */}
                     {isSelected && a.flowDiagram && (
                       <div className="px-3 pb-2">
