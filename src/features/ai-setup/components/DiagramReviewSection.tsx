@@ -13,6 +13,20 @@ import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
 import { DiagramEditor } from './DiagramEditor';
 import { ConversationDrawer } from './ConversationDrawer';
 import type { Flow } from '@/features/flows/types';
+import type { NodeMappingEntry } from '../api/useGetFlowDiagram';
+
+/** Inject conversation count into node labels for display */
+function injectNodeCounts(chart: string, nodeMapping: Record<string, NodeMappingEntry[]>): string {
+  let result = chart;
+  Object.entries(nodeMapping).forEach(([nodeId, sources]) => {
+    const uniqueConvs = new Set(sources.map((s) => s.conversationId)).size;
+    if (uniqueConvs > 0) {
+      const nodeRegex = new RegExp(`(${nodeId}\\s*[\\[\\(\\{][\\[\\(\\{]?)([^\\]\\)\\}]+?)([\\]\\)\\}][\\]\\)\\}]?)`);
+      result = result.replace(nodeRegex, `$1$2 · ${uniqueConvs} conv$3`);
+    }
+  });
+  return result;
+}
 
 const FlowCard = ({ flow }: { flow: Flow }) => {
   const navigate = useNavigate();
@@ -55,7 +69,7 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
       return diagram?.consolidatedDiagram ?? '';
     }
 
-    let chart = diagram.consolidatedDiagram;
+    let chart = injectNodeCounts(diagram.consolidatedDiagram, diagram.nodeMapping);
     const styleLines: string[] = [];
 
     Object.entries(diagram.nodeMapping).forEach(([nodeId, sources]) => {
@@ -78,7 +92,7 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
   const coverageChart = useMemo(() => {
     if (!diagram?.consolidatedDiagram || !diagram?.nodeMapping || selectedConversationId) return null;
 
-    let chart = diagram.consolidatedDiagram;
+    let chart = injectNodeCounts(diagram.consolidatedDiagram, diagram.nodeMapping);
     const styleLines: string[] = [];
 
     Object.entries(diagram.nodeMapping).forEach(([nodeId, sources]) => {

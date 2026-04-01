@@ -130,12 +130,24 @@ export const DiagramEditor = ({
     }
   }, []);
 
-  // Apply coverage styles
+  // Apply coverage styles + conversation count in labels
   const styledChart = useMemo(() => {
     if (!nodeMapping) return chart;
+    let displayChart = chart;
+
+    // Inject conversation count into node labels
+    Object.entries(nodeMapping).forEach(([nodeId, sources]) => {
+      if (!parsed.nodes.find((n) => n.id === nodeId)) return;
+      const uniqueConvs = new Set(sources.map((s) => s.conversationId)).size;
+      if (uniqueConvs > 0) {
+        // Match node definition like C1[Label] or C1{Label} or C1(Label)
+        const nodeRegex = new RegExp(`(${nodeId}\\s*[\\[\\(\\{][\\[\\(\\{]?)([^\\]\\)\\}]+?)([\\]\\)\\}][\\]\\)\\}]?)`);
+        displayChart = displayChart.replace(nodeRegex, `$1$2 · ${uniqueConvs} conv$3`);
+      }
+    });
+
     const styleLines: string[] = [];
     Object.entries(nodeMapping).forEach(([nodeId, sources]) => {
-      // Check node exists in current chart
       if (!parsed.nodes.find((n) => n.id === nodeId)) return;
       if (selectedConversationId) {
         if (sources.some((s) => s.conversationId === selectedConversationId)) {
