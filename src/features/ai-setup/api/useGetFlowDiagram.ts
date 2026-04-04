@@ -6,12 +6,21 @@ export interface NodeMappingEntry {
   nodeId: string;
 }
 
+export interface InternalQueue {
+  channelName: string;
+  nodeId: string;
+  queueType: 'fifo' | 'batch_reply' | 'llm_flexible';
+  usage: string;
+}
+
 export interface FlowDiagram {
   flowId: string;
   versionId: string;
   version: number;
   consolidatedDiagram: string;
   nodeMapping: Record<string, NodeMappingEntry[]>;
+  internalQueues: InternalQueue[];
+  nodeCategories: Record<string, string>;
   diagramApproved: boolean;
   diagramModified: boolean;
 }

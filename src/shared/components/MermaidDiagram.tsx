@@ -172,12 +172,17 @@ export const MermaidDiagram = ({ chart, className }: MermaidDiagramProps) => {
   useEffect(() => {
     if (!chart?.trim()) return;
     setError(null);
+    const renderId = idRef.current + '-' + Date.now();
     mermaid
-      .render(idRef.current + '-' + Date.now(), chart)
+      .render(renderId, chart)
       .then(({ svg: rendered }) => setSvg(rendered))
       .catch((err) => {
         console.error('[Mermaid] render error:', err);
         setError('No se pudo renderizar el diagrama');
+      })
+      .finally(() => {
+        // Clean up mermaid temp elements from body
+        document.querySelectorAll(`body > svg[id^="mermaid-"], body > [id^="mermaid-"]`).forEach((el) => el.remove());
       });
   }, [chart]);
 

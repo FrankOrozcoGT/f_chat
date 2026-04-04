@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import mermaid from 'mermaid';
-import { Plus, Trash2, Save, X, Undo2, Pencil, ArrowRight, Diamond, Square, Circle, Eye, MessageSquare, ChevronRight, Copy, Check } from 'lucide-react';
-import type { NodeMappingEntry } from '../api/useGetFlowDiagram';
+import { Plus, Trash2, Save, X, Undo2, Pencil, ArrowRight, Diamond, Square, Circle, Eye, MessageSquare, ChevronRight, Copy, Check, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import type { NodeMappingEntry, InternalQueue } from '../api/useGetFlowDiagram';
 import type { FlowAnalysis } from '../api/useGetFlowAnalyses';
 import { parseMermaidFlowchart, type ParsedNode, type ParsedEdge } from '../utils/parseMermaid';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
@@ -78,6 +78,8 @@ function nextNodeId(nodes: ParsedNode[]): string {
 interface DiagramEditorProps {
   mermaidChart: string;
   nodeMapping?: Record<string, NodeMappingEntry[]>;
+  internalQueues?: InternalQueue[];
+  nodeCategories?: Record<string, string>;
   analyses?: FlowAnalysis[];
   selectedConversationId?: string | null;
   onSave: (newMermaid: string) => void;
@@ -89,6 +91,8 @@ interface DiagramEditorProps {
 export const DiagramEditor = ({
   mermaidChart,
   nodeMapping,
+  internalQueues,
+  nodeCategories,
   analyses,
   selectedConversationId: externalSelectedConv,
   onSave,
@@ -98,19 +102,58 @@ export const DiagramEditor = ({
   // State
   const [chart, setChart] = useState(mermaidChart);
   const [svg, setSvg] = useState('');
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const [showRawEditor, setShowRawEditor] = useState(false);
+  const [rawValue, setRawValue] = useState('');
   const [selection, setSelection] = useState<Selection | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [selectMode, setSelectMode] = useState<SelectionMode>('none');
+  const [mode, setMode] = useState<'move' | 'edit'>('move');
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
   const [showSidebar, setShowSidebar] = useState(false);
   const [localSelectedConv, setLocalSelectedConv] = useState<string | null>(externalSelectedConv ?? null);
   const [viewingConversationId, setViewingConversationId] = useState<string | null>(null);
   const selectedConversationId = localSelectedConv;
   const [selectModeEdge, setSelectModeEdge] = useState<{ source: string; target: string; field: 'source' | 'target' } | null>(null);
   const [editingLabel, setEditingLabel] = useState<{ id: string; type: 'node' | 'edge'; value: string } | null>(null);
+  const [pan, setPan] = useState({ x: 0, y: 0, scale: 1, dragging: false, startX: 0, startY: 0 });
 
   const historyRef = useRef<string[]>([]);
   const svgContainerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const renderIdRef = useRef(0);
+
+  // Pan/zoom handlers
+  const handleWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+    setPan((prev) => {
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      return { ...prev, scale: Math.min(Math.max(prev.scale * delta, 0.2), 5) };
+    });
+  }, []);
+
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
+
+  const onPanMouseDown = (e: React.MouseEvent) => {
+    if (mode !== 'move') return;
+    setPan((prev) => ({ ...prev, dragging: true, startX: e.clientX - prev.x, startY: e.clientY - prev.y }));
+  };
+
+  const onPanMouseMove = (e: React.MouseEvent) => {
+    if (mode !== 'move' || !pan.dragging) return;
+    setPan((prev) => ({ ...prev, x: e.clientX - prev.startX, y: e.clientY - prev.startY }));
+  };
+
+  const onPanMouseUp = () => {
+    if (mode !== 'move') return;
+    setPan((prev) => ({ ...prev, dragging: false }));
+  };
 
   // Parse current chart
   const parsed = useMemo(() => parseMermaidFlowchart(chart), [chart]);
@@ -137,11 +180,10 @@ export const DiagramEditor = ({
 
     // Inject conversation count into node labels
     Object.entries(nodeMapping).forEach(([nodeId, sources]) => {
-      if (!parsed.nodes.find((n) => n.id === nodeId)) return;
       const uniqueConvs = new Set(sources.map((s) => s.conversationId)).size;
       if (uniqueConvs > 0) {
         // Match node definition like C1[Label] or C1{Label} or C1(Label)
-        const nodeRegex = new RegExp(`(${nodeId}\\s*[\\[\\(\\{][\\[\\(\\{]?)([^\\]\\)\\}]+?)([\\]\\)\\}][\\]\\)\\}]?)`);
+        const nodeRegex = new RegExp(`(${nodeId}\\s*[\\[\\(\\{][\\[\\(\\{]?)([^\\]\\)\\}]+)([\\]\\)\\}][\\]\\)\\}]?)`);
         displayChart = displayChart.replace(nodeRegex, `$1$2 · ${uniqueConvs} conv$3`);
       }
     });
@@ -162,120 +204,69 @@ export const DiagramEditor = ({
       }
     });
 
+    // Mark nodes with internal queues (purple border)
+    if (internalQueues) {
+      const queueNodeIds = new Set(internalQueues.map((q) => q.nodeId));
+      queueNodeIds.forEach((nodeId) => {
+        if (!styleLines.some((l) => l.includes(`style ${nodeId}`))) {
+          styleLines.push(`    style ${nodeId} stroke:#a855f7,stroke-width:2px`);
+        }
+      });
+    }
+
     // Highlight selected node/edge
     if (selection?.type === 'node') {
       styleLines.push(`    style ${selection.id} stroke:#fbbf24,stroke-width:3px`);
     }
 
-    return styleLines.length > 0 ? chart + '\n' + styleLines.join('\n') : chart;
-  }, [chart, nodeMapping, selectedConversationId, selection, parsed.nodes]);
+    return styleLines.length > 0 ? displayChart + '\n' + styleLines.join('\n') : displayChart;
+  }, [chart, nodeMapping, internalQueues, selectedConversationId, selection, parsed.nodes]);
 
-  // Render mermaid
+  // Render mermaid + fix SVG dimensions
   useEffect(() => {
     if (!styledChart.trim()) return;
+    setRenderError(null);
     const id = `editor-${++renderIdRef.current}-${Date.now()}`;
     mermaid
       .render(id, styledChart)
-      .then(({ svg: rendered }) => setSvg(rendered))
-      .catch(() => {});
+      .finally(() => {
+        // Mermaid injects temp SVG and error elements into body — clean them up
+        document.querySelectorAll(`#${CSS.escape(id)}, [data-mermaid-temp]`).forEach((el) => el.remove());
+        document.querySelectorAll('body > svg[id^="editor-"], body > .error-icon, body > [id^="editor-"]').forEach((el) => el.remove());
+      })
+      .then(({ svg: rendered }) => {
+        setSvg(rendered);
+        // Fix SVG dimensions after render
+        requestAnimationFrame(() => {
+          if (!svgContainerRef.current) return;
+          const svgEl = svgContainerRef.current.querySelector('svg');
+          if (!svgEl) return;
+          const viewBox = svgEl.getAttribute('viewBox');
+          if (viewBox) {
+            const parts = viewBox.split(/\s+|,/).map(Number);
+            if (parts.length >= 4) {
+              svgEl.setAttribute('width', String(parts[2]));
+              svgEl.setAttribute('height', String(parts[3]));
+            }
+          }
+          svgEl.style.maxWidth = 'none';
+          svgEl.style.overflow = 'visible';
+        });
+      })
+      .catch((err) => {
+        console.error('[DiagramEditor] mermaid render error:', err);
+        setRenderError(err?.message || String(err));
+      });
   }, [styledChart]);
 
-  // Attach click handlers to SVG nodes/edges after render
+  // Set cursor style on nodes/edges after SVG render
   useEffect(() => {
     const container = svgContainerRef.current;
     if (!container || !svg) return;
-
-    // Click on nodes
-    const nodeEls = container.querySelectorAll('.node');
-    nodeEls.forEach((el) => {
-      const id = el.id?.replace(/^flowchart-/, '').replace(/-\d+$/, '');
-      if (!id) return;
-
+    container.querySelectorAll('.node, .edgePath, .edgeLabel').forEach((el) => {
       (el as HTMLElement).style.cursor = 'pointer';
-      const handler = (e: Event) => {
-        e.stopPropagation();
-
-        // If we're in select mode for edge origin/destination
-        if (selectMode !== 'none' && selectModeEdge) {
-          pushHistory();
-          const newEdges = parsed.edges.map((edge) => {
-            if (edge.source === selectModeEdge.source && edge.target === selectModeEdge.target) {
-              return selectModeEdge.field === 'source'
-                ? { ...edge, source: id }
-                : { ...edge, target: id };
-            }
-            return edge;
-          });
-          setChart(rebuildMermaid(parsed.nodes, newEdges));
-          setSelectMode('none');
-          setSelectModeEdge(null);
-          setContextMenu(null);
-          return;
-        }
-
-        setSelection({ type: 'node', id });
-        setContextMenu({
-          x: (e as MouseEvent).clientX,
-          y: (e as MouseEvent).clientY,
-          selection: { type: 'node', id },
-        });
-      };
-      el.addEventListener('click', handler);
     });
-
-    // Click on edges — match by ID patterns or by DOM order
-    // Mermaid generates edge paths with IDs like "L_C1_C2_0" or "L-C1-C2-0"
-    // and edge labels with IDs like "edgeLabel-L_C1_C2_0" or class "edgeLabel"
-    const findEdgeKey = (el: Element): string | null => {
-      // Check the element itself and parent for edge ID patterns
-      const candidates = [el.id, el.closest('[id]')?.id ?? ''];
-      for (const id of candidates) {
-        // Pattern: L_C1_C2 or L-C1-C2
-        const m = id.match(/L[_-]([A-Za-z0-9_]+)[_-]([A-Za-z0-9_]+)/);
-        if (m) return `${m[1]}->${m[2]}`;
-      }
-      return null;
-    };
-
-    // edgePaths for the lines
-    const edgePathEls = container.querySelectorAll('.edgePath');
-    edgePathEls.forEach((el, idx) => {
-      (el as HTMLElement).style.cursor = 'pointer';
-      const handler = (e: Event) => {
-        e.stopPropagation();
-        const key = findEdgeKey(el) ?? (parsed.edges[idx] ? `${parsed.edges[idx].source}->${parsed.edges[idx].target}` : null);
-        if (!key) return;
-        setSelection({ type: 'edge', id: key });
-        setContextMenu({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, selection: { type: 'edge', id: key } });
-      };
-      el.addEventListener('click', handler);
-    });
-
-    // edgeLabels for the text on arrows
-    const edgeLabelEls = container.querySelectorAll('.edgeLabel');
-    edgeLabelEls.forEach((el, idx) => {
-      (el as HTMLElement).style.cursor = 'pointer';
-      const handler = (e: Event) => {
-        e.stopPropagation();
-        const key = findEdgeKey(el) ?? (parsed.edges[idx] ? `${parsed.edges[idx].source}->${parsed.edges[idx].target}` : null);
-        if (!key) return;
-        setSelection({ type: 'edge', id: key });
-        setContextMenu({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, selection: { type: 'edge', id: key } });
-      };
-      el.addEventListener('click', handler);
-    });
-
-    // Click on background to deselect
-    const svgEl = container.querySelector('svg');
-    if (svgEl) {
-      const bgHandler = (e: Event) => {
-        if ((e.target as Element).closest('.node, .edgePath, .edgeLabel')) return;
-        setSelection(null);
-        setContextMenu(null);
-      };
-      svgEl.addEventListener('click', bgHandler);
-    }
-  }, [svg, selectMode, selectModeEdge, parsed, pushHistory]);
+  }, [svg]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -302,6 +293,10 @@ export const DiagramEditor = ({
           const [src, tgt] = selection.id.split('->');
           handleDeleteEdge(src, tgt);
         }
+      }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        setMode((m) => m === 'move' ? 'edit' : 'move');
       }
     };
     window.addEventListener('keydown', handler);
@@ -429,7 +424,17 @@ export const DiagramEditor = ({
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-bg-secondary border-b border-border-primary shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-text-primary mr-2">Editor de diagrama</span>
+          <button
+            onClick={() => setMode((m) => m === 'move' ? 'edit' : 'move')}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded transition-colors ${
+              mode === 'edit'
+                ? 'bg-accent-yellow/15 text-accent-yellow border-accent-yellow/30'
+                : 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
+            }`}
+            title="Tab para cambiar"
+          >
+            {mode === 'move' ? '🖐 Mover' : '✏️ Editar'}
+          </button>
           <button
             onClick={undo}
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-bg-primary border border-border-primary rounded text-text-secondary hover:text-text-primary transition-colors disabled:opacity-30"
@@ -437,6 +442,13 @@ export const DiagramEditor = ({
           >
             <Undo2 size={13} />
             Deshacer
+          </button>
+          <button
+            onClick={() => { setRawValue(chart); setShowRawEditor(true); }}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-bg-primary border border-border-primary rounded text-text-secondary hover:text-text-primary transition-colors"
+            title="Editar código mermaid"
+          >
+            {'</>'}
           </button>
           {selectMode !== 'none' && (
             <span className="text-xs text-accent-yellow bg-accent-yellow/10 border border-accent-yellow/30 px-2.5 py-1 rounded">
@@ -481,13 +493,167 @@ export const DiagramEditor = ({
 
       {/* Main area: canvas + optional sidebar */}
       <div className="flex-1 flex overflow-hidden">
-        {/* SVG canvas */}
-        <div className="flex-1 overflow-auto relative" onClick={() => { setContextMenu(null); setSelection(null); }}>
+        {/* SVG canvas with pan/zoom */}
+        <div
+          ref={canvasRef}
+          className="flex-1 overflow-hidden relative select-none"
+          style={{ cursor: mode === 'move' ? (pan.dragging ? 'grabbing' : 'grab') : 'default' }}
+          onMouseDown={mode === 'move' ? onPanMouseDown : undefined}
+          onMouseMove={mode === 'move' ? onPanMouseMove : undefined}
+          onMouseUp={mode === 'move' ? onPanMouseUp : undefined}
+          onMouseLeave={mode === 'move' ? onPanMouseUp : undefined}
+          onClick={(e) => {
+            if (mode !== 'edit') return;
+            const target = e.target as Element;
+
+            // Check if clicked on a node
+            const nodeEl = target.closest('.node');
+            if (nodeEl) {
+              const id = nodeEl.id?.replace(/^flowchart-/, '').replace(/-\d+$/, '');
+              console.log('[DiagramEditor] node click via delegation:', id);
+              if (id) {
+                // Handle select mode for edge origin/destination
+                if (selectMode !== 'none' && selectModeEdge) {
+                  pushHistory();
+                  const newEdges = parsed.edges.map((edge) => {
+                    if (edge.source === selectModeEdge.source && edge.target === selectModeEdge.target) {
+                      return selectModeEdge.field === 'source'
+                        ? { ...edge, source: id }
+                        : { ...edge, target: id };
+                    }
+                    return edge;
+                  });
+                  setChart(rebuildMermaid(parsed.nodes, newEdges));
+                  setSelectMode('none');
+                  setSelectModeEdge(null);
+                  setContextMenu(null);
+                  return;
+                }
+                setSelection({ type: 'node', id });
+                setContextMenu({ x: e.clientX, y: e.clientY, selection: { type: 'node', id } });
+                return;
+              }
+            }
+
+            // Check if clicked on an edge path or label
+            const edgePathEl = target.closest('.edgePath');
+            const edgeLabelEl = target.closest('.edgeLabel');
+            const edgeEl = edgePathEl || edgeLabelEl;
+            if (edgeEl) {
+              // Try to find edge key from ID
+              const candidates = [edgeEl.id, edgeEl.closest('[id]')?.id ?? ''];
+              let edgeKey: string | null = null;
+              for (const eid of candidates) {
+                const m = eid.match(/L[_-]([A-Za-z0-9_]+)[_-]([A-Za-z0-9_]+)/);
+                if (m) { edgeKey = `${m[1]}->${m[2]}`; break; }
+              }
+              // Fallback: match by DOM index
+              if (!edgeKey) {
+                const allEdgePaths = svgContainerRef.current?.querySelectorAll('.edgePath');
+                const allEdgeLabels = svgContainerRef.current?.querySelectorAll('.edgeLabel');
+                const idx = edgePathEl
+                  ? Array.from(allEdgePaths ?? []).indexOf(edgePathEl)
+                  : Array.from(allEdgeLabels ?? []).indexOf(edgeLabelEl!);
+                if (idx >= 0 && parsed.edges[idx]) {
+                  edgeKey = `${parsed.edges[idx].source}->${parsed.edges[idx].target}`;
+                }
+              }
+              if (edgeKey) {
+                console.log('[DiagramEditor] edge click via delegation:', edgeKey);
+                setSelection({ type: 'edge', id: edgeKey });
+                setContextMenu({ x: e.clientX, y: e.clientY, selection: { type: 'edge', id: edgeKey } });
+                return;
+              }
+            }
+
+            // Background click — deselect
+            setContextMenu(null);
+            setSelection(null);
+          }}
+        >
           <div
             ref={svgContainerRef}
-            className="min-h-full flex items-center justify-center p-8"
+            style={{
+              transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${pan.scale})`,
+              transformOrigin: 'top left',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              pointerEvents: mode === 'edit' ? 'auto' : 'none',
+            }}
             dangerouslySetInnerHTML={{ __html: svg }}
           />
+          {/* Error + raw editor */}
+          {renderError && (
+            <div className="absolute inset-0 z-10 flex flex-col bg-bg-primary/95 p-4 overflow-auto">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium text-accent-red">Error de mermaid</span>
+                <button
+                  onClick={() => { setShowRawEditor(true); setRawValue(chart); setRenderError(null); }}
+                  className="text-[10px] px-2 py-0.5 bg-accent-blue/15 text-accent-blue border border-accent-blue/30 rounded"
+                >
+                  Editar código
+                </button>
+              </div>
+              <pre className="text-xs text-accent-red/80 font-mono whitespace-pre-wrap mb-3 bg-bg-secondary rounded p-3 border border-accent-red/20">{renderError}</pre>
+              <pre className="text-[10px] text-text-tertiary font-mono whitespace-pre-wrap bg-bg-secondary rounded p-3 border border-border-primary flex-1 overflow-auto">{chart}</pre>
+            </div>
+          )}
+          {showRawEditor && (
+            <div className="absolute inset-0 z-10 flex flex-col bg-bg-primary p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-text-primary">Editar diagrama (mermaid)</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      pushHistory();
+                      setChart(rawValue);
+                      setShowRawEditor(false);
+                      setRenderError(null);
+                    }}
+                    className="px-3 py-1 text-xs bg-accent-blue text-white rounded hover:opacity-90"
+                  >
+                    Aplicar
+                  </button>
+                  <button
+                    onClick={() => setShowRawEditor(false)}
+                    className="px-3 py-1 text-xs border border-border-primary text-text-secondary rounded hover:bg-bg-tertiary"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+              <textarea
+                value={rawValue}
+                onChange={(e) => setRawValue(e.target.value)}
+                className="flex-1 px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-xs font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-blue resize-none"
+              />
+            </div>
+          )}
+          {/* Zoom controls */}
+          <div className="absolute bottom-3 right-3 flex items-center gap-1 z-10">
+            <button
+              onClick={() => setPan((p) => ({ ...p, scale: Math.min(p.scale * 1.2, 5) }))}
+              className="p-1.5 rounded bg-bg-secondary/80 border border-border-primary text-text-secondary hover:text-text-primary transition-colors"
+              title="Zoom in"
+            >
+              <ZoomIn size={13} />
+            </button>
+            <button
+              onClick={() => setPan((p) => ({ ...p, scale: Math.max(p.scale * 0.8, 0.2) }))}
+              className="p-1.5 rounded bg-bg-secondary/80 border border-border-primary text-text-secondary hover:text-text-primary transition-colors"
+              title="Zoom out"
+            >
+              <ZoomOut size={13} />
+            </button>
+            <button
+              onClick={() => setPan({ x: 0, y: 0, scale: 1, dragging: false, startX: 0, startY: 0 })}
+              className="p-1.5 rounded bg-bg-secondary/80 border border-border-primary text-text-secondary hover:text-text-primary transition-colors"
+              title="Reset"
+            >
+              <RotateCcw size={13} />
+            </button>
+          </div>
         </div>
 
         {/* Sidebar: conversations */}
@@ -550,8 +716,31 @@ export const DiagramEditor = ({
         >
           {contextMenu.selection.type === 'node' && (() => {
             const nodeId = contextMenu.selection.id;
+            const category = nodeCategories?.[nodeId];
+            const queues = internalQueues?.filter((q) => q.nodeId === nodeId) ?? [];
             return (
               <>
+                {/* Node info */}
+                {category && (
+                  <div className="px-3 py-1.5 border-b border-border-primary">
+                    <p className="text-[10px] text-text-tertiary uppercase font-semibold">Categoría</p>
+                    <p className="text-xs text-accent-blue">{category}</p>
+                  </div>
+                )}
+                {queues.length > 0 && (
+                  <div className="px-3 py-1.5 border-b border-border-primary">
+                    <p className="text-[10px] text-text-tertiary uppercase font-semibold mb-1">Canales internos</p>
+                    {queues.map((q) => (
+                      <div key={q.channelName} className="mb-1 last:mb-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-purple-400">{q.channelName}</span>
+                          <span className="text-[10px] px-1 py-0.5 rounded bg-purple-400/15 text-purple-400 border border-purple-400/30">{q.queueType}</span>
+                        </div>
+                        <p className="text-[10px] text-text-tertiary mt-0.5">{q.usage}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <button onClick={() => handleEditNodeLabel(nodeId)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
                   <Pencil size={12} /> Editar nombre
                 </button>
@@ -657,7 +846,13 @@ export const DiagramEditor = ({
             </span>
           </>
         )}
-        <span className="ml-auto">Click en nodo o flecha para acciones · Delete para eliminar · Ctrl+Z deshacer · Esc cerrar</span>
+        {internalQueues && internalQueues.length > 0 && (
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded border-2 border-purple-400 bg-purple-400/10" />
+            Canal interno
+          </span>
+        )}
+        <span className="ml-auto">Tab: cambiar modo · {mode === 'edit' ? 'Click en nodo o flecha para acciones · Delete eliminar' : 'Arrastra para mover · Scroll para zoom'} · Ctrl+Z deshacer · Esc cerrar</span>
       </div>
 
       {/* Conversation drawer */}
@@ -668,6 +863,9 @@ export const DiagramEditor = ({
             conversationId={viewingConversationId}
             title={analysis?.intent ?? 'Conversación'}
             subtitle={analysis?.flowSummary}
+            groupJid={analysis?.groupJid}
+            participants={analysis?.participants}
+            isInternal={analysis?.isInternal}
             onClose={() => setViewingConversationId(null)}
           />
         );
