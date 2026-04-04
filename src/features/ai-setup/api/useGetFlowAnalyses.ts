@@ -1,9 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 
+export interface FlowAnalysisParticipant {
+  clientId: string;
+  name: string;
+  phoneNumber: string;
+}
+
 export interface FlowAnalysis {
   analysisId: string;
   conversationId: string;
+  groupJid: string | null;
+  participants: FlowAnalysisParticipant[];
   intent: string;
   flowSummary: string;
   flowDiagram: string;
