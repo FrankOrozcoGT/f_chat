@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Pencil, Eye, Layers, ChevronDown, ChevronRight, AlertCircle, Trash2, GitBranch, Loader2, Rocket, MessageSquare } from 'lucide-react';
+import { CheckCircle, Pencil, Layers, Trash2, GitBranch, Loader2, Rocket, Merge } from 'lucide-react';
 import { useGetFlows } from '@/features/flows/api/useGetFlows';
 import { usePromoteFlow } from '@/features/flows/api/usePromoteFlow';
 import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
@@ -9,49 +9,26 @@ import { useGetFlowAnalyses } from '../api/useGetFlowAnalyses';
 import { useUpdateFlowDiagram } from '../api/useUpdateFlowDiagram';
 import { useApproveDiagram } from '../api/useApproveDiagram';
 import { useGenerateFlows } from '../api/useGenerateFlows';
-import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
+import { useMergeIntents } from '../api/useMergeIntents';
 import { DiagramEditor } from './DiagramEditor';
-import { ConversationDrawer } from './ConversationDrawer';
 import type { Flow } from '@/features/flows/types';
-import type { NodeMappingEntry } from '../api/useGetFlowDiagram';
 
-/** Inject conversation count into node labels for display */
-function injectNodeCounts(chart: string, nodeMapping: Record<string, NodeMappingEntry[]>): string {
-  let result = chart;
-  Object.entries(nodeMapping).forEach(([nodeId, sources]) => {
-    const uniqueConvs = new Set(sources.map((s) => s.conversationId)).size;
-    if (uniqueConvs > 0) {
-      const nodeRegex = new RegExp(`(${nodeId}\\s*[\\[\\(\\{][\\[\\(\\{]?)([^\\]\\)\\}]+?)([\\]\\)\\}][\\]\\)\\}]?)`);
-      result = result.replace(nodeRegex, `$1$2 · ${uniqueConvs} conv$3`);
-    }
-  });
-  return result;
-}
-
-const FlowCard = ({ flow }: { flow: Flow }) => {
+const FlowCard = ({ flow, selected, onToggleSelect, mergeMode }: { flow: Flow; selected: boolean; onToggleSelect: (id: string) => void; mergeMode: boolean }) => {
   const navigate = useNavigate();
-  const { data: diagram, isLoading: diagramLoading } = useGetFlowDiagram(flow.id);
-  const { data: analyses } = useGetFlowAnalyses(flow.id);
   const updateDiagram = useUpdateFlowDiagram();
   const approveDiagram = useApproveDiagram();
   const { mutate: promote, isPending: isPromoting } = usePromoteFlow();
   const { mutate: discard, isPending: isDiscarding } = useDeleteFlow();
 
   const [editing, setEditing] = useState(false);
-  const [showIndividuals, setShowIndividuals] = useState(false);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
-  const [viewingConversationId, setViewingConversationId] = useState<string | null>(null);
+  const [localApproved, setLocalApproved] = useState(false);
 
+  const { data: diagram, isLoading: diagramLoading } = useGetFlowDiagram(editing ? flow.id : undefined);
+  const { data: analyses } = useGetFlowAnalyses(editing ? flow.id : null);
+
+  const isApproved = localApproved || diagram?.diagramApproved;
   const isBusy = isPromoting || isDiscarding;
   const hasNodes = flow.nodes.length > 0;
-
-  // Find nodes without coverage
-  const uncoveredNodes = useMemo(() => {
-    if (!diagram?.nodeMapping) return [];
-    return Object.entries(diagram.nodeMapping)
-      .filter(([, sources]) => sources.length === 0)
-      .map(([nodeId]) => nodeId);
-  }, [diagram?.nodeMapping]);
 
   const handleSave = (newMermaid: string) => {
     updateDiagram.mutate({ flowId: flow.id, diagram: newMermaid }, {
@@ -59,77 +36,31 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
     });
   };
 
-  const handleSelectAnalysis = (conversationId: string) => {
-    setSelectedConversationId(selectedConversationId === conversationId ? null : conversationId);
-  };
-
-  // Build highlighted mermaid: inject style classes for coverage
-  const highlightedChart = useMemo(() => {
-    if (!diagram?.consolidatedDiagram || !diagram?.nodeMapping || !selectedConversationId) {
-      return diagram?.consolidatedDiagram ?? '';
-    }
-
-    let chart = injectNodeCounts(diagram.consolidatedDiagram, diagram.nodeMapping);
-    const styleLines: string[] = [];
-
-    Object.entries(diagram.nodeMapping).forEach(([nodeId, sources]) => {
-      const isInConv = sources.some((s) => s.conversationId === selectedConversationId);
-      if (isInConv) {
-        styleLines.push(`    style ${nodeId} fill:#fbbf24,stroke:#f59e0b,color:#1a1a2e`);
-      } else if (sources.length === 0) {
-        styleLines.push(`    style ${nodeId} fill:#334155,stroke:#64748b,stroke-dasharray: 5 5`);
-      }
-    });
-
-    if (styleLines.length > 0) {
-      chart += '\n' + styleLines.join('\n');
-    }
-
-    return chart;
-  }, [diagram, selectedConversationId]);
-
-  // Coverage chart (no selection)
-  const coverageChart = useMemo(() => {
-    if (!diagram?.consolidatedDiagram || !diagram?.nodeMapping || selectedConversationId) return null;
-
-    let chart = injectNodeCounts(diagram.consolidatedDiagram, diagram.nodeMapping);
-    const styleLines: string[] = [];
-
-    Object.entries(diagram.nodeMapping).forEach(([nodeId, sources]) => {
-      if (sources.length === 0) {
-        styleLines.push(`    style ${nodeId} fill:#334155,stroke:#64748b,stroke-dasharray: 5 5`);
-      } else if (sources.length >= 3) {
-        styleLines.push(`    style ${nodeId} fill:#166534,stroke:#22c55e,color:#e2e8f0`);
-      } else {
-        styleLines.push(`    style ${nodeId} fill:#1e3a5f,stroke:#3b82f6,color:#e2e8f0`);
-      }
-    });
-
-    if (styleLines.length > 0) {
-      chart += '\n' + styleLines.join('\n');
-    }
-
-    return chart;
-  }, [diagram, selectedConversationId]);
-
-  const displayChart = selectedConversationId ? highlightedChart : (coverageChart ?? diagram?.consolidatedDiagram ?? '');
 
   return (
     <div className="border border-border-primary rounded-lg overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-bg-primary border-b border-border-primary">
         <div className="flex items-center gap-2 min-w-0">
+          {mergeMode && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect(flow.id)}
+              className="w-3.5 h-3.5 shrink-0 accent-purple-500"
+            />
+          )}
           <Layers size={14} className="text-accent-blue shrink-0" />
           <span className="text-sm font-medium text-text-primary truncate">{flow.name}</span>
           {flow.analysisCount > 0 && (
             <span className="text-[10px] text-accent-blue font-medium">{flow.analysisCount} conv.</span>
           )}
-          {diagram?.diagramApproved && (
+          {isApproved && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-accent-green/15 text-accent-green border-accent-green/30">
               Diagrama aprobado
             </span>
           )}
-          {diagram?.diagramModified && !diagram?.diagramApproved && (
+          {diagram?.diagramModified && !isApproved && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-accent-yellow/15 text-accent-yellow border-accent-yellow/30">
               Modificado
             </span>
@@ -141,26 +72,23 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {diagram && !diagram.diagramApproved && (
-            <>
-              <button
-                onClick={() => setEditing(true)}
-                disabled={editing}
-                className="p-1.5 rounded hover:bg-bg-tertiary text-text-tertiary hover:text-text-secondary transition-colors disabled:opacity-40"
-                title="Editar diagrama"
-              >
-                <Pencil size={14} />
-              </button>
-              <button
-                onClick={() => approveDiagram.mutate(flow.id)}
-                disabled={approveDiagram.isPending}
-                className="flex items-center gap-1 px-2.5 py-1 bg-accent-green text-white rounded text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-                title="Aprobar diagrama"
-              >
-                <CheckCircle size={12} />
-                Aprobar diagrama
-              </button>
-            </>
+          <button
+            onClick={() => setEditing(true)}
+            className="p-1.5 rounded hover:bg-bg-tertiary text-text-tertiary hover:text-text-secondary transition-colors"
+            title="Editar diagrama"
+          >
+            <Pencil size={14} />
+          </button>
+          {!isApproved && (
+            <button
+              onClick={() => approveDiagram.mutate(flow.id, { onSuccess: () => setLocalApproved(true) })}
+              disabled={approveDiagram.isPending}
+              className="flex items-center gap-1 px-2.5 py-1 bg-accent-green text-white rounded text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              title="Aprobar diagrama"
+            >
+              {approveDiagram.isPending ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+              {approveDiagram.isPending ? 'Aprobando...' : 'Aprobar diagrama'}
+            </button>
           )}
           {hasNodes && (
             <>
@@ -193,142 +121,25 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
         </div>
       </div>
 
-      {/* Uncovered nodes alert */}
-      {uncoveredNodes.length > 0 && !editing && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-accent-yellow/5 border-b border-accent-yellow/20">
-          <AlertCircle size={13} className="text-accent-yellow shrink-0" />
-          <p className="text-[11px] text-accent-yellow">
-            {uncoveredNodes.length} nodo{uncoveredNodes.length !== 1 ? 's' : ''} sugerido{uncoveredNodes.length !== 1 ? 's' : ''} por IA sin cobertura de conversaciones: {uncoveredNodes.join(', ')}
-          </p>
-        </div>
-      )}
-
-      {/* Diagram / Editor */}
-      <div className="p-3">
-        {diagramLoading && (
-          <div className="text-xs text-text-tertiary">Cargando diagrama...</div>
-        )}
-        {diagram && !editing && (
-          <MermaidDiagram chart={displayChart} />
-        )}
-        {diagram && editing && (
+      {/* Fullscreen Editor */}
+      {editing && (
+        diagramLoading ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-primary">
+            <Loader2 size={24} className="animate-spin text-text-tertiary" />
+          </div>
+        ) : diagram ? (
           <DiagramEditor
             mermaidChart={diagram.consolidatedDiagram}
             nodeMapping={diagram.nodeMapping}
+            internalQueues={diagram.internalQueues}
+            nodeCategories={diagram.nodeCategories}
             analyses={analyses}
-            selectedConversationId={selectedConversationId}
             onSave={handleSave}
             onCancel={() => setEditing(false)}
             isSaving={updateDiagram.isPending}
           />
-        )}
-        {!diagram && !diagramLoading && (
-          <div className="text-xs text-text-tertiary italic">Sin diagrama generado</div>
-        )}
-      </div>
-
-      {/* Legend */}
-      {diagram?.nodeMapping && !editing && (
-        <div className="flex items-center gap-4 px-4 py-1.5 border-t border-border-primary text-[10px] text-text-tertiary">
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded border-2 border-accent-green bg-accent-green/20" />
-            Alta cobertura (3+)
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded border-2 border-accent-blue bg-accent-blue/15" />
-            Baja cobertura
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded border-2 border-dashed border-text-tertiary" />
-            Sugerido por IA
-          </span>
-          {selectedConversationId && (
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded border-2 border-accent-yellow bg-accent-yellow/20" />
-              En conversación seleccionada
-            </span>
-          )}
-        </div>
+        ) : null
       )}
-
-      {/* Individual analyses */}
-      {analyses && analyses.length > 0 && (
-        <div className="border-t border-border-primary">
-          <button
-            onClick={() => setShowIndividuals((v) => !v)}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-text-secondary hover:bg-bg-tertiary transition-colors"
-          >
-            {showIndividuals ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            <Eye size={12} />
-            Conversaciones individuales ({analyses.length})
-          </button>
-
-          {showIndividuals && (
-            <div className="px-4 pb-3 flex flex-col gap-2">
-              <div className="flex flex-wrap gap-1.5">
-                {analyses.map((a) => {
-                  const isSelected = selectedConversationId === a.conversationId;
-                  return (
-                    <div key={a.analysisId} className="flex items-center gap-0.5">
-                      <button
-                        onClick={() => handleSelectAnalysis(a.conversationId)}
-                        className={`px-2 py-1 rounded-l text-[11px] border border-r-0 transition-colors ${
-                          isSelected
-                            ? 'bg-accent-yellow/15 text-accent-yellow border-accent-yellow/30'
-                            : 'bg-bg-primary text-text-secondary border-border-primary hover:border-accent-blue/50'
-                        }`}
-                      >
-                        {a.intent}
-                        <span className="text-text-tertiary ml-1 text-[10px]">
-                          {new Date(a.analyzedAt).toLocaleDateString()}
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => setViewingConversationId(a.conversationId)}
-                        className={`px-1.5 py-1 rounded-r text-[11px] border transition-colors ${
-                          isSelected
-                            ? 'bg-accent-yellow/15 text-accent-yellow border-accent-yellow/30'
-                            : 'bg-bg-primary text-text-tertiary border-border-primary hover:text-accent-blue hover:border-accent-blue/50'
-                        }`}
-                        title="Ver conversación"
-                      >
-                        <MessageSquare size={11} />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Show selected individual diagram */}
-              {selectedConversationId && (() => {
-                const selected = analyses.find((a) => a.conversationId === selectedConversationId);
-                if (!selected) return null;
-                return (
-                  <div className="mt-2 border border-border-primary rounded-md p-3 bg-bg-primary">
-                    <p className="text-xs text-text-secondary mb-2">{selected.flowSummary}</p>
-                    {selected.flowDiagram && (
-                      <MermaidDiagram chart={selected.flowDiagram} />
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Conversation drawer */}
-      {viewingConversationId && (() => {
-        const analysis = analyses?.find((a) => a.conversationId === viewingConversationId);
-        return (
-          <ConversationDrawer
-            conversationId={viewingConversationId}
-            title={analysis?.intent ?? 'Conversación'}
-            subtitle={analysis?.flowSummary}
-            onClose={() => setViewingConversationId(null)}
-          />
-        );
-      })()}
     </div>
   );
 };
@@ -336,8 +147,54 @@ const FlowCard = ({ flow }: { flow: Flow }) => {
 export const DiagramReviewSection = () => {
   const { data: flows, isLoading } = useGetFlows();
   const { mutate: generateFlows, isPending: isGeneratingFlows } = useGenerateFlows();
+  const { mutate: mergeIntents, isPending: isMerging, isSuccess: mergeSuccess, data: mergeResult, reset: resetMerge } = useMergeIntents();
   const drafts = (flows?.filter((f) => f.status === 'draft') ?? [])
     .sort((a, b) => (b.analysisCount ?? 0) - (a.analysisCount ?? 0));
+
+  const [mergeMode, setMergeMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showTargetModal, setShowTargetModal] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleStartMerge = () => {
+    if (selectedIds.size < 2) return;
+    setShowTargetModal(true);
+  };
+
+  const handleMerge = (targetFlowId: string) => {
+    const targetFlow = drafts.find((d) => d.id === targetFlowId);
+    const targetIntentId = targetFlow?.intents?.[0]?.id;
+    if (!targetIntentId) return;
+
+    const sourceIntentIds = drafts
+      .filter((d) => selectedIds.has(d.id) && d.id !== targetFlowId)
+      .map((d) => d.intents?.[0]?.id)
+      .filter(Boolean) as string[];
+
+    if (sourceIntentIds.length === 0) return;
+
+    mergeIntents({ targetIntentId, sourceIntentIds }, {
+      onSuccess: () => {
+        setShowTargetModal(false);
+        setSelectedIds(new Set());
+        setMergeMode(false);
+      },
+    });
+  };
+
+  const cancelMergeMode = () => {
+    setMergeMode(false);
+    setSelectedIds(new Set());
+    setShowTargetModal(false);
+  };
 
   if (isLoading) {
     return (
@@ -349,6 +206,8 @@ export const DiagramReviewSection = () => {
       </div>
     );
   }
+
+  const selectedDrafts = drafts.filter((d) => selectedIds.has(d.id));
 
   return (
     <div className="bg-bg-secondary border border-border-primary rounded-lg p-4 md:p-6 shadow-sm">
@@ -363,23 +222,101 @@ export const DiagramReviewSection = () => {
               : 'Los flujos generados aparecerán aquí para revisión'}
           </p>
         </div>
-        <button
-          onClick={() => generateFlows()}
-          disabled={isGeneratingFlows}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue text-white rounded-md text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {isGeneratingFlows ? <Loader2 size={14} className="animate-spin" /> : <GitBranch size={14} />}
-          Generar nodos
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {mergeMode ? (
+            <>
+              <button
+                onClick={handleStartMerge}
+                disabled={selectedIds.size < 2}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 text-white rounded-md text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                <Merge size={14} />
+                Fusionar ({selectedIds.size})
+              </button>
+              <button
+                onClick={cancelMergeMode}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-border-primary text-text-secondary rounded-md text-xs font-medium hover:bg-bg-tertiary"
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <>
+              {drafts.length >= 2 && (
+                <button
+                  onClick={() => setMergeMode(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-purple-400/30 text-purple-400 rounded-md text-xs font-medium hover:bg-purple-400/10 transition-colors"
+                >
+                  <Merge size={14} />
+                  Fusionar
+                </button>
+              )}
+              <button
+                onClick={() => generateFlows()}
+                disabled={isGeneratingFlows}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-blue text-white rounded-md text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {isGeneratingFlows ? <Loader2 size={14} className="animate-spin" /> : <GitBranch size={14} />}
+                Generar nodos
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {mergeSuccess && mergeResult && (
+        <div className="flex items-center justify-between p-3 bg-purple-400/10 border border-purple-400/30 rounded-md mb-4">
+          <p className="text-xs text-purple-400">
+            Fusionado: {mergeResult.mergedAnalyses} análisis movidos
+            {mergeResult.refinement && (
+              <> → <span className="font-medium">{mergeResult.refinement.intentName}</span> (${mergeResult.refinement.costUsd.toFixed(4)})</>
+            )}
+          </p>
+          <button onClick={() => resetMerge()} className="text-[10px] text-purple-400 hover:text-purple-300">✕</button>
+        </div>
+      )}
 
       {drafts.length === 0 ? (
         <p className="text-sm text-text-secondary italic">No hay flujos en borrador</p>
       ) : (
         <div className="flex flex-col gap-4">
           {drafts.map((f) => (
-            <FlowCard key={f.id} flow={f} />
+            <FlowCard key={f.id} flow={f} selected={selectedIds.has(f.id)} onToggleSelect={toggleSelect} mergeMode={mergeMode} />
           ))}
+        </div>
+      )}
+
+      {/* Target selection modal */}
+      {showTargetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowTargetModal(false)}>
+          <div className="bg-bg-secondary border border-border-primary rounded-lg shadow-xl p-4 w-96" onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-semibold text-text-primary mb-1">¿Cuál es el destino?</p>
+            <p className="text-[11px] text-text-tertiary mb-3">
+              Los demás flujos seleccionados se fusionarán en el que elijas. Sus conversaciones se moverán y el diagrama se refinará.
+            </p>
+            <div className="flex flex-col gap-1.5 mb-3 max-h-48 overflow-y-auto">
+              {selectedDrafts.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => handleMerge(d.id)}
+                  disabled={isMerging}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded text-xs text-left border bg-bg-primary text-text-secondary border-border-primary hover:border-purple-400 hover:text-purple-400 transition-colors disabled:opacity-50"
+                >
+                  <Layers size={12} />
+                  <span className="truncate flex-1">{d.name}</span>
+                  {d.analysisCount > 0 && (
+                    <span className="text-text-tertiary text-[10px]">{d.analysisCount} conv.</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            {isMerging && (
+              <div className="flex items-center gap-2 text-xs text-purple-400">
+                <Loader2 size={12} className="animate-spin" />
+                Fusionando...
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
