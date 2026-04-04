@@ -16,7 +16,7 @@ const EDGE_MARKER = { type: MarkerType.ArrowClosed as const, color: 'var(--color
 
 
 function getTotalSessions(flow: Flow, activeSessions: ActiveSessionsResponse): number {
-  let total = activeSessions[flow.routerNode.id] || 0;
+  let total = flow.routerNode ? (activeSessions[flow.routerNode.id] || 0) : 0;
   for (const fn of (flow.nodes ?? [])) {
     total += activeSessions[fn.node.id] || 0;
   }
@@ -150,7 +150,7 @@ export function useFlowCanvasLayout({
           });
         });
 
-        const entryRfId = nodeIdToRfId[flow.routerNode.id];
+        const entryRfId = flow.routerNode ? nodeIdToRfId[flow.routerNode.id] : undefined;
         if (entryRfId) {
           rfEdges[rfEdges.length - 1] = {
             ...rfEdges[rfEdges.length - 1],
