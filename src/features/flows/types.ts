@@ -46,6 +46,11 @@ export interface FlowTransition {
 
 export type FlowStatus = 'draft' | 'active' | 'archived';
 
+export interface FlowIntent {
+  id: string;
+  name: string;
+}
+
 export interface Flow {
   id: string;
   name: string;
@@ -58,6 +63,7 @@ export interface Flow {
   routerNode: Node | null;
   nodes: FlowNode[];
   transitions: FlowTransition[];
+  intents: FlowIntent[];
 }
 
 export interface FlowVersion {
