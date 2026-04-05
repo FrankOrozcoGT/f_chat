@@ -1,7 +1,6 @@
 import { MainLayout } from '@/layouts/MainLayout';
 import { BatchAnalysisSection } from './BatchAnalysisSection';
 import { InternalsReviewSection } from './InternalsReviewSection';
-import { GenerateDiagramsSection } from './GenerateDiagramsSection';
 import { DiagramReviewSection } from './DiagramReviewSection';
 
 export const AiSetupPage = () => {
@@ -32,10 +31,7 @@ export const AiSetupPage = () => {
             <InternalsReviewSection />
           </div>
 
-          {/* Paso 3: Generar diagramas */}
-          <GenerateDiagramsSection />
-
-          {/* Paso 4-7: Revisión de diagramas + nodos + promover */}
+          {/* Paso 3-7: Intents, diagramas, nodos, promover */}
           <DiagramReviewSection />
         </div>
       </div>
