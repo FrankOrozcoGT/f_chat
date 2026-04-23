@@ -39,6 +39,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const isInitialLoad = useRef(true);
   const { setSelectedConversationId, selectedConversationType } = useConversationsStore();
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
@@ -100,10 +101,21 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
     return el.scrollHeight - el.scrollTop - el.clientHeight < 200;
   };
 
-  // Auto-scroll to bottom when messages change (only if near bottom)
+  // Auto-scroll to bottom when messages change (always on initial load, then only if near bottom)
   useEffect(() => {
-    if (isNearBottom()) scrollToBottom();
+    if (displayMessages.length === 0) return;
+    if (isInitialLoad.current) {
+      scrollToBottom('instant');
+      isInitialLoad.current = false;
+    } else if (isNearBottom()) {
+      scrollToBottom();
+    }
   }, [displayMessages]);
+
+  // Reset initial load flag when conversation changes
+  useEffect(() => {
+    isInitialLoad.current = true;
+  }, [conversationId, historicalConversationId]);
 
   // Track scroll position to show/hide the scroll-to-bottom button
   useEffect(() => {
