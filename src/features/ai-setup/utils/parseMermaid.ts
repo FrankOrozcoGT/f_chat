@@ -28,9 +28,6 @@ export function parseMermaidFlowchart(chart: string): { nodes: ParsedNode[]; edg
   // Regex for node definitions: ID[Label] or ID(Label) or ID{Label} etc.
   const nodePattern = /([A-Za-z0-9_]+)\s*[\[\(\{][\[\(\{]?\s*([^\]\)\}]+?)\s*[\]\)\}][\]\)\}]?/g;
 
-  // Regex for edges: A -->|label| B or A --> B or A --- B etc.
-  const edgePattern = /([A-Za-z0-9_]+)\s*(-{2,3}>?\|?[^|]*\|?-{0,3}>?)\s*(?:\|([^|]+)\|)?\s*([A-Za-z0-9_]+)/g;
-
   for (const line of contentLines) {
     // Skip style/class/subgraph lines
     if (/^(style|class|subgraph|end|click|linkStyle)/i.test(line)) continue;

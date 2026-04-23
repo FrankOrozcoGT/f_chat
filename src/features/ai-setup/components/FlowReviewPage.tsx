@@ -17,8 +17,6 @@ export const FlowReviewPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('version');
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set([0]));
-  const [expandedCases, setExpandedCases] = useState<Set<number>>(new Set());
-
   const { data: flows } = useGetFlows();
   const { data: versions, isLoading: versionsLoading } = useGetFlowVersions(flowId ?? null);
   const { data: analyses, isLoading: analysesLoading } = useGetFlowAnalyses(flowId ?? null);
@@ -40,14 +38,6 @@ export const FlowReviewPage = () => {
 
   const toggleNode = (i: number) => {
     setExpandedNodes((prev) => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
-  };
-
-  const toggleCase = (i: number) => {
-    setExpandedCases((prev) => {
       const next = new Set(prev);
       next.has(i) ? next.delete(i) : next.add(i);
       return next;
@@ -241,8 +231,8 @@ export const FlowReviewPage = () => {
                     <p className="text-xs font-semibold text-text-tertiary uppercase mb-3">Transiciones</p>
                     <div className="flex flex-col gap-1.5">
                       {latestVersion.nodesSnapshot.transitions.map((t, i) => {
-                        const fromName = latestVersion.nodesSnapshot.nodes[t.fromNodeIndex]?.name ?? t.fromNodeIndex;
-                        const toName = latestVersion.nodesSnapshot.nodes[t.toNodeIndex]?.name ?? t.toNodeIndex;
+                        const fromName = latestVersion.nodesSnapshot.nodes.find((n) => n.id === t.fromNodeId)?.name ?? t.fromNodeId;
+                        const toName = latestVersion.nodesSnapshot.nodes.find((n) => n.id === t.toNodeId)?.name ?? t.toNodeId;
                         return (
                           <div key={i} className="flex items-center gap-2 text-xs">
                             <span className="text-text-secondary">{fromName}</span>
@@ -257,31 +247,6 @@ export const FlowReviewPage = () => {
                 )}
 
                 {/* Selected cases */}
-                {latestVersion.nodesSnapshot.selectedCases?.length > 0 && (
-                  <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-                    <p className="text-xs font-semibold text-text-tertiary uppercase mb-3">
-                      Casos representativos ({latestVersion.nodesSnapshot.selectedCases.length})
-                    </p>
-                    <div className="flex flex-col gap-2">
-                      {latestVersion.nodesSnapshot.selectedCases.map((c, i) => (
-                        <div key={i} className="border border-border-primary rounded-md overflow-hidden">
-                          <button
-                            onClick={() => toggleCase(i)}
-                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-bg-tertiary/50 transition-colors text-left"
-                          >
-                            <p className="text-xs text-text-secondary truncate pr-2">{c.flowSummary}</p>
-                            {expandedCases.has(i) ? <ChevronDown size={12} className="text-text-tertiary shrink-0" /> : <ChevronRight size={12} className="text-text-tertiary shrink-0" />}
-                          </button>
-                          {expandedCases.has(i) && (
-                            <div className="px-3 pb-3 border-t border-border-primary mt-1">
-                              <MermaidDiagram chart={c.flowDiagram} className="mt-2" />
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
             )}
           </div>

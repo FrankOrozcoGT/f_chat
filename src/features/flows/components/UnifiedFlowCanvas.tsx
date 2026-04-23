@@ -190,7 +190,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
     if (nodeId) {
       for (const flow of flows) {
         const isInFlow =
-          flow.routerNode.id === nodeId ||
+          flow.routerNode?.id === nodeId ||
           (flow.nodes ?? []).some((fn) => fn.node.id === nodeId);
         if (isInFlow) {
           setExpandedFlowIds((prev) => {
@@ -213,7 +213,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
 
   const openEditFlow = useCallback((flow: Flow) => {
     setEditFlowTarget(flow);
-    setFlowForm({ name: flow.name, routerNodeId: flow.routerNodeId, newNodeName: '' });
+    setFlowForm({ name: flow.name, routerNodeId: flow.routerNodeId ?? '', newNodeName: '' });
     setFlowFormErrors({});
   }, []);
 
@@ -330,7 +330,7 @@ export const UnifiedFlowCanvas = ({ flows, activeSessions }: UnifiedFlowCanvasPr
 
   const openEditNode = useCallback((node: Node) => {
     setEditNodeTarget(node);
-    setNodeForm({ name: node.name, systemPrompt: node.systemPrompt ?? '', tools: node.tools, preCode: parseJsonArr(node.preCode), postCode: parseJsonArr(node.postCode), todos: node.todos ?? [], onError: node.onError });
+    setNodeForm({ name: node.name, systemPrompt: node.systemPrompt ?? '', tools: node.tools.map(preCodeItemCode), preCode: parseJsonArr(node.preCode), postCode: parseJsonArr(node.postCode), todos: node.todos ?? [], onError: node.onError });
     setNodeFormErrors({});
     setNodeFormTab('general');
   }, []);
