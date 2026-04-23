@@ -24,7 +24,7 @@ interface FlowGroupNodeData {
 }
 
 export const FlowGroupNode = memo(({ data }: { data: FlowGroupNodeData }) => {
-  const badge = statusConfig[data.status];
+  const badge = statusConfig[data.status] ?? statusConfig['draft'];
   const actionButtons = (
     <div className="flex items-center gap-0.5">
       <button
