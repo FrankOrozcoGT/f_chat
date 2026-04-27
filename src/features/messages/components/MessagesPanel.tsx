@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Bot, Hand, Info, AlertTriangle, Search, Loader2, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Bot, Hand, Info, AlertTriangle, Search, Loader2, ChevronDown, MoreVertical, X as XCircle } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
@@ -20,6 +20,7 @@ import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { useTakeControl } from '../api/useTakeControl';
 import { useReturnToAi } from '../api/useReturnToAi';
+import { useCloseConversation } from '../api/useCloseConversation';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket } from '@/lib/websocket';
 import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
@@ -42,6 +43,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
   const isInitialLoad = useRef(true);
   const { setSelectedConversationId, selectedConversationType } = useConversationsStore();
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
   const { showToast } = useToast();
   const { showModal: showDisconnectedModal, closeModal: closeDisconnectedModal } = usePhoneReconnectStore();
@@ -87,6 +89,19 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
   const returnToAi = useReturnToAi({
     onError: (error) => {
       const msg = (error as any)?.response?.data?.message || 'Error al devolver a IA';
+      showToast(msg, 'error');
+    },
+  });
+  const closeConversation = useCloseConversation({
+    onSuccess: (data) => {
+      setIsMenuOpen(false);
+      const msg = data.movedMessages > 0
+        ? `Conversación cerrada. ${data.movedMessages} mensajes archivados.`
+        : 'Conversación cerrada.';
+      showToast(msg, 'success');
+    },
+    onError: (error) => {
+      const msg = (error as any)?.response?.data?.message || 'Error al cerrar la conversación';
       showToast(msg, 'error');
     },
   });
@@ -385,6 +400,38 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
         >
           <Info className="w-5 h-5 text-accent-blue" />
         </button>
+
+        {/* Kebab menu */}
+        <div className="relative">
+          <button
+            onClick={() => setIsMenuOpen((v) => !v)}
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-bg-tertiary transition-colors"
+            aria-label="Más opciones"
+          >
+            <MoreVertical className="w-5 h-5 text-text-secondary" />
+          </button>
+
+          {isMenuOpen && (
+            <>
+              {/* Backdrop */}
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setIsMenuOpen(false)}
+              />
+              {/* Dropdown */}
+              <div className="absolute right-0 top-full mt-1 w-52 bg-bg-secondary border border-border-primary rounded-lg shadow-lg z-20 py-1">
+                <button
+                  onClick={() => closeConversation.mutate(conversationId)}
+                  disabled={closeConversation.isPending}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <XCircle className="w-4 h-4 text-accent-red" />
+                  {closeConversation.isPending ? 'Cerrando...' : 'Cerrar Conversación'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
       {/* Historical conversation warning banner */}
