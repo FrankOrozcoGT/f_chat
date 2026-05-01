@@ -21,6 +21,7 @@ export interface Product {
   name: string;
   basePrice: number;
   description: string | null;
+  imageUrl: string | null;
   discounts: ProductDiscount[];
 }
 

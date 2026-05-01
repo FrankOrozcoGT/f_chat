@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Plus, Package, Pencil, Trash2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Plus, Package, Pencil, Trash2, ImagePlus } from 'lucide-react';
 import { CrmLayout } from '@/layouts/CrmLayout';
 import { useGetProducts } from '../api/useGetProducts';
 import { useCreateProduct } from '../api/useCreateProduct';
 import { useUpdateProduct } from '../api/useUpdateProduct';
 import { useDeleteProduct } from '../api/useDeleteProduct';
+import { useUploadProductImage } from '../api/useUploadProductImage';
 import { useToast } from '@/shared/hooks/useToast';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
@@ -23,7 +24,11 @@ export const ProductsPage = () => {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
+  const uploadImage = useUploadProductImage();
   const { showToast } = useToast();
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -99,6 +104,25 @@ export const ProductsPage = () => {
     }
   };
 
+  const openImageUpload = (productId: string) => {
+    setUploadTargetId(productId);
+    imageInputRef.current?.click();
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadTargetId) return;
+    e.target.value = '';
+    try {
+      await uploadImage.mutateAsync({ id: uploadTargetId, file });
+      showToast('Imagen actualizada', 'success');
+    } catch {
+      showToast('Error al subir la imagen', 'error');
+    } finally {
+      setUploadTargetId(null);
+    }
+  };
+
   const isSubmitting = createProduct.isPending || updateProduct.isPending;
 
   // Mobile card view
@@ -111,9 +135,17 @@ export const ProductsPage = () => {
         >
           <div className="flex items-start justify-between gap-3 mb-2">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-bg-tertiary flex items-center justify-center shrink-0">
-                <Package size={16} className="text-text-secondary" />
-              </div>
+              <button
+                onClick={() => openImageUpload(product.id)}
+                className="w-9 h-9 rounded-full bg-bg-tertiary flex items-center justify-center shrink-0 overflow-hidden hover:opacity-80 transition-opacity"
+                title="Cambiar imagen"
+              >
+                {product.imageUrl ? (
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Package size={16} className="text-text-secondary" />
+                )}
+              </button>
               <div>
                 <p className="font-medium text-text-primary text-sm">{product.name}</p>
                 {product.description && (
@@ -135,6 +167,9 @@ export const ProductsPage = () => {
             </button>
           </div>
           <div className="flex gap-2">
+            <Button variant="secondary" size="sm" className="flex-1 min-h-11" onClick={() => openImageUpload(product.id)} isLoading={uploadImage.isPending && uploadTargetId === product.id}>
+              <ImagePlus size={14} /> Imagen
+            </Button>
             <Button variant="secondary" size="sm" className="flex-1 min-h-11" onClick={() => openEdit(product)}>
               <Pencil size={14} /> Editar
             </Button>
@@ -153,9 +188,17 @@ export const ProductsPage = () => {
       header: 'Producto',
       render: (p) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-bg-tertiary flex items-center justify-center shrink-0">
-            <Package size={16} className="text-text-secondary" />
-          </div>
+          <button
+            onClick={() => openImageUpload(p.id)}
+            className="w-9 h-9 rounded-full bg-bg-tertiary flex items-center justify-center shrink-0 overflow-hidden hover:opacity-80 transition-opacity"
+            title="Cambiar imagen"
+          >
+            {p.imageUrl ? (
+              <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+            ) : (
+              <Package size={16} className="text-text-secondary" />
+            )}
+          </button>
           <div>
             <p className="font-medium text-text-primary">{p.name}</p>
             {p.description && (
@@ -188,6 +231,9 @@ export const ProductsPage = () => {
       header: '',
       render: (p) => (
         <div className="flex items-center justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => openImageUpload(p.id)} title="Subir imagen" isLoading={uploadImage.isPending && uploadTargetId === p.id}>
+            <ImagePlus size={16} />
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => openEdit(p)} title="Editar">
             <Pencil size={16} />
           </Button>
@@ -315,6 +361,15 @@ export const ProductsPage = () => {
       <DiscountsModal
         product={discountsProduct}
         onClose={() => setDiscountsProduct(null)}
+      />
+
+      {/* Hidden image input */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageChange}
       />
 
       {/* Delete Confirm */}
