@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Tag, Pencil, Trash2, SlidersHorizontal, Clock, Settings } from 'lucide-react';
+import { Plus, Tag, Pencil, Trash2, SlidersHorizontal, Clock, Settings, MessageSquare } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
 import { Select } from '@/shared/ui/Select';
+import { SearchableSelect } from '@/shared/ui/SearchableSelect';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
@@ -12,6 +13,8 @@ import { useToast } from '@/shared/hooks/useToast';
 import { Toast } from '@/shared/ui/Toast';
 import { useGetSettings } from '../api/useGetSettings';
 import { useUpdateSettings } from '../api/useUpdateSettings';
+import { useGetFarewellTemplate } from '../api/useGetFarewellTemplate';
+import { useUpdateFarewellTemplate } from '../api/useUpdateFarewellTemplate';
 import { useGetLabels } from '@/features/queue/labels/api/useGetLabels';
 import { useCreateLabel } from '@/features/queue/labels/api/useCreateLabel';
 import { useUpdateLabel } from '@/features/queue/labels/api/useUpdateLabel';
@@ -46,7 +49,7 @@ const analysisModeOptions = [
 
 const emptyLabelForm = { label: '', clientId: '', groupJid: '' };
 
-type TabId = 'analysis' | 'schedule' | 'labels';
+type TabId = 'analysis' | 'schedule' | 'labels' | 'messages';
 
 interface Tab {
   id: TabId;
@@ -59,6 +62,7 @@ const TABS: Tab[] = [
   { id: 'analysis', label: 'Análisis', icon: <SlidersHorizontal size={16} /> },
   { id: 'schedule', label: 'Horarios', icon: <Clock size={16} />, ownerOnly: true },
   { id: 'labels', label: 'Etiquetas', icon: <Tag size={16} /> },
+  { id: 'messages', label: 'Mensajes', icon: <MessageSquare size={16} /> },
 ];
 
 export const SettingsPage = () => {
@@ -73,6 +77,12 @@ export const SettingsPage = () => {
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('manual');
   const [messageLimit, setMessageLimit] = useState<number | ''>(30);
   const [workSchedule, setWorkSchedule] = useState<WorkSchedule>({});
+
+  // Farewell template
+  const { data: farewellTemplate } = useGetFarewellTemplate();
+  const updateFarewell = useUpdateFarewellTemplate();
+  const [farewellContent, setFarewellContent] = useState('');
+  const farewellHasChanges = farewellTemplate !== undefined && farewellContent !== farewellTemplate.content;
 
   // Labels state
   const { data: labels = [], isLoading: labelsLoading } = useGetLabels();
@@ -94,6 +104,12 @@ export const SettingsPage = () => {
       setWorkSchedule(settings.workSchedule ?? {});
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (farewellTemplate) {
+      setFarewellContent(farewellTemplate.content);
+    }
+  }, [farewellTemplate]);
 
   const toggleDay = (day: string) => {
     setWorkSchedule((prev) => {
@@ -542,6 +558,47 @@ export const SettingsPage = () => {
                 </div>
               )}
 
+              {/* Mensajes */}
+              {activeTab === 'messages' && (
+                <div className="bg-bg-secondary border border-border-primary rounded-lg p-4 md:p-6 space-y-6">
+                  <div>
+                    <h2 className="text-base font-semibold text-text-primary mb-1">Mensajes del sistema</h2>
+                    <p className="text-sm text-text-secondary">Personaliza los mensajes automáticos que envía el bot.</p>
+                  </div>
+
+                  <div className="border-t border-border-primary pt-6 space-y-2">
+                    <label className="block text-sm font-medium text-text-primary">
+                      Mensaje de despedida
+                    </label>
+                    <p className="text-xs text-text-tertiary">
+                      Se envía automáticamente al cerrar una conversación.
+                    </p>
+                    <textarea
+                      value={farewellContent}
+                      onChange={(e) => setFarewellContent(e.target.value)}
+                      rows={5}
+                      className="w-full px-3 py-2 text-sm bg-bg-primary border border-border-primary rounded-md text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent-blue resize-y"
+                      placeholder="Ej: ¡Hasta pronto! Si necesitas algo más, no dudes en contactarnos."
+                    />
+                  </div>
+
+                  <div className="pt-4 border-t border-border-primary flex justify-end">
+                    <Button
+                      onClick={() => {
+                        updateFarewell.mutate(farewellContent, {
+                          onSuccess: () => showToast('Mensaje de despedida guardado', 'success'),
+                          onError: () => showToast('Error al guardar el mensaje', 'error'),
+                        });
+                      }}
+                      disabled={!farewellHasChanges || updateFarewell.isPending}
+                      isLoading={updateFarewell.isPending}
+                    >
+                      Guardar cambios
+                    </Button>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </div>
@@ -563,25 +620,27 @@ export const SettingsPage = () => {
               />
             </FormField>
             <FormField label="Cliente" optional>
-              <Select
+              <SearchableSelect
                 value={labelForm.clientId}
                 options={[
                   { value: '', label: 'Sin cliente' },
                   ...contactsSelect.map((c) => ({ value: c.id, label: c.name || c.phoneNumber })),
                 ]}
                 onChange={(val) => setLabelForm((f) => ({ ...f, clientId: val }))}
-                size="md"
+                placeholder="Sin cliente"
+                searchPlaceholder="Buscar cliente..."
               />
             </FormField>
             <FormField label="Grupo" optional>
-              <Select
+              <SearchableSelect
                 value={labelForm.groupJid}
                 options={[
                   { value: '', label: 'Sin grupo' },
                   ...groupsSelect.map((g) => ({ value: g.groupJid, label: g.groupName })),
                 ]}
                 onChange={(val) => setLabelForm((f) => ({ ...f, groupJid: val }))}
-                size="md"
+                placeholder="Sin grupo"
+                searchPlaceholder="Buscar grupo..."
               />
             </FormField>
           </div>
