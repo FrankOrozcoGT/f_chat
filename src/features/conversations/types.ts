@@ -17,6 +17,7 @@ export interface Conversation {
   type: ConversationType;
   clientPhone: string;
   clientName: string;
+  clientId?: string;
   clientAvatar?: string;
   groupName?: string;
   participants?: Participant[];

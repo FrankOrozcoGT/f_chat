@@ -66,6 +66,7 @@ export const useGetConversations = (params: GetConversationsParams = {}) => {
         type: conv.type ?? 'individual',
         clientPhone: conv.client?.phoneNumber ?? conv.participants?.[0]?.phoneNumber ?? '',
         clientName: conv.type === 'group' ? (conv.groupName ?? 'Grupo') : (conv.client?.name ?? ''),
+        clientId: conv.client?.id,
         clientAvatar: conv.type === 'individual' ? (conv.client?.profilePicUrl ?? undefined) : undefined,
         groupName: conv.groupName ?? undefined,
         participants: conv.participants,

@@ -1,9 +1,11 @@
-// Individual conversation item component
-// Shows avatar, name, preview, timestamp, and unread badge
-
-import { Bot, Hand } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Bot, Hand, Pencil, Check, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Conversation } from '../types';
 import { useConversationsStore } from '../store';
+import { conversationKeys } from '../api/conversationKeys';
+import { useUpdateContactName } from '@/features/contacts/api/useUpdateContactName';
+import { useToast } from '@/shared/hooks/useToast';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -14,6 +16,13 @@ interface ConversationItemProps {
 export const ConversationItem = ({ conversation }: ConversationItemProps) => {
   const { selectedConversationId, setSelectedConversation } =
     useConversationsStore();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const { mutate: updateName, isPending } = useUpdateContactName();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const isSelected = selectedConversationId === conversation.id;
   const hasUnread = conversation.unreadCount > 0 || conversation.lastMessageDirection === 'inbound';
@@ -22,7 +31,6 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
     setSelectedConversation(conversation.id, conversation.type);
   };
 
-  // Format timestamp relative to now
   const formattedTime = conversation.lastMessageAt
     ? formatDistanceToNow(new Date(conversation.lastMessageAt), {
         addSuffix: true,
@@ -30,7 +38,6 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
       })
     : '';
 
-  // Get initials for avatar fallback
   const initials = conversation.clientName
     .split(' ')
     .map((n) => n[0])
@@ -38,7 +45,6 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
     .toUpperCase()
     .slice(0, 2);
 
-  // Consistent gradient per contact based on phone number (djb2 hash)
   const AVATAR_GRADIENTS: [string, string][] = [
     ['#FF6B6B', '#FF8E53'],
     ['#FFC107', '#FF8E53'],
@@ -60,8 +66,48 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
   }
   const [gradientFrom, gradientTo] = AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
 
-  // Clean phone number (remove WhatsApp group suffix @g.us)
   const cleanPhone = conversation.clientPhone.replace(/@g\.us$/, '');
+
+  const startEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setInputValue(conversation.clientName);
+    setIsEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const cancelEditing = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setIsEditing(false);
+    setInputValue('');
+  };
+
+  const save = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const trimmed = inputValue.trim();
+    if (!trimmed || trimmed === conversation.clientName || !conversation.clientId) {
+      cancelEditing();
+      return;
+    }
+    updateName(
+      { contactId: conversation.clientId, name: trimmed },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+          setIsEditing(false);
+          showToast('Nombre actualizado', 'success');
+        },
+        onError: () => {
+          showToast('Error al actualizar el nombre', 'error');
+        },
+      }
+    );
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') save();
+    if (e.key === 'Escape') cancelEditing();
+  };
 
   return (
     <button
@@ -79,7 +125,6 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
       {/* Avatar */}
       <div className="shrink-0 w-12 h-12 relative">
         {conversation.type === 'group' ? (
-          // Group avatar: stack of participant photos (WhatsApp style)
           (() => {
             const pics = (conversation.participants ?? []).slice(0, 4);
             if (pics.length === 0) {
@@ -92,7 +137,6 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
                 </div>
               );
             }
-            // 2x2 grid for 3+ participants, side-by-side for 2, single for 1
             const count = pics.length;
             const gridClass = count >= 3
               ? 'grid grid-cols-2 gap-[2px]'
@@ -150,10 +194,39 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
       <div className="flex-1 min-w-0">
         {/* Name row */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
-          <h3 className={`text-base leading-tight truncate ${hasUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-semibold text-gray-900 dark:text-white'}`}>
-            {conversation.clientName}
-          </h3>
-          {conversation.unreadCount > 0 && (
+          {isEditing ? (
+            <div className="flex items-center gap-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+              <input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+                disabled={isPending}
+                className="flex-1 min-w-0 text-base font-semibold bg-transparent border-b border-blue-500 outline-none text-gray-900 dark:text-white"
+              />
+              <button onClick={save} disabled={isPending} className="shrink-0 text-blue-500 hover:opacity-70 transition-opacity">
+                <Check className="w-4 h-4" />
+              </button>
+              <button onClick={cancelEditing} disabled={isPending} className="shrink-0 text-gray-400 hover:opacity-70 transition-opacity">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <h3 className={`text-base leading-tight truncate ${hasUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-semibold text-gray-900 dark:text-white'}`}>
+                {conversation.clientName}
+              </h3>
+              {conversation.type === 'individual' && conversation.clientId && (
+                <button
+                  onClick={startEditing}
+                  className="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          )}
+          {!isEditing && conversation.unreadCount > 0 && (
             <span className="shrink-0 min-w-4.5 h-4.5 px-1 rounded-full bg-amber-400 text-white text-[10px] font-bold flex items-center justify-center">
               {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
             </span>
@@ -161,34 +234,35 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
         </div>
 
         {/* Last message preview */}
-        {conversation.lastMessage && (
+        {!isEditing && conversation.lastMessage && (
           <p className={`text-sm truncate mb-1 ${hasUnread ? 'text-gray-800 dark:text-gray-200 font-medium' : 'text-gray-600 dark:text-gray-300'}`}>
             {conversation.lastMessage}
           </p>
         )}
 
         {/* Bottom row: phone + timestamp */}
-        <div className="flex items-center justify-between gap-2 text-xs">
-          <span className="text-gray-400 dark:text-gray-500 truncate">
-            {conversation.type === 'group'
-              ? `Grupo · ${(conversation.participants ?? []).length} participantes`
-              : cleanPhone}
-          </span>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {conversation.mode === 'AI' ? (
-              <span title="Modo IA"><Bot className="w-3.5 h-3.5 text-accent-purple" /></span>
-            ) : conversation.mode === 'HITL' ? (
-              <span title="Modo HITL - Atendido por humano"><Hand className="w-3.5 h-3.5 text-accent-orange" /></span>
-            ) : null}
-            {formattedTime && (
-              <span className={hasUnread ? 'text-amber-500 font-medium' : 'text-gray-400 dark:text-gray-500'}>
-                {formattedTime}
-              </span>
-            )}
+        {!isEditing && (
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <span className="text-gray-400 dark:text-gray-500 truncate">
+              {conversation.type === 'group'
+                ? `Grupo · ${(conversation.participants ?? []).length} participantes`
+                : cleanPhone}
+            </span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {conversation.mode === 'AI' ? (
+                <span title="Modo IA"><Bot className="w-3.5 h-3.5 text-accent-purple" /></span>
+              ) : conversation.mode === 'HITL' ? (
+                <span title="Modo HITL - Atendido por humano"><Hand className="w-3.5 h-3.5 text-accent-orange" /></span>
+              ) : null}
+              {formattedTime && (
+                <span className={hasUnread ? 'text-amber-500 font-medium' : 'text-gray-400 dark:text-gray-500'}>
+                  {formattedTime}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
-
     </button>
   );
 };

@@ -61,7 +61,7 @@ export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HI
 
   return (
     <div className="h-full overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 bg-bg-primary">
-      <ClientInfo client={conversationDetail.client} />
+      <ClientInfo client={conversationDetail.client} conversationId={conversationId} />
       <ProductsPromotions
         products={conversationDetail.products}
         promotions={conversationDetail.promotions}
