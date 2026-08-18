@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Smartphone, Circle, Clock, Trash2 } from 'lucide-react';
 import { Card, CardBody } from '@/shared/ui/Card';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -19,6 +19,11 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
   const [currentStatus, setCurrentStatus] = useState<PhoneStatus>(phone.status);
   const deletePhone = useDeletePhone();
   const { showToast } = useToast();
+
+  // Resincronizar cuando la prop cambia por una vía distinta al socket (ej. refetch de la lista)
+  useEffect(() => {
+    setCurrentStatus(phone.status);
+  }, [phone.status]);
 
   // WebSocket listener para actualizaciones de estado en tiempo real
   useSocketEvent<PhoneStatusChangedPayload>('phone:status_changed', useCallback((data) => {

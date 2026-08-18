@@ -159,7 +159,10 @@ export function useTestSession(flowId: string | undefined, onNodeHighlight: (nod
     if (!testId) return;
     try {
       const result = await testStepBack.mutateAsync({ testId });
-      setMessages((prev) => prev.slice(0, -2));
+      setMessages((prev) => {
+        const lastUserIdx = prev.map((m) => m.role).lastIndexOf('user');
+        return lastUserIdx === -1 ? prev : prev.slice(0, lastUserIdx);
+      });
       setCurrentMsgIndex((prev) => Math.max(0, prev - 1));
       onNodeHighlight(result.currentNodeId);
     } catch (error) {

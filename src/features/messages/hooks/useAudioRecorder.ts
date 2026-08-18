@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/shared/hooks/useToast';
 
 const MAX_RECORDING_SECONDS = 60;
@@ -20,6 +20,19 @@ export function useAudioRecorder() {
   const streamRef = useRef<MediaStream | null>(null);
   const isCancelledRef = useRef(false);
   const { showToast } = useToast();
+
+  // Si el componente se desmonta mientras graba, liberar el micrófono y el interval
+  useEffect(() => {
+    return () => {
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {

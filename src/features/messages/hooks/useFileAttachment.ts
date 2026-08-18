@@ -25,10 +25,11 @@ export function useFileAttachment() {
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setFilePreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+      });
       setSelectedFile(file);
-      if (file.type.startsWith('image/')) {
-        setFilePreviewUrl(URL.createObjectURL(file));
-      }
     }
   };
 
