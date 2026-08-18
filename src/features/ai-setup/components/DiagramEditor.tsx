@@ -1,15 +1,18 @@
-import { useState, useRef, useMemo } from 'react';
-import { Save, X, Undo2, Eye, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { useState, useRef } from 'react';
 import type { NodeMappingEntry, InternalQueue } from '../api/useGetFlowDiagram';
 import type { FlowAnalysis } from '../api/useGetFlowAnalyses';
 import { ConversationDrawer } from './ConversationDrawer';
 import { DiagramContextMenu, type ContextMenuState } from './DiagramContextMenu';
 import { DiagramConversationsSidebar } from './DiagramConversationsSidebar';
 import { DiagramLabelEditorModal, type EditingLabelState } from './DiagramLabelEditorModal';
+import { DiagramEditorToolbar } from './DiagramEditorToolbar';
+import { DiagramZoomControls } from './DiagramZoomControls';
+import { DiagramLegendFooter } from './DiagramLegendFooter';
 import { usePanZoom } from '../hooks/usePanZoom';
 import { useMermaidChartEditor, type NodeShape } from '../hooks/useMermaidChartEditor';
 import { useDiagramRender } from '../hooks/useDiagramRender';
 import { useDiagramKeyboardShortcuts } from '../hooks/useDiagramKeyboardShortcuts';
+import { useStyledDiagramChart } from '../hooks/useStyledDiagramChart';
 
 // --- Types ---
 type SelectionMode = 'none' | 'select-origin' | 'select-destination';
@@ -86,54 +89,14 @@ export const DiagramEditor = ({
     }
   };
 
-  // Apply coverage styles + conversation count in labels
-  const styledChart = useMemo(() => {
-    if (!nodeMapping) return chart;
-    let displayChart = chart;
-
-    // Inject conversation count into node labels
-    Object.entries(nodeMapping).forEach(([nodeId, sources]) => {
-      const uniqueConvs = new Set(sources.map((s) => s.conversationId)).size;
-      if (uniqueConvs > 0) {
-        // Match node definition like C1[Label] or C1{Label} or C1(Label)
-        const nodeRegex = new RegExp(`(${nodeId}\\s*[\\[\\(\\{][\\[\\(\\{]?)([^\\]\\)\\}]+)([\\]\\)\\}][\\]\\)\\}]?)`);
-        displayChart = displayChart.replace(nodeRegex, `$1$2 · ${uniqueConvs} conv$3`);
-      }
-    });
-
-    const styleLines: string[] = [];
-    Object.entries(nodeMapping).forEach(([nodeId, sources]) => {
-      if (!parsed.nodes.find((n) => n.id === nodeId)) return;
-      if (selectedConversationId) {
-        if (sources.some((s) => s.conversationId === selectedConversationId)) {
-          styleLines.push(`    style ${nodeId} fill:#fbbf24,stroke:#f59e0b,color:#1a1a2e`);
-        }
-      } else if (sources.length === 0) {
-        styleLines.push(`    style ${nodeId} fill:#334155,stroke:#64748b,stroke-dasharray: 5 5`);
-      } else if (sources.length >= 3) {
-        styleLines.push(`    style ${nodeId} fill:#166534,stroke:#22c55e,color:#e2e8f0`);
-      } else {
-        styleLines.push(`    style ${nodeId} fill:#1e3a5f,stroke:#3b82f6,color:#e2e8f0`);
-      }
-    });
-
-    // Mark nodes with internal queues (purple border)
-    if (internalQueues) {
-      const queueNodeIds = new Set(internalQueues.map((q) => q.nodeId));
-      queueNodeIds.forEach((nodeId) => {
-        if (!styleLines.some((l) => l.includes(`style ${nodeId}`))) {
-          styleLines.push(`    style ${nodeId} stroke:#a855f7,stroke-width:2px`);
-        }
-      });
-    }
-
-    // Highlight selected node/edge
-    if (selection?.type === 'node') {
-      styleLines.push(`    style ${selection.id} stroke:#fbbf24,stroke-width:3px`);
-    }
-
-    return styleLines.length > 0 ? displayChart + '\n' + styleLines.join('\n') : displayChart;
-  }, [chart, nodeMapping, internalQueues, selectedConversationId, selection, parsed.nodes]);
+  const styledChart = useStyledDiagramChart({
+    chart,
+    parsed,
+    nodeMapping,
+    internalQueues,
+    selectedConversationId,
+    selection,
+  });
 
   const { svg, renderError, setRenderError } = useDiagramRender(styledChart, svgContainerRef);
 
@@ -234,75 +197,21 @@ export const DiagramEditor = ({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-bg-primary">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-bg-secondary border-b border-border-primary shrink-0">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMode((m) => m === 'move' ? 'edit' : 'move')}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded transition-colors ${
-              mode === 'edit'
-                ? 'bg-accent-yellow/15 text-accent-yellow border-accent-yellow/30'
-                : 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
-            }`}
-            title="Tab para cambiar"
-          >
-            {mode === 'move' ? '🖐 Mover' : '✏️ Editar'}
-          </button>
-          <button
-            onClick={undo}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-bg-primary border border-border-primary rounded text-text-secondary hover:text-text-primary transition-colors disabled:opacity-30"
-            title="Deshacer (Ctrl+Z)"
-          >
-            <Undo2 size={13} />
-            Deshacer
-          </button>
-          <button
-            onClick={() => { setRawValue(chart); setShowRawEditor(true); }}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-bg-primary border border-border-primary rounded text-text-secondary hover:text-text-primary transition-colors"
-            title="Editar código mermaid"
-          >
-            {'</>'}
-          </button>
-          {selectMode !== 'none' && (
-            <span className="text-xs text-accent-yellow bg-accent-yellow/10 border border-accent-yellow/30 px-2.5 py-1 rounded">
-              Haz click en un nodo para seleccionar {selectMode === 'select-origin' ? 'nuevo origen' : 'nuevo destino'}
-              <button onClick={() => { setSelectMode('none'); setSelectModeEdge(null); }} className="ml-2 text-text-tertiary hover:text-text-primary">
-                <X size={11} />
-              </button>
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {analyses && analyses.length > 0 && (
-            <button
-              onClick={() => setShowSidebar((v) => !v)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium border rounded transition-colors ${
-                showSidebar
-                  ? 'bg-accent-blue/15 text-accent-blue border-accent-blue/30'
-                  : 'bg-bg-primary text-text-secondary border-border-primary hover:text-text-primary'
-              }`}
-            >
-              <Eye size={13} />
-              Conversaciones ({analyses.length})
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-accent-blue text-white rounded text-xs font-medium hover:opacity-90 disabled:opacity-50"
-          >
-            <Save size={13} />
-            {isSaving ? 'Guardando...' : 'Guardar'}
-          </button>
-          <button
-            onClick={onCancel}
-            className="flex items-center gap-1.5 px-4 py-1.5 border border-border-primary text-text-secondary rounded text-xs font-medium hover:bg-bg-tertiary"
-          >
-            <X size={13} />
-            Cerrar
-          </button>
-        </div>
-      </div>
+      <DiagramEditorToolbar
+        mode={mode}
+        onToggleMode={() => setMode((m) => m === 'move' ? 'edit' : 'move')}
+        onUndo={undo}
+        onOpenRawEditor={() => { setRawValue(chart); setShowRawEditor(true); }}
+        selectMode={selectMode}
+        onCancelSelectMode={() => { setSelectMode('none'); setSelectModeEdge(null); }}
+        hasSidebarToggle={!!analyses && analyses.length > 0}
+        showSidebar={showSidebar}
+        onToggleSidebar={() => setShowSidebar((v) => !v)}
+        analysesCount={analyses?.length ?? 0}
+        onSave={handleSave}
+        isSaving={isSaving}
+        onCancel={onCancel}
+      />
 
       {/* Main area: canvas + optional sidebar */}
       <div className="flex-1 flex overflow-hidden">
@@ -431,30 +340,7 @@ export const DiagramEditor = ({
               />
             </div>
           )}
-          {/* Zoom controls */}
-          <div className="absolute bottom-3 right-3 flex items-center gap-1 z-10">
-            <button
-              onClick={zoomIn}
-              className="p-1.5 rounded bg-bg-secondary/80 border border-border-primary text-text-secondary hover:text-text-primary transition-colors"
-              title="Zoom in"
-            >
-              <ZoomIn size={13} />
-            </button>
-            <button
-              onClick={zoomOut}
-              className="p-1.5 rounded bg-bg-secondary/80 border border-border-primary text-text-secondary hover:text-text-primary transition-colors"
-              title="Zoom out"
-            >
-              <ZoomOut size={13} />
-            </button>
-            <button
-              onClick={resetPan}
-              className="p-1.5 rounded bg-bg-secondary/80 border border-border-primary text-text-secondary hover:text-text-primary transition-colors"
-              title="Reset"
-            >
-              <RotateCcw size={13} />
-            </button>
-          </div>
+          <DiagramZoomControls onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={resetPan} />
         </div>
 
         {/* Sidebar: conversations */}
@@ -496,32 +382,11 @@ export const DiagramEditor = ({
         />
       )}
 
-      {/* Legend + hints */}
-      <div className="flex items-center gap-4 px-4 py-2 bg-bg-secondary border-t border-border-primary text-[10px] text-text-tertiary shrink-0">
-        {nodeMapping && (
-          <>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded border-2 border-accent-green bg-accent-green/10" />
-              Alta cobertura
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded border-2 border-accent-blue bg-accent-blue/10" />
-              Baja cobertura
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded border-2 border-dashed border-text-tertiary" />
-              Sugerido IA
-            </span>
-          </>
-        )}
-        {internalQueues && internalQueues.length > 0 && (
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded border-2 border-purple-400 bg-purple-400/10" />
-            Canal interno
-          </span>
-        )}
-        <span className="ml-auto">Tab: cambiar modo · {mode === 'edit' ? 'Click en nodo o flecha para acciones · Delete eliminar' : 'Arrastra para mover · Scroll para zoom'} · Ctrl+Z deshacer · Esc cerrar</span>
-      </div>
+      <DiagramLegendFooter
+        hasNodeMapping={!!nodeMapping}
+        hasInternalQueues={!!internalQueues && internalQueues.length > 0}
+        mode={mode}
+      />
 
       {/* Conversation drawer */}
       {viewingConversationId && (() => {
