@@ -6,7 +6,7 @@ import { useStartTest } from '../api/useStartTest';
 import { useTestSend } from '../api/useTestSend';
 import { useTestStepBack } from '../api/useTestStepBack';
 import { useTestStop } from '../api/useTestStop';
-import { useGetMessages } from '@/features/messages/api/useGetMessages';
+import { useGetMessages } from '@/features/messages';
 import { TestChat } from './TestChat';
 import { TestIntent, SideEffectAction } from '../types';
 import type { TestMessage, ConversationTestMessage, Contact, ContactConversation } from '../types';

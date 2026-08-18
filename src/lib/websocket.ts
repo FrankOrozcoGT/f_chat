@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
-import type { BackendMessageDirection, BackendMessageType, BackendSenderType, BackendMessageStatus } from '@/features/messages/types';
+import type { BackendMessageDirection, BackendMessageType, BackendSenderType, BackendMessageStatus } from '@/features/messages';
 
 // Event payload types
 export interface MessageIncomingPayload {

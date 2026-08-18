@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSocketEvent } from '@/lib/websocket';
 import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
 import { messageKeys } from '../api/messageKeys';
-import { authKeys } from '@/features/auth/api/useGetMe';
+import { authKeys } from '@/features/auth/api';
 import { useToast } from '@/shared/hooks/useToast';
 import type { Message } from '../types';
 

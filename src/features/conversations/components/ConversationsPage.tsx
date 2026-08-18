@@ -12,9 +12,7 @@ import { ConversationsList } from './ConversationsList';
 import { conversationKeys } from '../api/conversationKeys';
 import { useConversationsStore } from '../store';
 import { useSocketEvent } from '@/lib/websocket';
-import { messageKeys } from '@/features/messages/api/messageKeys';
-import { MessagesPanel } from '@/features/messages/components/MessagesPanel';
-import { HITLPanel } from '@/features/messages/components/HITLPanel';
+import { messageKeys, MessagesPanel, HITLPanel } from '@/features/messages';
 
 export const ConversationsPage = () => {
   const queryClient = useQueryClient();
