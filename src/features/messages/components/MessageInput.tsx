@@ -1,19 +1,17 @@
 // Message input component - Task 5: Send messages
 // Mobile-first design with touch-friendly button
 // Enter to send, Shift+Enter for new line
-// Validations: not empty, max 4096 chars
-// Support: text, image, video, audio, document
 
 import { useState, useRef, useEffect } from 'react';
 import type { KeyboardEvent, ChangeEvent } from 'react';
 import { Send, Image, Paperclip, Mic, X, Trash2, Square, Reply } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { InfoBanner } from '@/shared/ui/InfoBanner';
-import { useToast } from '@/shared/hooks/useToast';
-import { useSendMessage } from '../api/useSendMessage';
-import { useSendMessageWithFile } from '../api/useSendMessageWithFile';
-import { usePhoneReconnectStore } from '@/features/phones';
-import type { BackendMessageType, Message } from '../types';
+import { useMessageSend } from '../hooks/useMessageSend';
+import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import type { Message } from '../types';
+
+const MAX_MESSAGE_LENGTH = 4096;
 
 interface MessageInputProps {
   conversationId: string;
@@ -22,143 +20,53 @@ interface MessageInputProps {
   onCancelQuote?: () => void;
 }
 
+function formatRecordingTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancelQuote }: MessageInputProps) => {
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const isCancelledRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { showToast } = useToast();
-  const { openModal: openDisconnectedModal, isDismissed } = usePhoneReconnectStore();
 
-  const handleSendError = (_error: Error, errorType?: 'credits_limit' | 'phone_disconnected' | 'generic', isFile = false) => {
-    if (errorType === 'phone_disconnected') {
-      if (!isDismissed()) {
-        openDisconnectedModal();
-      } else {
-        showToast('El teléfono está desconectado.', 'error');
-      }
-    } else if (errorType === 'credits_limit') {
-      showToast('Sin créditos disponibles. Has alcanzado el límite de tu plan.', 'error');
-    } else {
-      showToast(isFile ? 'Error al enviar el archivo. Intenta nuevamente.' : 'Error al enviar el mensaje. Intenta nuevamente.', 'error');
-    }
-  };
+  const { sendText, sendAudio, sendFile, isPending } = useMessageSend(conversationId);
+  const {
+    isRecording,
+    recordingTime,
+    recordedAudio,
+    toggleRecording,
+    stopRecording,
+    cancelRecording,
+    clearAudioRecording,
+  } = useAudioRecorder();
 
-  const sendMessageMutation = useSendMessage(conversationId, {
-    onError: (error, errorType) => handleSendError(error, errorType),
-  });
-  const sendMessageWithFileMutation = useSendMessageWithFile(conversationId, {
-    onError: (error, errorType) => handleSendError(error, errorType, true),
-  });
-
-  const handleSend = async () => {
+  const handleSend = () => {
     const trimmedMessage = message.trim();
 
     // Validation: not empty (text or file required)
     if (!trimmedMessage && !selectedFile && !recordedAudio) return;
 
-    // Validation: max 4096 characters for text
-    if (trimmedMessage.length > 4096) {
-      showToast('El mensaje no puede exceder 4096 caracteres', 'error');
-      return;
-    }
-
-    // Handle recorded audio (use send-with-file endpoint)
     if (recordedAudio) {
-      // Validate file size (max 16MB for backend)
-      if (recordedAudio.size > 16 * 1024 * 1024) {
-        showToast('El audio no puede exceder 16MB', 'error');
-        return;
-      }
-
-      sendMessageWithFileMutation.mutate({
-        file: recordedAudio,
-        conversationId,
-        tipo: 'audio',
-        contenido: trimmedMessage || undefined,
-      });
-
-      // Clear inputs
+      if (!sendAudio({ file: recordedAudio, caption: trimmedMessage })) return;
       setMessage('');
       clearAudioRecording();
       onCancelQuote?.();
       return;
     }
 
-    // Handle selected file (use send-with-file endpoint)
     if (selectedFile) {
-      // Validate MIME type (backend only accepts specific types)
-      const allowedMimes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'video/mp4', 'video/mpeg',
-        'audio/mpeg', 'audio/ogg', 'audio/wav',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ];
-
-      if (!allowedMimes.includes(selectedFile.type)) {
-        showToast('Tipo de archivo no permitido', 'error');
-        return;
-      }
-
-      // Validate file size (max 16MB for backend)
-      if (selectedFile.size > 16 * 1024 * 1024) {
-        showToast('El archivo no puede exceder 16MB', 'error');
-        return;
-      }
-
-      // Determine type from file MIME type
-      // NOTE: Backend expects "image" for both images AND videos
-      let tipo: Exclude<BackendMessageType, 'text'> = 'document';
-      if (selectedFile.type.startsWith('image/')) {
-        tipo = 'image';
-      } else if (selectedFile.type.startsWith('video/')) {
-        tipo = 'image'; // Videos use "image" type in backend
-      } else if (selectedFile.type.startsWith('audio/')) {
-        tipo = 'audio';
-      } else if (
-        selectedFile.type === 'application/pdf' ||
-        selectedFile.type === 'application/msword' ||
-        selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ) {
-        tipo = 'document';
-      }
-
-      sendMessageWithFileMutation.mutate({
-        file: selectedFile,
-        conversationId,
-        tipo,
-        contenido: trimmedMessage || undefined,
-      });
-
-      // Clear inputs
+      if (!sendFile({ file: selectedFile, caption: trimmedMessage })) return;
       setMessage('');
       clearFileSelection();
       onCancelQuote?.();
       return;
     }
 
-    // Handle text-only message (use send endpoint)
-    sendMessageMutation.mutate({
-      conversationId,
-      contenido: trimmedMessage,
-      tipo: 'text',
-      mediaUrl: null,
-      quotedMessageId: quotedMessage?.id ?? undefined,
-    });
-
-    // Clear inputs
+    if (!sendText({ content: trimmedMessage, quotedMessageId: quotedMessage?.id ?? undefined })) return;
     setMessage('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     onCancelQuote?.();
@@ -172,15 +80,6 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
-    }
-  };
-
-  const clearAudioRecording = () => {
-    setRecordedAudio(null);
-    setRecordingTime(0);
-    if (audioPreviewRef.current) {
-      audioPreviewRef.current.pause();
-      audioPreviewRef.current = null;
     }
   };
 
@@ -211,93 +110,6 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
     }
   };
 
-  const handleVoiceClick = async () => {
-    if (isRecording) {
-      // Stop recording
-      stopRecording();
-    } else {
-      // Start recording
-      await startRecording();
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      // Request microphone permission
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      isCancelledRef.current = false;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        // Only save audio if NOT cancelled and we have chunks
-        if (!isCancelledRef.current && audioChunksRef.current.length > 0) {
-          // Create audio blob FIRST (before stopping tracks)
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-
-          // Store recorded audio for preview
-          setRecordedAudio(audioBlob);
-        }
-
-        // THEN stop all tracks (after blob is created)
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((track) => track.stop());
-          streamRef.current = null;
-        }
-
-        setIsRecording(false);
-
-        if (recordingIntervalRef.current) {
-          clearInterval(recordingIntervalRef.current);
-          recordingIntervalRef.current = null;
-        }
-      };
-
-      // Start recording (no timeslice = single chunk on stop)
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-
-      // Start timer
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime((prev) => {
-          // Auto-stop after 60 seconds
-          if (prev >= 60) {
-            stopRecording();
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      showToast('No se pudo acceder al micrófono', 'error');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-  };
-
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -312,7 +124,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, [message]);
 
-  const isDisabled = disabled || sendMessageMutation.isPending || sendMessageWithFileMutation.isPending;
+  const isDisabled = disabled || isPending;
 
   // AI mode: show info banner instead of input
   if (disabled) {
@@ -332,13 +144,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
         <div className="flex items-center gap-3">
           {/* Cancel button */}
           <button
-            onClick={() => {
-              // Set cancellation flag BEFORE stopping
-              isCancelledRef.current = true;
-
-              // Stop recording (onstop will check the flag and NOT save)
-              stopRecording();
-            }}
+            onClick={cancelRecording}
             className="min-h-11 min-w-11 flex items-center justify-center rounded-full bg-bg-tertiary hover:bg-accent-red hover:bg-opacity-10 transition-colors"
             title="Cancelar grabación"
           >
@@ -349,7 +155,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
           <div className="flex-1 flex items-center gap-2">
             <div className="w-2 h-2 bg-accent-red rounded-full animate-pulse" />
             <span className="text-sm font-medium text-text-primary">
-              {formatTime(recordingTime)}
+              {formatRecordingTime(recordingTime)}
             </span>
             <div className="flex-1 h-1 bg-bg-tertiary rounded-full overflow-hidden">
               <div
@@ -411,7 +217,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
               focus:border-accent-blue focus:outline-2 focus:outline-accent-blue
               transition-colors
             "
-            maxLength={4096}
+            maxLength={MAX_MESSAGE_LENGTH}
           />
           <Button
             onClick={handleSend}
@@ -484,7 +290,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
               disabled:opacity-60 disabled:cursor-not-allowed
               transition-colors
             "
-            maxLength={4096}
+            maxLength={MAX_MESSAGE_LENGTH}
           />
           <Button
             onClick={handleSend}
@@ -545,7 +351,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
             <Paperclip className="w-5 h-5 md:w-5 md:h-5 text-text-secondary" />
           </button>
           <button
-            onClick={handleVoiceClick}
+            onClick={toggleRecording}
             disabled={isDisabled}
             className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-full hover:bg-bg-tertiary transition-colors disabled:opacity-50"
             title="Grabar audio"
@@ -574,7 +380,7 @@ export const MessageInput = ({ conversationId, disabled, quotedMessage, onCancel
             disabled:opacity-60 disabled:cursor-not-allowed
             transition-colors
           "
-          maxLength={4096}
+          maxLength={MAX_MESSAGE_LENGTH}
           style={{ maxHeight: '120px' }}
         />
 
