@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Play, CheckCircle, AlertCircle, Layers, Tag, DollarSign, Users } from 'lucide-react';
 import { StatCard } from '@/shared/ui/StatCard';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { useBatchAnalysis } from '@/features/ai-setup/api/useBatchAnalysis';
 
 export const BatchAnalysisSection = () => {
@@ -84,7 +85,7 @@ export const BatchAnalysisSection = () => {
         <div className="flex items-center gap-2 p-3 bg-accent-red/10 border border-accent-red/30 rounded-md mb-4">
           <AlertCircle size={16} className="text-accent-red shrink-0" />
           <p className="text-sm text-accent-red">
-            {(error as Error)?.message ?? 'Error al ejecutar el análisis'}
+            {getErrorMessage(error, 'Error al ejecutar el análisis')}
           </p>
         </div>
       )}

@@ -18,7 +18,7 @@ import { AcceptInvitationPage } from '@/features/tenants/components/AcceptInvita
 import { ProductsPage } from '@/features/catalog/products/components/ProductsPage';
 import { PromotionsPage } from '@/features/catalog/promotions/components/PromotionsPage';
 import { ShippingPage } from '@/features/catalog/shipping/components/ShippingPage';
-import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
+import { ProtectedRoute } from '@/routing/ProtectedRoute';
 import { ToastContainer } from '@/shared/ui/Toast';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket, useSocketEvent } from '@/lib/websocket';
