@@ -4,13 +4,8 @@ import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
 import { useToast } from '@/shared/hooks/useToast';
 import { useInviteMember } from '../api';
+import { roleOptions } from '../types';
 import type { TenantRole } from '@/features/auth/types';
-
-const roleOptions = [
-  { value: 'user' as TenantRole, label: 'Usuario' },
-  { value: 'tecnico' as TenantRole, label: 'Técnico' },
-  { value: 'owner' as TenantRole, label: 'Owner' },
-];
 
 interface InviteMemberModalProps {
   isOpen: boolean;

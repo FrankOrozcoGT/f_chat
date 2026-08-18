@@ -1,23 +1,11 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Search, Play, Pause, SkipBack, Square, RotateCcw, MessageSquare, Phone, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
-import { useSearchContacts } from '../api/useSearchContacts';
-import { useStartTest } from '../api/useStartTest';
-import { useTestSend } from '../api/useTestSend';
-import { useTestStepBack } from '../api/useTestStepBack';
-import { useTestStop } from '../api/useTestStop';
 import { useGetMessages } from '@/features/messages';
 import { TestChat } from './TestChat';
-import { TestIntent, SideEffectAction } from '../types';
-import type { TestMessage, ConversationTestMessage, Contact, ContactConversation } from '../types';
+import { useContactSearch } from '../hooks/useContactSearch';
+import { useTestSession } from '../hooks/useTestSession';
 import { formatDate } from '@/shared/lib/date';
-
-const TERMINAL_INTENTS = new Set<TestIntent>([
-  TestIntent.CloseSession,
-  TestIntent.SwitchToHitl,
-  TestIntent.MaxIterations,
-  TestIntent.ReportHacking,
-]);
 
 const TEST_PHONE_KEY = 'flowTest_testPhone';
 
@@ -27,238 +15,59 @@ interface TestPanelProps {
   onNodeHighlight: (nodeId: string | null) => void;
 }
 
-type Phase = 'search' | 'testing';
-
 export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) => {
-  // Search phase
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [selectedConversation, setSelectedConversation] = useState<ContactConversation | null>(null);
   const [testPhone, setTestPhone] = useState(() => localStorage.getItem(TEST_PHONE_KEY) || '');
-  const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
 
-  // Test phase
-  const [phase, setPhase] = useState<Phase>('search');
-  const [testId, setTestId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<TestMessage[]>([]);
-  const [conversationMessages, setConversationMessages] = useState<ConversationTestMessage[]>([]);
-  const [currentMsgIndex, setCurrentMsgIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const {
+    searchQuery,
+    setSearchQuery,
+    debouncedQuery,
+    expandedContactId,
+    setExpandedContactId,
+    contacts,
+    isSearching,
+    selectedContact,
+    selectedConversation,
+    selectConversation,
+    reset: resetSearch,
+  } = useContactSearch();
 
-  // API hooks
-  const { data: contacts, isLoading: isSearching } = useSearchContacts(debouncedQuery);
+  const {
+    phase,
+    messages,
+    conversationMessages,
+    currentMsgIndex,
+    isPlaying,
+    isSending,
+    isStarting,
+    isSteppingBack,
+    start,
+    stepBack,
+    stop,
+    restart,
+    togglePlay,
+  } = useTestSession(flowId, onNodeHighlight);
+
   const { data: convMessages } = useGetMessages(selectedConversation?.id || '');
-  const startTest = useStartTest();
-  const testSend = useTestSend();
-  const testStepBack = useTestStepBack();
-  const testStop = useTestStop();
-
-  // Refs para auto-play (evitar closures stale)
-  const isPlayingRef = useRef(false);
-  const currentMsgIndexRef = useRef(0);
-  const isSendingRef = useRef(false);
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Sync refs con state
-  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
-  useEffect(() => { currentMsgIndexRef.current = currentMsgIndex; }, [currentMsgIndex]);
-
-  const handleSendMessage = useCallback(async (msg: ConversationTestMessage): Promise<'continue' | 'wait' | 'stop'> => {
-    if (!testId || isSendingRef.current) return 'stop';
-    isSendingRef.current = true;
-
-    const userMsg: TestMessage = {
-      id: `user-${Date.now()}`,
-      content: msg.content,
-      role: 'user',
-      type: msg.type,
-      mediaUrl: msg.mediaUrl,
-    };
-    setMessages((prev) => [...prev, userMsg]);
-
-    try {
-      const result = await testSend.mutateAsync({
-        testId,
-        message: msg.content,
-        mediaUrl: msg.mediaUrl,
-      });
-
-      const assistantMsg: TestMessage = {
-        id: `assistant-${Date.now()}`,
-        content: result.response,
-        role: 'assistant',
-        nodeId: result.currentNodeId,
-        intent: result.intent,
-        sideEffects: result.sideEffects,
-        preCodeContext: result.preCodeContext,
-        nodeTransitions: result.nodeTransitions,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-      const lastTransition = result.nodeTransitions?.slice().reverse().find((t: { to: string | null }) => t.to !== null);
-      onNodeHighlight(lastTransition?.to ?? result.currentNodeId);
-      isSendingRef.current = false;
-
-      if (TERMINAL_INTENTS.has(result.intent)) {
-        setIsPlaying(false);
-        return 'stop';
-      }
-
-      const hasSendMessage = result.sideEffects?.some(
-        (se: { action: string }) => se.action === SideEffectAction.SendMessage
-      );
-      return hasSendMessage ? 'continue' : 'wait';
-    } catch {
-      const errorMsg: TestMessage = {
-        id: `error-${Date.now()}`,
-        content: 'Error al procesar el mensaje',
-        role: 'assistant',
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-      setIsPlaying(false);
-      isSendingRef.current = false;
-      return 'stop';
-    }
-  }, [testId, testSend, onNodeHighlight]);
-
-  // Auto-play: setTimeout secuencial, espera respuesta antes de avanzar
-  useEffect(() => {
-    if (!isPlaying || !testId) return;
-
-    const playNext = async () => {
-      const idx = currentMsgIndexRef.current;
-      if (idx >= conversationMessages.length || !isPlayingRef.current) {
-        setIsPlaying(false);
-        return;
-      }
-
-      const result = await handleSendMessage(conversationMessages[idx]);
-      if (result === 'stop' || !isPlayingRef.current) return;
-
-      setCurrentMsgIndex((prev) => prev + 1);
-
-      // 'continue' = agent sent a message, advance to next user msg
-      // 'wait' = agent didn't send message (e.g. switchToHitl), pause
-      if (result === 'continue') {
-        timeoutRef.current = setTimeout(playNext, 2000);
-      } else {
-        setIsPlaying(false);
-      }
-    };
-
-    timeoutRef.current = setTimeout(playNext, 500);
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [isPlaying, testId, conversationMessages, handleSendMessage]);
 
   const handleTestPhoneChange = (value: string) => {
     setTestPhone(value);
     localStorage.setItem(TEST_PHONE_KEY, value);
   };
 
-  const handleSelectConversation = (contact: Contact, conversation: ContactConversation) => {
-    setSelectedContact(contact);
-    setSelectedConversation(conversation);
-  };
-
   const handleStartTest = async () => {
     if (!selectedConversation || !testPhone.trim()) return;
-
-    // Filtrar solo mensajes incoming (del cliente) para enviar al test
-    const incomingMessages: ConversationTestMessage[] = convMessages
-      ?.filter((m) => m.direction === 'incoming')
-      .map((m) => ({
-        content: m.content,
-        type: (m.type === 'image' ? 'image' : 'text') as 'text' | 'image',
-        mediaUrl: m.mediaUrl ?? undefined,
-      })) || [];
-
-    if (incomingMessages.length === 0) return;
-
-    try {
-      const result = await startTest.mutateAsync({
-        conversationId: selectedConversation.id,
-        flowId,
-        clientPhone: testPhone.trim(),
-      });
-
-      setTestId(result.testId);
-      setPhase('testing');
-      setMessages([]);
-      setCurrentMsgIndex(0);
-      setConversationMessages(incomingMessages);
-    } catch {
-      // Error manejado por tanstack query
-    }
-  };
-
-  const handleStepBack = async () => {
-    if (!testId) return;
-
-    try {
-      const result = await testStepBack.mutateAsync({ testId });
-      setMessages((prev) => prev.slice(0, -2));
-      setCurrentMsgIndex((prev) => Math.max(0, prev - 1));
-      onNodeHighlight(result.currentNodeId);
-    } catch {
-      // Error manejado por tanstack query
-    }
-  };
-
-  const handleStop = async () => {
-    setIsPlaying(false);
-    if (testId) {
-      await testStop.mutateAsync({ testId });
-    }
-    setTestId(null);
-    setPhase('search');
-    setMessages([]);
-    setConversationMessages([]);
-    setCurrentMsgIndex(0);
-    setSelectedContact(null);
-    setSelectedConversation(null);
-    onNodeHighlight(null);
+    await start(selectedConversation.id, testPhone, convMessages);
   };
 
   const handleRestart = async () => {
     if (!selectedConversation || !testPhone.trim()) return;
-    setIsPlaying(false);
-    if (testId) {
-      await testStop.mutateAsync({ testId });
-    }
-    setMessages([]);
-    setCurrentMsgIndex(0);
-    onNodeHighlight(null);
-
-    const incomingMessages: ConversationTestMessage[] = convMessages
-      ?.filter((m) => m.direction === 'incoming')
-      .map((m) => ({
-        content: m.content,
-        type: (m.type === 'image' ? 'image' : 'text') as 'text' | 'image',
-        mediaUrl: m.mediaUrl ?? undefined,
-      })) || [];
-    if (incomingMessages.length === 0) return;
-
-    const result = await startTest.mutateAsync({
-      conversationId: selectedConversation.id,
-      flowId,
-      clientPhone: testPhone.trim(),
-    });
-    setTestId(result.testId);
-    setConversationMessages(incomingMessages);
-    setIsPlaying(true);
+    await restart(selectedConversation.id, testPhone, convMessages);
   };
 
-  const handleTogglePlay = () => {
-    setIsPlaying((prev) => !prev);
+  const handleStop = async () => {
+    await stop();
+    resetSearch();
   };
 
   const canStart = selectedConversation && testPhone.trim() && convMessages && convMessages.some((m) => m.direction === 'incoming');
@@ -336,7 +145,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
                   {isExpanded && contact.conversations.map((conv) => (
                     <button
                       key={conv.id}
-                      onClick={() => handleSelectConversation(contact, conv)}
+                      onClick={() => selectConversation(contact, conv)}
                       className={`w-full text-left pl-9 pr-4 py-2.5 text-sm hover:bg-bg-tertiary transition-colors ${
                         selectedConversation?.id === conv.id ? 'bg-bg-tertiary' : ''
                       }`}
@@ -375,7 +184,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
                 variant="primary"
                 size="md"
                 onClick={handleStartTest}
-                isLoading={startTest.isPending}
+                isLoading={isStarting}
                 disabled={!canStart}
                 className="w-full"
               >
@@ -387,7 +196,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
       ) : (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Chat area */}
-          <TestChat messages={messages} isLoading={testSend.isPending} />
+          <TestChat messages={messages} isLoading={isSending} />
 
           {/* Controls */}
           <div className="shrink-0 p-3 border-t border-border-primary">
@@ -403,8 +212,8 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleStepBack}
-                disabled={messages.length === 0 || testStepBack.isPending}
+                onClick={stepBack}
+                disabled={messages.length === 0 || isSteppingBack}
                 title="Retroceder un paso"
               >
                 <SkipBack size={16} />
@@ -412,7 +221,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
               <Button
                 variant="primary"
                 size="sm"
-                onClick={handleTogglePlay}
+                onClick={togglePlay}
                 disabled={currentMsgIndex >= conversationMessages.length}
                 className="flex-1"
               >

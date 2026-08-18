@@ -6,14 +6,9 @@ import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared
 import { Button } from '@/shared/ui/Button';
 import { useToast } from '@/shared/hooks/useToast';
 import { useChangeMemberRole, useRemoveMember } from '../api';
+import { roleOptions } from '../types';
 import type { TenantMember } from '../types';
 import type { TenantRole } from '@/features/auth/types';
-
-const roleOptions = [
-  { value: 'owner' as TenantRole, label: 'Owner' },
-  { value: 'user' as TenantRole, label: 'Usuario' },
-  { value: 'tecnico' as TenantRole, label: 'Técnico' },
-];
 
 const getRoleStyles = (role: string) => {
   if (role === 'owner') return 'bg-accent-blue/10 text-accent-blue border-accent-blue/30';

@@ -1,6 +1,4 @@
 import { useState, useRef } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { Phone, Clock, Pencil, X, Check } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/shared/ui/Card';
@@ -8,6 +6,7 @@ import { useToast } from '@/shared/hooks/useToast';
 import { useUpdateContactName } from '@/features/contacts';
 import { messageKeys } from '../api/messageKeys';
 import { conversationKeys } from '@/features/conversations';
+import { formatRelativeTime } from '@/shared/lib/date';
 import type { Client } from '../types';
 
 interface ClientInfoProps {
@@ -25,10 +24,7 @@ export const ClientInfo = ({ client, conversationId }: ClientInfoProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const lastContactFormatted = client?.lastContactAt
-    ? formatDistanceToNow(new Date(client.lastContactAt), {
-        addSuffix: true,
-        locale: es,
-      })
+    ? formatRelativeTime(client.lastContactAt)
     : 'Desconocido';
 
   const startEditing = () => {
