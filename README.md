@@ -1,6 +1,16 @@
-# Frontend - fcoder
+# f_chat Frontend
 
-React frontend para control remoto de agentes Claude. Parte del sistema fcoder.
+SPA de React para f_chat: panel de conversaciones de WhatsApp, editor de flows conversacionales de IA, catálogo, y administración multi-tenant.
+
+## Repos relacionados
+
+Este es el frontend de un proyecto de dos repos. Para correr la app completa, clona también el backend:
+
+```bash
+git clone https://github.com/FrankOrozcoGT/f_chat_backend.git
+```
+
+Ver [f_chat_backend](https://github.com/FrankOrozcoGT/f_chat_backend) para la API NestJS.
 
 ## Stack Tecnológico (2026)
 
@@ -24,22 +34,33 @@ src/
 │   └── {feature}/
 │       ├── api/          # TanStack Query hooks
 │       ├── components/   # Componentes de presentación
+│       ├── hooks/        # Hooks propios del feature
+│       ├── types.ts
 │       └── store.ts      # Zustand - UI state
 │
-├── layouts/              # Layouts compartidos
+├── routing/               # Guards y páginas de acceso propias de la app (no genéricas)
+├── layouts/                # Layouts compartidos
 │
-├── shared/               # Componentes reutilizables
-│   ├── ui/              # Componentes base
-│   └── hooks/           # Hooks utilitarios
+├── shared/                 # Código verdaderamente compartido entre features
+│   ├── ui/                # Componentes base
+│   ├── components/
+│   ├── hooks/              # Hooks utilitarios
+│   └── lib/                # Helpers (errors.ts, date.ts, etc.)
 │
-├── lib/                  # Config y utilidades
-│   ├── api.ts           # Axios instance
-│   ├── websocket.ts     # WebSocket client
-│   └── queryClient.ts   # TanStack Query config
+├── lib/                    # Infraestructura transversal
+│   ├── api.ts              # Axios instance
+│   ├── websocket.ts        # WebSocket client
+│   └── queryClient.ts      # TanStack Query config
 │
 ├── App.tsx
 └── main.tsx
 ```
+
+Reglas de la arquitectura:
+- Sin barrel files (`index.ts` que reexportan) — se importa siempre del archivo real.
+- Todos los imports usan el alias `@/`, sin excepción — cero imports relativos (`./`, `../`).
+- `shared/` y `lib/` nunca importan de `features/`.
+- Manejo de errores centralizado vía `shared/lib/errors.ts` (`getErrorMessage`) — nunca `error instanceof Error ? ... : ...` manual ni casts.
 
 ### Separación de Estado
 
@@ -131,10 +152,14 @@ useEffect(() => {
 - Reconexión automática
 - Rooms para aislamiento
 
-## Project ID
+## Estado del proyecto
 
-```
-9e1b6c02-3723-41c3-89ac-fc349866e60a
-```
+Este proyecto no recibe desarrollo activo de mi parte, pero queda disponible como referencia y punto de partida para quien quiera continuarlo. Si lo usas y quieres seguir mejorándolo, o simplemente quieres decirme qué te pareció, sos bienvenido a abrir un issue o un PR — forks son bienvenidos.
 
-Este ID se usa para asociar el proyecto con las memorias y reglas en el sistema de MCP.
+## Licencia
+
+[MIT License](LICENSE)
+
+## Contribuir
+
+Contribuciones bienvenidas — abre un issue primero para discutir el cambio. Este proyecto sigue el [Contributor Covenant](CODE_OF_CONDUCT.md).
