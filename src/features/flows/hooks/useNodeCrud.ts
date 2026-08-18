@@ -20,9 +20,21 @@ export interface NodeForm {
 
 const emptyNodeForm: NodeForm = { name: '', systemPrompt: '', tools: [], preCode: [], postCode: [], todos: [], onError: 'hitl' };
 
-function parseJsonArr(val: string | null): PreCodeItem[] {
+function parseJsonArr(val: string | null, fieldLabel: string, onError: (message: string) => void): PreCodeItem[] {
   if (!val) return [];
-  try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; }
+  try {
+    const p = JSON.parse(val);
+    if (!Array.isArray(p)) {
+      console.error(`[useNodeCrud] ${fieldLabel} no es un array JSON:`, val);
+      onError(`${fieldLabel} tiene un formato inválido y no se pudo cargar`);
+      return [];
+    }
+    return p;
+  } catch (err) {
+    console.error(`[useNodeCrud] Error parseando ${fieldLabel}:`, err, val);
+    onError(`No se pudo leer ${fieldLabel} (dato corrupto)`);
+    return [];
+  }
 }
 
 type ArgsModalCtx = { field: 'preCode' | 'postCode'; form: 'edit' | 'create'; code: string };
@@ -108,14 +120,14 @@ export function useNodeCrud(functions: NodeFunction[]) {
       name: node.name,
       systemPrompt: node.systemPrompt ?? '',
       tools: node.tools.map(preCodeItemCode),
-      preCode: parseJsonArr(node.preCode),
-      postCode: parseJsonArr(node.postCode),
+      preCode: parseJsonArr(node.preCode, 'Pre Code', (message) => showToast(message, 'error')),
+      postCode: parseJsonArr(node.postCode, 'Post Code', (message) => showToast(message, 'error')),
       todos: node.todos ?? [],
       onError: node.onError,
     });
     setNodeFormErrors({});
     setNodeFormTab('general');
-  }, []);
+  }, [showToast]);
 
   const openCreateNode = useCallback(() => {
     setCreateNodeForm(emptyNodeForm);
