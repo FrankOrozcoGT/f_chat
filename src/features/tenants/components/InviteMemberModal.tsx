@@ -6,7 +6,7 @@ import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
 import { useInviteMember } from '../api';
 import { roleOptions } from '../types';
-import type { TenantRole } from '@/features/auth/types';
+import type { TenantRole } from '@/features/auth';
 
 interface InviteMemberModalProps {
   isOpen: boolean;

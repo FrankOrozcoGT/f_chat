@@ -4,7 +4,7 @@ import { MainLayout } from '@/layouts/MainLayout';
 import { useToast } from '@/shared/hooks/useToast';
 import { Toast } from '@/shared/ui/Toast';
 import { useGetSettings } from '../api/useGetSettings';
-import { useGetMe } from '@/features/auth/api';
+import { useGetMe } from '@/features/auth';
 import { AnalysisSettingsTab } from './AnalysisSettingsTab';
 import { ScheduleSettingsTab } from './ScheduleSettingsTab';
 import { LabelsSettingsTab } from './LabelsSettingsTab';

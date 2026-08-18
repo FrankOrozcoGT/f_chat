@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
 import { Button } from '@/shared/ui/Button';
-import { useGetMe } from '@/features/auth/api';
+import { useGetMe } from '@/features/auth';
 import { useGetTenantMembers } from '../api';
 import { MembersTable } from './MembersTable';
 import { InviteMemberModal } from './InviteMemberModal';

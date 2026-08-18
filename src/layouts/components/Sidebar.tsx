@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { Users, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, MessageSquare, Activity, DollarSign, Settings, X, Workflow, Building2, ShoppingBag, BrainCircuit } from 'lucide-react';
-import { useGetMe } from '@/features/auth/api';
+import { useGetMe } from '@/features/auth';
 import { useSidebarStore } from '@/stores/useSidebarStore';
-import type { AuthMe } from '@/features/auth/types';
+import type { AuthMe } from '@/features/auth';
 
 const menuItems = [
   {

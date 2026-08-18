@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { Button } from '@/shared/ui/Button';
-import { useGetMe } from '@/features/auth/api';
-import { useSwitchTenant } from '@/features/auth/api';
+import { useGetMe } from '@/features/auth';
+import { useSwitchTenant } from '@/features/auth';
 import { useAcceptInvitation, useRejectInvitation } from '../api';
 
 const ERROR_MESSAGES: Record<string, string> = {

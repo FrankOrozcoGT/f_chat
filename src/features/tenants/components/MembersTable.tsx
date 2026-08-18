@@ -8,7 +8,7 @@ import { useToast } from '@/shared/hooks/useToast';
 import { useChangeMemberRole, useRemoveMember } from '../api';
 import { roleOptions } from '../types';
 import type { TenantMember } from '../types';
-import type { TenantRole } from '@/features/auth/types';
+import type { TenantRole } from '@/features/auth';
 
 const getRoleStyles = (role: string) => {
   if (role === 'owner') return 'bg-accent-blue/10 text-accent-blue border-accent-blue/30';
