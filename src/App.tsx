@@ -158,11 +158,11 @@ function App() {
             }
           />
 
-          {/* Health routes - accesible para todos los usuarios autenticados */}
+          {/* Health routes - el backend exige SystemAdminGuard, debe coincidir aquí */}
           <Route
             path="/admin/health"
             element={
-              <ProtectedRoute requiredAccess="authenticated">
+              <ProtectedRoute requiredAccess="super-admin">
                 <HealthPage />
               </ProtectedRoute>
             }
