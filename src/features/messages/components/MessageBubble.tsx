@@ -2,13 +2,12 @@
 // Different styles for incoming (client) vs outgoing (agent) messages
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { Check, CheckCheck, Clock, XCircle, Bot, Cog, User, Reply } from 'lucide-react';
 import { Avatar } from '@/shared/ui/Avatar';
 import { ImageModal } from '@/shared/ui/ImageModal';
 import type { Message } from '../types';
 import { cn } from '@/shared/lib/utils';
+import { formatRelativeTime } from '@/shared/lib/date';
 
 interface MessageBubbleProps {
   message: Message;
@@ -26,10 +25,7 @@ export const MessageBubble = ({ message, clientName, isGroup, onReply, onScrollT
   const [isHovered, setIsHovered] = useState(false);
 
   // Format timestamp
-  const formattedTime = formatDistanceToNow(new Date(message.timestamp), {
-    addSuffix: true,
-    locale: es,
-  });
+  const formattedTime = formatRelativeTime(message.timestamp);
 
   // Get initials for avatar fallback
   const initials = clientName

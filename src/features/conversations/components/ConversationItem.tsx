@@ -6,8 +6,7 @@ import { useConversationsStore } from '../store';
 import { conversationKeys } from '../api/conversationKeys';
 import { useUpdateContactName } from '@/features/contacts';
 import { useToast } from '@/shared/hooks/useToast';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatRelativeTime } from '@/shared/lib/date';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -32,10 +31,7 @@ export const ConversationItem = ({ conversation }: ConversationItemProps) => {
   };
 
   const formattedTime = conversation.lastMessageAt
-    ? formatDistanceToNow(new Date(conversation.lastMessageAt), {
-        addSuffix: true,
-        locale: es,
-      })
+    ? formatRelativeTime(conversation.lastMessageAt)
     : '';
 
   const initials = conversation.clientName
