@@ -8,6 +8,7 @@ import { messageKeys } from './messageKeys';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { MessageDirection, MessageSenderType, MessageStatus } from '../types';
 import type { Message, BackendMessageType } from '../types';
+import { generateTempId, snapshotMessages, rollbackMessages, classifySendError, type SendErrorType } from './optimisticSend';
 
 interface SendMessagePayload {
   conversationId: string;
@@ -34,7 +35,7 @@ interface SendMessageResponse {
 }
 
 interface UseSendMessageOptions {
-  onError?: (error: Error, errorType?: 'credits_limit' | 'phone_disconnected' | 'generic') => void;
+  onError?: (error: Error, errorType?: SendErrorType) => void;
 }
 
 export const useSendMessage = (conversationId: string, options?: UseSendMessageOptions) => {
@@ -55,12 +56,9 @@ export const useSendMessage = (conversationId: string, options?: UseSendMessageO
       await queryClient.cancelQueries({ queryKey: messageKeys.list(conversationId) });
 
       // Snapshot previous messages (for rollback)
-      const previousMessages = queryClient.getQueryData<Message[]>(
-        messageKeys.list(conversationId)
-      );
+      const previousMessages = snapshotMessages(queryClient, conversationId);
 
-      // Generate temporary ID (UUID v4 simple)
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const tempId = generateTempId();
 
       // Map backend type to frontend type
       const frontendType = tipo === 'audio' ? 'voice' : tipo;
@@ -97,29 +95,10 @@ export const useSendMessage = (conversationId: string, options?: UseSendMessageO
 
     // On error: rollback to previous state
     onError: (error, _variables, context) => {
-      if (context?.previousMessages) {
-        queryClient.setQueryData(
-          messageKeys.list(conversationId),
-          context.previousMessages
-        );
-      }
+      rollbackMessages(queryClient, conversationId, context?.previousMessages);
 
-      // Detect error type
-      let errorType: 'credits_limit' | 'phone_disconnected' | 'generic' = 'generic';
-
-      const resp = error && typeof error === 'object' && 'response' in error
-        ? (error as any).response
-        : null;
-
-      if (resp?.status === 403 && typeof resp?.data?.message === 'string' && resp.data.message.includes('Credits limit')) {
-        errorType = 'credits_limit';
-      } else if (resp?.status === 503) {
-        errorType = 'phone_disconnected';
-      }
-
-      // Call external error handler if provided
       if (options?.onError) {
-        options.onError(error as Error, errorType);
+        options.onError(error as Error, classifySendError(error));
       }
     },
 
