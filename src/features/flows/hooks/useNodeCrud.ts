@@ -25,13 +25,11 @@ function parseJsonArr(val: string | null, fieldLabel: string, onError: (message:
   try {
     const p = JSON.parse(val);
     if (!Array.isArray(p)) {
-      console.error(`[useNodeCrud] ${fieldLabel} no es un array JSON:`, val);
       onError(`${fieldLabel} tiene un formato inválido y no se pudo cargar`);
       return [];
     }
     return p;
-  } catch (err) {
-    console.error(`[useNodeCrud] Error parseando ${fieldLabel}:`, err, val);
+  } catch {
     onError(`No se pudo leer ${fieldLabel} (dato corrupto)`);
     return [];
   }

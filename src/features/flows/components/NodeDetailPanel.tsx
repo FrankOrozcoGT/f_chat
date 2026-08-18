@@ -7,12 +7,10 @@ function parseJsonArray(value: string | null, fieldLabel: string): { items: PreC
   try {
     const parsed = JSON.parse(value);
     if (!Array.isArray(parsed)) {
-      console.error(`[NodeDetailPanel] ${fieldLabel} no es un array JSON:`, value);
       return { items: [], error: `${fieldLabel} tiene un formato inválido` };
     }
     return { items: parsed, error: null };
-  } catch (err) {
-    console.error(`[NodeDetailPanel] Error parseando ${fieldLabel}:`, err, value);
+  } catch {
     return { items: [], error: `No se pudo leer ${fieldLabel} (dato corrupto)` };
   }
 }
