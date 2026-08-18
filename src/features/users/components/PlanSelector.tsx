@@ -3,6 +3,7 @@ import { Select } from '@/shared/ui/Select';
 import { useUpdatePlan } from '../api/useUpdatePlan';
 import type { AdminTenant } from '../types';
 import type { SelectOption } from '@/shared/ui/Select';
+import { getErrorMessage } from '@/shared/lib/errors';
 
 interface PlanSelectorProps {
   tenant: AdminTenant;
@@ -27,13 +28,12 @@ export const PlanSelector = ({ tenant, onSuccess, onError }: PlanSelectorProps) 
         onSuccess: () => {
           onSuccess?.(`Plan actualizado a ${newPlan === 'free' ? 'Free' : 'Full'}`);
         },
-        onError: (error: any) => {
-          const status = error?.response?.status;
-          let message = 'Error de conexión';
-          if (status === 400) message = 'Plan inválido';
-          else if (status === 403) message = 'No autorizado';
-          else if (status === 404) message = 'Organización no encontrada';
-          onError?.(message);
+        onError: (error) => {
+          onError?.(getErrorMessage(error, 'Error de conexión', {
+            400: 'Plan inválido',
+            403: 'No autorizado',
+            404: 'Organización no encontrada',
+          }));
         },
       }
     );

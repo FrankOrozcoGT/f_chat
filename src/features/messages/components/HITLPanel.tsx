@@ -8,6 +8,7 @@ import { useGetConversationDetail } from '../api/useGetConversationDetail';
 import { useAnalyzeConversation } from '../api/useAnalyzeConversation';
 import { messageKeys } from '../api/messageKeys';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { ClientInfo } from './ClientInfo';
 import { ProductsPromotions } from './ProductsPromotions';
 import { ConversationSummary } from './ConversationSummary';
@@ -30,9 +31,8 @@ export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HI
         queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
         showToast(`Análisis completado — ${data.creditsUsed.toFixed(2)} créditos usados`, 'success');
       },
-      onError: (error: any) => {
-        const msg = error?.response?.data?.message || 'Error al analizar la conversación';
-        showToast(msg, 'error');
+      onError: (error) => {
+        showToast(getErrorMessage(error, 'Error al analizar la conversación'), 'error');
       },
     });
   };

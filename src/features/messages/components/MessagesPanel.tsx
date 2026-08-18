@@ -22,6 +22,7 @@ import { useTakeControl } from '../api/useTakeControl';
 import { useReturnToAi } from '../api/useReturnToAi';
 import { useCloseConversation } from '../api/useCloseConversation';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { socket } from '@/lib/websocket';
 import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
 import type { Message } from '../types';
@@ -54,9 +55,8 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
       },
-      onError: (error: any) => {
-        const msg = error?.response?.data?.message || 'Error al analizar la conversación';
-        showToast(msg, 'error');
+      onError: (error) => {
+        showToast(getErrorMessage(error, 'Error al analizar la conversación'), 'error');
       },
     });
   };
@@ -82,14 +82,12 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
   // HITL mutation hooks
   const takeControl = useTakeControl({
     onError: (error) => {
-      const msg = (error as any)?.response?.data?.message || 'Error al tomar control';
-      showToast(msg, 'error');
+      showToast(getErrorMessage(error, 'Error al tomar control'), 'error');
     },
   });
   const returnToAi = useReturnToAi({
     onError: (error) => {
-      const msg = (error as any)?.response?.data?.message || 'Error al devolver a IA';
-      showToast(msg, 'error');
+      showToast(getErrorMessage(error, 'Error al devolver a IA'), 'error');
     },
   });
   const closeConversation = useCloseConversation({
@@ -101,8 +99,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
       showToast(msg, 'success');
     },
     onError: (error) => {
-      const msg = (error as any)?.response?.data?.message || 'Error al cerrar la conversación';
-      showToast(msg, 'error');
+      showToast(getErrorMessage(error, 'Error al cerrar la conversación'), 'error');
     },
   });
 
@@ -517,7 +514,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
       >
         {client && conversationDetail && (
           <div className="space-y-4">
-            <ClientInfo client={client} />
+            <ClientInfo client={client} conversationId={conversationId} />
             <ProductsPromotions
               products={conversationDetail.products}
               promotions={conversationDetail.promotions}
