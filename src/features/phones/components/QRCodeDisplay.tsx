@@ -4,6 +4,7 @@ import QRCodeLib from 'qrcode';
 import { useSocketEvent } from '@/lib/websocket';
 import type { PhoneQRUpdatedPayload, PhoneStatusChangedPayload } from '@/lib/websocket';
 import type { PhoneStatus } from '@/features/phones/types';
+import { getErrorMessage } from '@/shared/lib/errors';
 
 interface QRCodeDisplayProps {
   phoneId: string;
@@ -49,7 +50,7 @@ export const QRCodeDisplay = ({
         setQrCodeImage(qrDataURL);
       } catch (err) {
         console.error('Error generando QR:', err);
-        setError(err instanceof Error ? err.message : 'Error al generar código QR');
+        setError(getErrorMessage(err, 'Error al generar código QR'));
       } finally {
         setIsGenerating(false);
       }

@@ -5,7 +5,8 @@ interface BackendErrorBody {
 }
 
 /**
- * Extrae un mensaje legible de un error de axios.
+ * Extrae un mensaje legible de cualquier error (axios, Error nativo del
+ * navegador, o desconocido) — punto único de manejo de errores del frontend.
  * statusMessages permite mapear códigos HTTP a mensajes custom (evaluados antes del mensaje del backend).
  * translateMessage permite reescribir el mensaje crudo del backend (ej. traducirlo) antes de devolverlo.
  */
@@ -25,6 +26,10 @@ export function getErrorMessage(
       const translated = translateMessage?.(backendMessage);
       return translated ?? backendMessage;
     }
+    return fallback;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
   }
   return fallback;
 }
