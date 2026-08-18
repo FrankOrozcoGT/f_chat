@@ -7,6 +7,7 @@ import { useUpdateProduct } from '../api/useUpdateProduct';
 import { useDeleteProduct } from '../api/useDeleteProduct';
 import { useUploadProductImage } from '../api/useUploadProductImage';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
@@ -87,8 +88,8 @@ export const ProductsPage = () => {
         showToast('Producto creado', 'success');
       }
       closeModal();
-    } catch {
-      showToast('Error al guardar el producto', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al guardar el producto'), 'error');
     }
   };
 
@@ -97,8 +98,8 @@ export const ProductsPage = () => {
     try {
       await deleteProduct.mutateAsync(deleteTarget.id);
       showToast('Producto eliminado', 'success');
-    } catch {
-      showToast('Error al eliminar el producto', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar el producto'), 'error');
     } finally {
       setDeleteTarget(null);
     }
@@ -116,8 +117,8 @@ export const ProductsPage = () => {
     try {
       await uploadImage.mutateAsync({ id: uploadTargetId, file });
       showToast('Imagen actualizada', 'success');
-    } catch {
-      showToast('Error al subir la imagen', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al subir la imagen'), 'error');
     } finally {
       setUploadTargetId(null);
     }

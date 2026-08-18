@@ -6,6 +6,7 @@ import { useCreateShippingLocation } from '../api/useCreateShippingLocation';
 import { useUpdateShippingLocation } from '../api/useUpdateShippingLocation';
 import { useDeleteShippingLocation } from '../api/useDeleteShippingLocation';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
@@ -80,8 +81,8 @@ export const ShippingPage = () => {
         showToast('Ubicación creada', 'success');
       }
       closeModal();
-    } catch {
-      showToast('Error al guardar la ubicación', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al guardar la ubicación'), 'error');
     }
   };
 
@@ -90,8 +91,8 @@ export const ShippingPage = () => {
     try {
       await deleteLocation.mutateAsync(deleteTarget.id);
       showToast('Ubicación eliminada', 'success');
-    } catch {
-      showToast('Error al eliminar la ubicación', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar la ubicación'), 'error');
     } finally {
       setDeleteTarget(null);
     }

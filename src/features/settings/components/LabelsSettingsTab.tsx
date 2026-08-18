@@ -8,6 +8,7 @@ import { FormField } from '@/shared/ui/FormField';
 import { Input } from '@/shared/ui/Input';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { useGetLabels, useCreateLabel, useUpdateLabel, useDeleteLabel } from '@/features/queue/labels';
 import { useGetContactsSelect } from '@/features/contacts';
 import { useGetGroupsSelect } from '@/features/conversations';
@@ -71,13 +72,10 @@ export const LabelsSettingsTab = () => {
         showToast('Etiqueta creada', 'success');
       }
       closeLabelModal();
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 409) {
-        showToast('Ya existe una etiqueta con ese nombre', 'error');
-      } else {
-        showToast('Error al guardar la etiqueta', 'error');
-      }
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al guardar la etiqueta', {
+        409: 'Ya existe una etiqueta con ese nombre',
+      }), 'error');
     }
   };
 
@@ -86,8 +84,8 @@ export const LabelsSettingsTab = () => {
     try {
       await deleteLabel.mutateAsync(deleteTarget.id);
       showToast('Etiqueta eliminada', 'success');
-    } catch {
-      showToast('Error al eliminar la etiqueta', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar la etiqueta'), 'error');
     } finally {
       setDeleteTarget(null);
     }

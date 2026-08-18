@@ -7,6 +7,7 @@ import { useUpdatePromotion } from '../api/useUpdatePromotion';
 import { useDeletePromotion } from '../api/useDeletePromotion';
 import { useGetProducts } from '@/features/catalog/products/api/useGetProducts';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
@@ -92,8 +93,8 @@ export const PromotionsPage = () => {
         showToast('Promoción creada', 'success');
       }
       closeModal();
-    } catch {
-      showToast('Error al guardar la promoción', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al guardar la promoción'), 'error');
     }
   };
 
@@ -102,8 +103,8 @@ export const PromotionsPage = () => {
     try {
       await deletePromotion.mutateAsync(deleteTarget.id);
       showToast('Promoción eliminada', 'success');
-    } catch {
-      showToast('Error al eliminar la promoción', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar la promoción'), 'error');
     } finally {
       setDeleteTarget(null);
     }

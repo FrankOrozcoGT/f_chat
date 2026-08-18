@@ -11,6 +11,7 @@ import { useCreateDiscount } from '../api/useCreateDiscount';
 import { useDeleteDiscount } from '../api/useDeleteDiscount';
 import { useGetContactsSelect } from '@/features/contacts';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import type { Product, ProductDiscount } from '../types';
 
 interface DiscountsModalProps {
@@ -64,8 +65,8 @@ export const DiscountsModal = ({ product, onClose }: DiscountsModalProps) => {
       });
       showToast('Descuento creado', 'success');
       resetForm();
-    } catch {
-      showToast('Error al crear el descuento', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al crear el descuento'), 'error');
     }
   };
 
@@ -74,8 +75,8 @@ export const DiscountsModal = ({ product, onClose }: DiscountsModalProps) => {
     try {
       await deleteDiscount.mutateAsync(deleteTarget.id);
       showToast('Descuento eliminado', 'success');
-    } catch {
-      showToast('Error al eliminar el descuento', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar el descuento'), 'error');
     } finally {
       setDeleteTarget(null);
     }

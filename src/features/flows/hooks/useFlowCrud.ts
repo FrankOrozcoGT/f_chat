@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { useCreateFlow } from '../api/useCreateFlow';
 import { useUpdateFlow } from '../api/useUpdateFlow';
 import { useDeleteFlow } from '../api/useDeleteFlow';
@@ -66,8 +67,8 @@ export function useFlowCrud(existingNodesCount: number) {
       await createFlow.mutateAsync({ name: flowForm.name.trim(), routerNodeId });
       showToast('Flujo creado', 'success');
       setCreateFlowOpen(false);
-    } catch {
-      showToast('Error al crear el flujo', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al crear el flujo'), 'error');
     }
   };
 
@@ -78,8 +79,8 @@ export function useFlowCrud(existingNodesCount: number) {
       await updateFlow.mutateAsync({ id: editFlowTarget.id, dto: { name: flowForm.name.trim(), routerNodeId: flowForm.routerNodeId || undefined } });
       showToast('Flujo actualizado', 'success');
       setEditFlowTarget(null);
-    } catch {
-      showToast('Error al actualizar el flujo', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al actualizar el flujo'), 'error');
     }
   };
 
@@ -88,8 +89,8 @@ export function useFlowCrud(existingNodesCount: number) {
     try {
       await deleteFlow.mutateAsync(deleteFlowTarget.id);
       showToast('Flujo eliminado', 'success');
-    } catch {
-      showToast('Error al eliminar el flujo', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar el flujo'), 'error');
     } finally {
       setDeleteFlowTarget(null);
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { useCreateIntent } from '../api/useCreateIntent';
 import { useUpdateIntent } from '../api/useUpdateIntent';
 import { useDeleteIntent } from '../api/useDeleteIntent';
@@ -43,8 +44,8 @@ export function useIntentCrud() {
       await createIntent.mutateAsync({ name: intentForm.name.trim(), flowId: intentForm.flowId || undefined });
       showToast('Intent creado', 'success');
       setCreateIntentOpen(false);
-    } catch {
-      showToast('Error al crear el intent', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al crear el intent'), 'error');
     }
   };
 
@@ -55,8 +56,8 @@ export function useIntentCrud() {
       await updateIntent.mutateAsync({ id: editIntentTarget.id, dto: { name: intentForm.name.trim(), flowId: intentForm.flowId || undefined } });
       showToast('Intent actualizado', 'success');
       setEditIntentTarget(null);
-    } catch {
-      showToast('Error al actualizar el intent', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al actualizar el intent'), 'error');
     }
   };
 
@@ -65,8 +66,8 @@ export function useIntentCrud() {
     try {
       await deleteIntent.mutateAsync(deleteIntentTarget.id);
       showToast('Intent eliminado', 'success');
-    } catch {
-      showToast('Error al eliminar el intent', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar el intent'), 'error');
     } finally {
       setDeleteIntentTarget(null);
     }

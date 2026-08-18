@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { useCreateNode } from '../api/useCreateNode';
 import { useUpdateNode } from '../api/useUpdateNode';
 import { preCodeItemCode } from '../types';
@@ -141,8 +142,8 @@ export function useNodeCrud(functions: NodeFunction[]) {
       });
       showToast('Nodo actualizado', 'success');
       setEditNodeTarget(null);
-    } catch {
-      showToast('Error al actualizar el nodo', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al actualizar el nodo'), 'error');
     }
   };
 
@@ -161,8 +162,8 @@ export function useNodeCrud(functions: NodeFunction[]) {
       showToast('Nodo creado', 'success');
       setCreateNodeOpen(false);
       setCreateNodeForm(emptyNodeForm);
-    } catch {
-      showToast('Error al crear el nodo', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al crear el nodo'), 'error');
     }
   };
 

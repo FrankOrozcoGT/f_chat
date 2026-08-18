@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { useCreateTransition } from '../api/useCreateTransition';
 import { useDeleteTransition } from '../api/useDeleteTransition';
 import { useCreateNode } from '../api/useCreateNode';
@@ -53,8 +54,8 @@ export function useTransitionCrud(flowId: string | null) {
       await createTransitionMutation.mutateAsync({ fromNodeId: transitionFromNode.id, toNodeId, transitionCode: transitionForm.transitionCode.trim() });
       showToast('Transición creada', 'success');
       setTransitionFromNode(null);
-    } catch {
-      showToast('Error al crear la transición', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al crear la transición'), 'error');
     }
   };
 
@@ -63,8 +64,8 @@ export function useTransitionCrud(flowId: string | null) {
     try {
       await deleteTransitionMutation.mutateAsync(deleteTransitionTarget);
       showToast('Transición eliminada', 'success');
-    } catch {
-      showToast('Error al eliminar', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar'), 'error');
     } finally {
       setDeleteTransitionTarget(null);
     }
