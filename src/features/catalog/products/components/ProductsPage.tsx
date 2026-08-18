@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
-import { Plus, Package, Pencil, Trash2, ImagePlus } from 'lucide-react';
-import { CrmLayout } from '@/layouts/CrmLayout';
+import { Package, Pencil, Trash2, ImagePlus } from 'lucide-react';
 import { useGetProducts } from '../api/useGetProducts';
 import { useCreateProduct } from '../api/useCreateProduct';
 import { useUpdateProduct } from '../api/useUpdateProduct';
@@ -9,7 +8,7 @@ import { useUploadProductImage } from '../api/useUploadProductImage';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
 import { useCrudModalState } from '@/shared/hooks/useCrudModalState';
-import { CrudPageStates } from '@/shared/components/CrudPageStates';
+import { CatalogPageLayout } from '@/shared/components/CatalogPageLayout';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
@@ -240,119 +239,106 @@ export const ProductsPage = () => {
   ];
 
   return (
-    <CrmLayout>
-      <div className="space-y-4 md:space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Productos</h1>
-            <p className="text-sm text-text-secondary mt-1">
-              {products.length} producto{products.length !== 1 ? 's' : ''} en el catálogo
-            </p>
-          </div>
-          <Button onClick={openCreate} size="md">
-            <Plus size={18} />
-            <span className="hidden sm:inline">Nuevo producto</span>
-          </Button>
-        </div>
+    <CatalogPageLayout
+      title="Productos"
+      subtitle={`${products.length} producto${products.length !== 1 ? 's' : ''} en el catálogo`}
+      createLabel="Nuevo producto"
+      onCreate={openCreate}
+      isLoading={isLoading}
+      isError={isError}
+      isEmpty={products.length === 0}
+      loadingLabel="Cargando productos..."
+      errorMessage="Error al cargar los productos"
+      emptyState={{
+        icon: Package,
+        title: 'Sin productos',
+        description: 'Agrega tu primer producto al catálogo.',
+        createLabel: 'Nuevo producto',
+      }}
+      modals={
+        <>
+          {/* Form Modal */}
+          <Modal isOpen={modalOpen} onClose={closeModal} size="md">
+            <ModalHeader onClose={closeModal}>
+              <ModalTitle>{editing ? 'Editar producto' : 'Nuevo producto'}</ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <FormField label="Nombre" required error={errors.name}>
+                  <Input
+                    placeholder="Ej: Caja de cartón grande"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    error={!!errors.name}
+                  />
+                </FormField>
+                <FormField label="Precio base" required error={errors.basePrice}>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={form.basePrice}
+                    onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
+                    error={!!errors.basePrice}
+                  />
+                </FormField>
+                <FormField label="Descripción" optional>
+                  <Textarea
+                    placeholder="Descripción del producto..."
+                    value={form.description}
+                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                    rows={3}
+                  />
+                </FormField>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="secondary" onClick={closeModal} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit} isLoading={isSubmitting}>
+                {editing ? 'Guardar cambios' : 'Crear producto'}
+              </Button>
+            </ModalFooter>
+          </Modal>
 
-        <CrudPageStates
-          isLoading={isLoading}
-          isError={isError}
-          isEmpty={products.length === 0}
-          loadingLabel="Cargando productos..."
-          errorMessage="Error al cargar los productos"
-          emptyState={{
-            icon: Package,
-            title: 'Sin productos',
-            description: 'Agrega tu primer producto al catálogo.',
-            createLabel: 'Nuevo producto',
-          }}
-          onCreate={openCreate}
-        >
-          <MobileCards />
-          <div className="hidden md:block">
-            <Table
-              data={products}
-              columns={columns}
-              getRowKey={(p) => p.id}
-            />
-          </div>
-        </CrudPageStates>
+          {/* Discounts Modal */}
+          <DiscountsModal
+            product={discountsProduct}
+            onClose={() => setDiscountsProduct(null)}
+          />
+
+          {/* Hidden image input */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageChange}
+          />
+
+          {/* Delete Confirm */}
+          <ConfirmModal
+            isOpen={!!deleteTarget}
+            onClose={() => setDeleteTarget(null)}
+            onConfirm={handleDelete}
+            title="Eliminar producto"
+            message={`¿Estás seguro de eliminar "${deleteTarget?.name}"? Esta acción no se puede deshacer.`}
+            confirmText="Eliminar"
+            isLoading={deleteProduct.isPending}
+          />
+        </>
+      }
+    >
+      <MobileCards />
+      <div className="hidden md:block">
+        <Table
+          data={products}
+          columns={columns}
+          getRowKey={(p) => p.id}
+        />
       </div>
-
-      {/* Form Modal */}
-      <Modal isOpen={modalOpen} onClose={closeModal} size="md">
-        <ModalHeader onClose={closeModal}>
-          <ModalTitle>{editing ? 'Editar producto' : 'Nuevo producto'}</ModalTitle>
-        </ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            <FormField label="Nombre" required error={errors.name}>
-              <Input
-                placeholder="Ej: Caja de cartón grande"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                error={!!errors.name}
-              />
-            </FormField>
-            <FormField label="Precio base" required error={errors.basePrice}>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={form.basePrice}
-                onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
-                error={!!errors.basePrice}
-              />
-            </FormField>
-            <FormField label="Descripción" optional>
-              <Textarea
-                placeholder="Descripción del producto..."
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                rows={3}
-              />
-            </FormField>
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="secondary" onClick={closeModal} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} isLoading={isSubmitting}>
-            {editing ? 'Guardar cambios' : 'Crear producto'}
-          </Button>
-        </ModalFooter>
-      </Modal>
-
-      {/* Discounts Modal */}
-      <DiscountsModal
-        product={discountsProduct}
-        onClose={() => setDiscountsProduct(null)}
-      />
-
-      {/* Hidden image input */}
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleImageChange}
-      />
-
-      {/* Delete Confirm */}
-      <ConfirmModal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        title="Eliminar producto"
-        message={`¿Estás seguro de eliminar "${deleteTarget?.name}"? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        isLoading={deleteProduct.isPending}
-      />
-
-    </CrmLayout>
+    </CatalogPageLayout>
   );
 };
