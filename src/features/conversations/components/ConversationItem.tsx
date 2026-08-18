@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Conversation } from '../types';
 import { useConversationsStore } from '../store';
 import { conversationKeys } from '../api/conversationKeys';
-import { useUpdateContactName } from '@/features/contacts/api/useUpdateContactName';
+import { useUpdateContactName } from '@/features/contacts';
 import { useToast } from '@/shared/hooks/useToast';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';

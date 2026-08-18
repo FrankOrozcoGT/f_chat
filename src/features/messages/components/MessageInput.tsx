@@ -12,7 +12,7 @@ import { InfoBanner } from '@/shared/ui/InfoBanner';
 import { useToast } from '@/shared/hooks/useToast';
 import { useSendMessage } from '../api/useSendMessage';
 import { useSendMessageWithFile } from '../api/useSendMessageWithFile';
-import { usePhoneReconnectStore } from '@/features/phones/store';
+import { usePhoneReconnectStore } from '@/features/phones';
 import type { BackendMessageType, Message } from '../types';
 
 interface MessageInputProps {

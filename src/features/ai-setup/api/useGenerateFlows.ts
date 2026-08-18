@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { flowKeys } from '@/features/flows/api/flowKeys';
+import { flowKeys } from '@/features/flows';
 interface GenerateFlowsResult {
   flowsGenerated: number;
   flows: { id: string; name: string; refined?: boolean }[];

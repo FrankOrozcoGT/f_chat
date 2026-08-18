@@ -24,11 +24,10 @@ import { useToast } from '@/shared/hooks/useToast';
 import { socket, useSocketEvent } from '@/lib/websocket';
 import type { ConversationHitlPayload, ApiDownPayload, ApiUpPayload, PhoneQRUpdatedPayload, PhoneStatusChangedPayload, MessageIncomingPayload } from '@/lib/websocket';
 import { MessageDirection } from '@/features/messages/types';
-import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { messageKeys } from '@/features/messages/api/messageKeys';
 import { useGetMe } from '@/features/auth/api';
-import { usePhoneReconnectStore } from '@/features/phones/store';
-import { useConversationsStore } from '@/features/conversations/store';
+import { conversationKeys, useConversationsStore } from '@/features/conversations';
+import { usePhoneReconnectStore } from '@/features/phones';
 
 /** Listeners globales que requieren estar dentro de BrowserRouter (useNavigate) */
 const GlobalListeners = () => {

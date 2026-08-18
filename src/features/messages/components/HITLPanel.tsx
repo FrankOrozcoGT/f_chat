@@ -3,7 +3,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { Search, Loader2 } from 'lucide-react';
-import { useConversationsStore } from '@/features/conversations/store';
+import { useConversationsStore } from '@/features/conversations';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
 import { useAnalyzeConversation } from '../api/useAnalyzeConversation';
 import { messageKeys } from '../api/messageKeys';

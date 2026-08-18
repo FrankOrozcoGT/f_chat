@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bot, Hand, Info, AlertTriangle, Search, Loader2, ChevronDown, MoreVertical, X as XCircle } from 'lucide-react';
-import { useConversationsStore } from '@/features/conversations/store';
+import { useConversationsStore } from '@/features/conversations';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
 import { messageKeys } from '../api/messageKeys';
@@ -27,8 +27,7 @@ import { useSocketEvent } from '@/lib/websocket';
 import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
 import type { Message } from '../types';
 import { authKeys } from '@/features/auth/api/useGetMe';
-import { usePhoneReconnectStore } from '@/features/phones/store';
-import { PhoneDisconnectedModal } from '@/features/phones/components/PhoneDisconnectedModal';
+import { usePhoneReconnectStore, PhoneDisconnectedModal } from '@/features/phones';
 
 interface MessagesPanelProps {
   conversationId: string;

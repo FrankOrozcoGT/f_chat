@@ -4,7 +4,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { messageKeys } from './messageKeys';
-import { conversationKeys } from '@/features/conversations/api/conversationKeys';
+import { conversationKeys } from '@/features/conversations';
 
 interface ReturnToAiPayload {
   conversationId: string;

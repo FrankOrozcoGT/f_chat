@@ -5,9 +5,9 @@ import { Phone, Clock, Pencil, X, Check } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/shared/ui/Card';
 import { useToast } from '@/shared/hooks/useToast';
-import { useUpdateContactName } from '@/features/contacts/api/useUpdateContactName';
+import { useUpdateContactName } from '@/features/contacts';
 import { messageKeys } from '../api/messageKeys';
-import { conversationKeys } from '@/features/conversations/api/conversationKeys';
+import { conversationKeys } from '@/features/conversations';
 import type { Client } from '../types';
 
 interface ClientInfoProps {

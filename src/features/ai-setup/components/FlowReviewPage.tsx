@@ -2,13 +2,9 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Layers, MessageSquare, FlaskConical, CheckCircle, Trash2, Loader2, AlertCircle, Wrench, GitBranch, ChevronDown, ChevronRight } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
-import { useGetFlows } from '@/features/flows/api/useGetFlows';
-import { useGetFlowVersions } from '@/features/flows/api/useGetFlowVersions';
-import { usePromoteFlow } from '@/features/flows/api/usePromoteFlow';
-import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
+import { useGetFlows, useGetFlowVersions, usePromoteFlow, useDeleteFlow, TestPanel } from '@/features/flows';
 import { useGetFlowAnalyses } from '../api/useGetFlowAnalyses';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
-import { TestPanel } from '@/features/flows/components/TestPanel';
 import { formatDate } from '@/shared/lib/date';
 
 type Tab = 'version' | 'conversations' | 'test';

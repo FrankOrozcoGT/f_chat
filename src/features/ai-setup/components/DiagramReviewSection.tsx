@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Pencil, Layers, Trash2, GitBranch, Loader2, Rocket, Merge, Eye, Tag } from 'lucide-react';
-import { useGetFlows } from '@/features/flows/api/useGetFlows';
-import { usePromoteFlow } from '@/features/flows/api/usePromoteFlow';
-import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
+import { useGetFlows, usePromoteFlow, useDeleteFlow } from '@/features/flows';
 import { useGetFlowDiagram } from '../api/useGetFlowDiagram';
 import { useGetFlowAnalyses } from '../api/useGetFlowAnalyses';
 import { useUpdateFlowDiagram } from '../api/useUpdateFlowDiagram';
@@ -14,7 +12,7 @@ import { useMergeAnalyses } from '../api/useMergeAnalyses';
 import { useMergeIntents } from '../api/useMergeIntents';
 import { useGenerateFlows } from '../api/useGenerateFlows';
 import { DiagramEditor } from './DiagramEditor';
-import type { Flow } from '@/features/flows/types';
+import type { Flow } from '@/features/flows';
 
 /* ── Intent Review Section ── */
 

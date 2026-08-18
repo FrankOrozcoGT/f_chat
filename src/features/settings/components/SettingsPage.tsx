@@ -15,15 +15,12 @@ import { useGetSettings } from '../api/useGetSettings';
 import { useUpdateSettings } from '../api/useUpdateSettings';
 import { useGetFarewellTemplate } from '../api/useGetFarewellTemplate';
 import { useUpdateFarewellTemplate } from '../api/useUpdateFarewellTemplate';
-import { useGetLabels } from '@/features/queue/labels/api/useGetLabels';
-import { useCreateLabel } from '@/features/queue/labels/api/useCreateLabel';
-import { useUpdateLabel } from '@/features/queue/labels/api/useUpdateLabel';
-import { useDeleteLabel } from '@/features/queue/labels/api/useDeleteLabel';
-import { useGetContactsSelect } from '@/features/contacts/api/useGetContactsSelect';
-import { useGetGroupsSelect } from '@/features/conversations/api/useGetGroupsSelect';
+import { useGetLabels, useCreateLabel, useUpdateLabel, useDeleteLabel } from '@/features/queue/labels';
+import { useGetContactsSelect } from '@/features/contacts';
+import { useGetGroupsSelect } from '@/features/conversations';
 import { useGetMe } from '@/features/auth/api';
 import type { AnalysisMode, WorkSchedule } from '../types';
-import type { ContactLabel, CreateContactLabelDto, UpdateContactLabelDto } from '@/features/queue/labels/types';
+import type { ContactLabel, CreateContactLabelDto, UpdateContactLabelDto } from '@/features/queue/labels';
 
 const DAY_NAMES: Record<string, string> = {
   '1': 'Lunes',
