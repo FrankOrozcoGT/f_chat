@@ -1,47 +1,19 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import mermaid from 'mermaid';
-import { Plus, Trash2, Save, X, Undo2, Pencil, ArrowRight, Diamond, Square, Circle, Eye, MessageSquare, ChevronRight, Copy, Check, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import { Save, X, Undo2, Eye, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import type { NodeMappingEntry, InternalQueue } from '../api/useGetFlowDiagram';
 import type { FlowAnalysis } from '../api/useGetFlowAnalyses';
-import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
 import { ConversationDrawer } from './ConversationDrawer';
-import { formatDate } from '@/shared/lib/date';
+import { DiagramContextMenu, type ContextMenuState } from './DiagramContextMenu';
+import { DiagramConversationsSidebar } from './DiagramConversationsSidebar';
+import { DiagramLabelEditorModal, type EditingLabelState } from './DiagramLabelEditorModal';
 import { usePanZoom } from '../hooks/usePanZoom';
 import { useMermaidChartEditor, type NodeShape } from '../hooks/useMermaidChartEditor';
-
-// --- CopyId ---
-const CopyId = ({ value }: { value: string }) => {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <button
-      onClick={handleCopy}
-      className="flex items-center gap-1 px-3 pb-1 text-[10px] font-mono text-text-tertiary hover:text-accent-blue truncate w-full text-left transition-colors"
-      title="Copiar conversationId"
-    >
-      {copied ? <Check size={10} className="text-accent-green shrink-0" /> : <Copy size={10} className="shrink-0" />}
-      <span className="truncate">{copied ? 'Copiado' : value}</span>
-    </button>
-  );
-};
+import { useDiagramRender } from '../hooks/useDiagramRender';
+import { useDiagramKeyboardShortcuts } from '../hooks/useDiagramKeyboardShortcuts';
 
 // --- Types ---
 type SelectionMode = 'none' | 'select-origin' | 'select-destination';
-
-interface Selection {
-  type: 'node' | 'edge';
-  id: string; // nodeId or "source->target"
-}
-
-interface ContextMenu {
-  x: number;
-  y: number;
-  selection: Selection;
-}
+type Selection = ContextMenuState['selection'];
 
 // --- Props ---
 interface DiagramEditorProps {
@@ -69,12 +41,10 @@ export const DiagramEditor = ({
   isSaving,
 }: DiagramEditorProps) => {
   // State
-  const [svg, setSvg] = useState('');
-  const [renderError, setRenderError] = useState<string | null>(null);
   const [showRawEditor, setShowRawEditor] = useState(false);
   const [rawValue, setRawValue] = useState('');
   const [selection, setSelection] = useState<Selection | null>(null);
-  const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [selectMode, setSelectMode] = useState<SelectionMode>('none');
   const [mode, setMode] = useState<'move' | 'edit'>('move');
   const [showSidebar, setShowSidebar] = useState(false);
@@ -82,10 +52,9 @@ export const DiagramEditor = ({
   const [viewingConversationId, setViewingConversationId] = useState<string | null>(null);
   const selectedConversationId = localSelectedConv;
   const [selectModeEdge, setSelectModeEdge] = useState<{ source: string; target: string; field: 'source' | 'target' } | null>(null);
-  const [editingLabel, setEditingLabel] = useState<{ id: string; type: 'node' | 'edge'; value: string } | null>(null);
+  const [editingLabel, setEditingLabel] = useState<EditingLabelState | null>(null);
 
   const svgContainerRef = useRef<HTMLDivElement>(null);
-  const renderIdRef = useRef(0);
 
   const {
     chart,
@@ -169,86 +138,7 @@ export const DiagramEditor = ({
     return styleLines.length > 0 ? displayChart + '\n' + styleLines.join('\n') : displayChart;
   }, [chart, nodeMapping, internalQueues, selectedConversationId, selection, parsed.nodes]);
 
-  // Render mermaid + fix SVG dimensions
-  useEffect(() => {
-    if (!styledChart.trim()) return;
-    setRenderError(null);
-    const id = `editor-${++renderIdRef.current}-${Date.now()}`;
-    mermaid
-      .render(id, styledChart)
-      .finally(() => {
-        // Mermaid injects temp SVG and error elements into body — clean them up
-        document.querySelectorAll(`#${CSS.escape(id)}, [data-mermaid-temp]`).forEach((el) => el.remove());
-        document.querySelectorAll('body > svg[id^="editor-"], body > .error-icon, body > [id^="editor-"]').forEach((el) => el.remove());
-      })
-      .then(({ svg: rendered }) => {
-        setSvg(rendered);
-        // Fix SVG dimensions after render
-        requestAnimationFrame(() => {
-          if (!svgContainerRef.current) return;
-          const svgEl = svgContainerRef.current.querySelector('svg');
-          if (!svgEl) return;
-          const viewBox = svgEl.getAttribute('viewBox');
-          if (viewBox) {
-            const parts = viewBox.split(/\s+|,/).map(Number);
-            if (parts.length >= 4) {
-              svgEl.setAttribute('width', String(parts[2]));
-              svgEl.setAttribute('height', String(parts[3]));
-            }
-          }
-          svgEl.style.maxWidth = 'none';
-          svgEl.style.overflow = 'visible';
-        });
-      })
-      .catch((err) => {
-        console.error('[DiagramEditor] mermaid render error:', err);
-        setRenderError(err?.message || String(err));
-      });
-  }, [styledChart]);
-
-  // Set cursor style on nodes/edges after SVG render
-  useEffect(() => {
-    const container = svgContainerRef.current;
-    if (!container || !svg) return;
-    container.querySelectorAll('.node, .edgePath, .edgeLabel').forEach((el) => {
-      (el as HTMLElement).style.cursor = 'pointer';
-    });
-  }, [svg]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        undo();
-      }
-      if (e.key === 'Escape') {
-        if (editingLabel) {
-          setEditingLabel(null);
-        } else if (contextMenu) {
-          setContextMenu(null);
-        } else if (selectMode !== 'none') {
-          setSelectMode('none');
-          setSelectModeEdge(null);
-        } else {
-          onCancel();
-        }
-      }
-      if (e.key === 'Delete' && selection && !editingLabel) {
-        if (selection.type === 'node') handleDeleteNode(selection.id);
-        if (selection.type === 'edge') {
-          const [src, tgt] = selection.id.split('->');
-          handleDeleteEdge(src, tgt);
-        }
-      }
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        setMode((m) => m === 'move' ? 'edit' : 'move');
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [undo, onCancel, selection, contextMenu, editingLabel, selectMode]);
+  const { svg, renderError, setRenderError } = useDiagramRender(styledChart, svgContainerRef);
 
   // --- Actions ---
   const handleEditNodeLabel = (nodeId: string) => {
@@ -316,6 +206,34 @@ export const DiagramEditor = ({
     const cleanChart = chart.split('\n').filter((l) => !l.trim().startsWith('style ')).join('\n');
     onSave(cleanChart);
   };
+
+  useDiagramKeyboardShortcuts({
+    hasEditingLabel: !!editingLabel,
+    hasContextMenu: !!contextMenu,
+    isSelectingEndpoint: selectMode !== 'none',
+    onUndo: undo,
+    onEscape: () => {
+      if (editingLabel) {
+        setEditingLabel(null);
+      } else if (contextMenu) {
+        setContextMenu(null);
+      } else if (selectMode !== 'none') {
+        setSelectMode('none');
+        setSelectModeEdge(null);
+      } else {
+        onCancel();
+      }
+    },
+    onDeleteSelection: () => {
+      if (!selection) return;
+      if (selection.type === 'node') handleDeleteNode(selection.id);
+      if (selection.type === 'edge') {
+        const [src, tgt] = selection.id.split('->');
+        handleDeleteEdge(src, tgt);
+      }
+    },
+    onToggleMode: () => setMode((m) => m === 'move' ? 'edit' : 'move'),
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-bg-primary">
@@ -546,174 +464,41 @@ export const DiagramEditor = ({
 
         {/* Sidebar: conversations */}
         {showSidebar && analyses && (
-          <div className="w-80 shrink-0 border-l border-border-primary bg-bg-secondary flex flex-col overflow-hidden">
-            <div className="px-3 py-2.5 border-b border-border-primary shrink-0">
-              <p className="text-xs font-semibold text-text-tertiary uppercase">Conversaciones individuales</p>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {analyses.map((a) => {
-                const isSelected = selectedConversationId === a.conversationId;
-                return (
-                  <div key={a.analysisId} className={`border-b border-border-primary ${isSelected ? 'bg-accent-yellow/5' : ''}`}>
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      <button
-                        onClick={() => setLocalSelectedConv(isSelected ? null : a.conversationId)}
-                        className={`flex-1 text-left text-xs truncate transition-colors ${
-                          isSelected ? 'text-accent-yellow font-medium' : 'text-text-secondary hover:text-text-primary'
-                        }`}
-                      >
-                        <ChevronRight size={10} className={`inline mr-1 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
-                        {a.intent}
-                        <span className="text-text-tertiary ml-1 text-[10px]">
-                          {formatDate(a.analyzedAt)}
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => setViewingConversationId(a.conversationId)}
-                        className="p-1 rounded text-text-tertiary hover:text-accent-blue transition-colors shrink-0"
-                        title="Ver mensajes"
-                      >
-                        <MessageSquare size={12} />
-                      </button>
-                    </div>
-                    {/* Conversation ID — copiable */}
-                    {isSelected && (
-                      <CopyId value={a.conversationId} />
-                    )}
-                    {/* Show individual diagram when selected */}
-                    {isSelected && a.flowDiagram && (
-                      <div className="px-3 pb-2">
-                        <p className="text-[10px] text-text-tertiary mb-1 line-clamp-2">{a.flowSummary}</p>
-                        <MermaidDiagram chart={a.flowDiagram} className="max-h-48" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <DiagramConversationsSidebar
+            analyses={analyses}
+            selectedConversationId={selectedConversationId}
+            onSelectConversation={setLocalSelectedConv}
+            onViewConversation={setViewingConversationId}
+          />
         )}
       </div>
 
       {/* Context menu */}
       {contextMenu && (
-        <div
-          className="fixed z-60 bg-bg-secondary border border-border-primary rounded-lg shadow-xl py-1 min-w-45"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {contextMenu.selection.type === 'node' && (() => {
-            const nodeId = contextMenu.selection.id;
-            const category = nodeCategories?.[nodeId];
-            const queues = internalQueues?.filter((q) => q.nodeId === nodeId) ?? [];
-            return (
-              <>
-                {/* Node info */}
-                {category && (
-                  <div className="px-3 py-1.5 border-b border-border-primary">
-                    <p className="text-[10px] text-text-tertiary uppercase font-semibold">Categoría</p>
-                    <p className="text-xs text-accent-blue">{category}</p>
-                  </div>
-                )}
-                {queues.length > 0 && (
-                  <div className="px-3 py-1.5 border-b border-border-primary">
-                    <p className="text-[10px] text-text-tertiary uppercase font-semibold mb-1">Canales internos</p>
-                    {queues.map((q) => (
-                      <div key={q.channelName} className="mb-1 last:mb-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-medium text-purple-400">{q.channelName}</span>
-                          <span className="text-[10px] px-1 py-0.5 rounded bg-purple-400/15 text-purple-400 border border-purple-400/30">{q.queueType}</span>
-                        </div>
-                        <p className="text-[10px] text-text-tertiary mt-0.5">{q.usage}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <button onClick={() => handleEditNodeLabel(nodeId)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
-                  <Pencil size={12} /> Editar nombre
-                </button>
-                <div className="px-3 py-1.5 text-[10px] text-text-tertiary uppercase font-semibold">Forma</div>
-                <div className="flex items-center gap-1 px-3 pb-1.5">
-                  <button onClick={() => handleChangeShape(nodeId, '[]')} className="p-1.5 rounded border border-border-primary hover:border-accent-blue text-text-secondary hover:text-accent-blue" title="Rectangular">
-                    <Square size={13} />
-                  </button>
-                  <button onClick={() => handleChangeShape(nodeId, '{}')} className="p-1.5 rounded border border-border-primary hover:border-accent-blue text-text-secondary hover:text-accent-blue" title="Decisión">
-                    <Diamond size={13} />
-                  </button>
-                  <button onClick={() => handleChangeShape(nodeId, '()')} className="p-1.5 rounded border border-border-primary hover:border-accent-blue text-text-secondary hover:text-accent-blue" title="Redondeado">
-                    <Circle size={13} />
-                  </button>
-                </div>
-                <div className="border-t border-border-primary my-0.5" />
-                <button onClick={() => handleAddNodeAfter(nodeId)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
-                  <Plus size={12} /> Agregar nodo después
-                </button>
-                <div className="border-t border-border-primary my-0.5" />
-                <button onClick={() => handleDeleteNode(nodeId)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-accent-red hover:bg-accent-red/10 transition-colors">
-                  <Trash2 size={12} /> Eliminar nodo
-                </button>
-              </>
-            );
-          })()}
-
-          {contextMenu.selection.type === 'edge' && (() => {
-            const [src, tgt] = contextMenu.selection.id.split('->');
-            return (
-              <>
-                <button onClick={() => handleEditEdgeLabel(src, tgt)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
-                  <Pencil size={12} /> Editar etiqueta
-                </button>
-                <button onClick={() => handleChangeEdgeEndpoint(src, tgt, 'source')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
-                  <ArrowRight size={12} className="rotate-180" /> Cambiar origen
-                </button>
-                <button onClick={() => handleChangeEdgeEndpoint(src, tgt, 'target')} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
-                  <ArrowRight size={12} /> Cambiar destino
-                </button>
-                <div className="border-t border-border-primary my-0.5" />
-                <button onClick={() => handleInsertNodeInEdge(src, tgt)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
-                  <Plus size={12} /> Insertar nodo en medio
-                </button>
-                <div className="border-t border-border-primary my-0.5" />
-                <button onClick={() => handleDeleteEdge(src, tgt)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-accent-red hover:bg-accent-red/10 transition-colors">
-                  <Trash2 size={12} /> Eliminar transición
-                </button>
-              </>
-            );
-          })()}
-        </div>
+        <DiagramContextMenu
+          contextMenu={contextMenu}
+          nodeCategories={nodeCategories}
+          internalQueues={internalQueues}
+          onEditNodeLabel={handleEditNodeLabel}
+          onChangeShape={handleChangeShape}
+          onAddNodeAfter={handleAddNodeAfter}
+          onDeleteNode={handleDeleteNode}
+          onEditEdgeLabel={handleEditEdgeLabel}
+          onChangeEdgeEndpoint={handleChangeEdgeEndpoint}
+          onInsertNodeInEdge={handleInsertNodeInEdge}
+          onDeleteEdge={handleDeleteEdge}
+          onStopPropagation={(e) => e.stopPropagation()}
+        />
       )}
 
       {/* Label editor modal */}
       {editingLabel && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/40" onClick={() => setEditingLabel(null)}>
-          <div className="bg-bg-secondary border border-border-primary rounded-lg shadow-xl p-4 w-80" onClick={(e) => e.stopPropagation()}>
-            <p className="text-xs text-text-tertiary uppercase font-semibold mb-2">
-              {editingLabel.type === 'node' ? 'Nombre del nodo' : 'Etiqueta de transición'}
-            </p>
-            <input
-              autoFocus
-              value={editingLabel.value}
-              onChange={(e) => setEditingLabel({ ...editingLabel, value: e.target.value })}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveLabel(); if (e.key === 'Escape') setEditingLabel(null); }}
-              className="w-full px-3 py-2 bg-bg-primary border border-border-primary rounded-md text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-blue"
-              placeholder={editingLabel.type === 'node' ? 'Nombre del paso...' : 'Etiqueta (opcional)...'}
-            />
-            <div className="flex items-center justify-end gap-2 mt-3">
-              <button
-                onClick={() => setEditingLabel(null)}
-                className="px-3 py-1.5 text-xs text-text-secondary border border-border-primary rounded hover:bg-bg-tertiary"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSaveLabel}
-                className="px-3 py-1.5 text-xs bg-accent-blue text-white rounded hover:opacity-90"
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </div>
+        <DiagramLabelEditorModal
+          editingLabel={editingLabel}
+          onChange={(value) => setEditingLabel({ ...editingLabel, value })}
+          onSave={handleSaveLabel}
+          onClose={() => setEditingLabel(null)}
+        />
       )}
 
       {/* Legend + hints */}
