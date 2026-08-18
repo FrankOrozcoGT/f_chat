@@ -92,7 +92,7 @@ export interface BackendClient {
   id: string;
   phoneNumber: string;
   name: string;
-  metadata: any | null;
+  metadata: Record<string, unknown> | null;
   firstContactAt: string;
   lastContactAt: string;
 }
