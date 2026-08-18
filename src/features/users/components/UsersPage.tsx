@@ -1,12 +1,14 @@
 import { Building2, AlertCircle, Loader2, Calendar } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
-import { useGetAdminTenants } from '../api/useGetUsers';
+import { useGetAdminTenants } from '@/features/users/api/useGetUsers';
 import { useToast } from '@/shared/hooks/useToast';
 import { Toast } from '@/shared/ui/Toast';
 import { Table, type TableColumn } from '@/shared/ui/Table';
-import { PlanSelector } from './PlanSelector';
-import { LimitsCell } from './LimitsCell';
-import type { AdminTenant } from '../types';
+import { PlanSelector } from '@/features/users/components/PlanSelector';
+import { LimitsCell } from '@/features/users/components/LimitsCell';
+import type { AdminTenant } from '@/features/users/types';
+import { formatDate as formatDateBase } from '@/shared/lib/date';
+import { getErrorMessage } from '@/shared/lib/errors';
 
 export const UsersPage = () => {
   const { data: tenants, isLoading, isError, error } = useGetAdminTenants();
@@ -14,11 +16,7 @@ export const UsersPage = () => {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    return formatDateBase(dateString, { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const columns: TableColumn<AdminTenant>[] = [
@@ -107,7 +105,7 @@ export const UsersPage = () => {
             <AlertCircle size={48} className="text-accent-red" />
             <h2 className="text-xl font-semibold text-text-primary">Error al cargar organizaciones</h2>
             <p className="text-text-secondary max-w-md">
-              {error instanceof Error ? error.message : 'No se pudieron cargar las organizaciones.'}
+              {getErrorMessage(error, 'No se pudieron cargar las organizaciones.')}
             </p>
           </div>
         </div>

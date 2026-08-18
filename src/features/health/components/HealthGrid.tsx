@@ -1,5 +1,5 @@
-import type { ApiHealth } from '../types';
-import { HealthCard } from './HealthCard';
+import type { ApiHealth } from '@/features/health/types';
+import { HealthCard } from '@/features/health/components/HealthCard';
 
 interface HealthGridProps {
   healthData: ApiHealth[];

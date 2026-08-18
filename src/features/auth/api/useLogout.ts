@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { authKeys } from './useGetMe';
+import { authKeys } from '@/features/auth/api/useGetMe';
 
 /**
  * Hook para hacer logout del usuario.

@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
-import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from './Modal';
-import { Button } from './Button';
+import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
+import { Button } from '@/shared/ui/Button';
 
 interface ConfirmModalProps {
   isOpen: boolean;

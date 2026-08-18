@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { phoneKeys } from './phoneKeys';
+import { phoneKeys } from '@/features/phones/api/phoneKeys';
 
 export const useDeletePhone = () => {
   const queryClient = useQueryClient();

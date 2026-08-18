@@ -1,4 +1,4 @@
-import type { Period } from '../types';
+import type { Period } from '@/features/costs/types';
 
 export const costKeys = {
   all: ['costs'] as const,

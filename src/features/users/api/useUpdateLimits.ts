@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { adminTenantKeys } from './userKeys';
+import { adminTenantKeys } from '@/features/users/api/userKeys';
 
 interface UpdateLimitsParams {
   tenantId: string;

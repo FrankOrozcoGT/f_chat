@@ -2,29 +2,28 @@
 // Header + Messages body + Input footer
 // WebSocket integration for real-time updates
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Bot, Hand, Info, AlertTriangle, Search, Loader2, ChevronDown } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Search, Loader2, ChevronDown } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
-import { useGetMessages } from '../api/useGetMessages';
-import { useGetConversationDetail } from '../api/useGetConversationDetail';
-import { messageKeys } from '../api/messageKeys';
-import { useAnalyzeConversation } from '../api/useAnalyzeConversation';
-import { MessageBubble } from './MessageBubble';
-import { MessageInput } from './MessageInput';
-import { ClientInfo } from './ClientInfo';
-import { ProductsPromotions } from './ProductsPromotions';
-import { Avatar } from '@/shared/ui/Avatar';
-import { Badge } from '@/shared/ui/Badge';
-import { Button } from '@/shared/ui/Button';
+import { useGetMessages } from '@/features/messages/api/useGetMessages';
+import { useGetConversationDetail } from '@/features/messages/api/useGetConversationDetail';
+import { messageKeys } from '@/features/messages/api/messageKeys';
+import { useAnalyzeConversation } from '@/features/messages/api/useAnalyzeConversation';
+import { MessageBubble } from '@/features/messages/components/MessageBubble';
+import { MessageInput } from '@/features/messages/components/MessageInput';
+import { MessagesPanelHeader } from '@/features/messages/components/MessagesPanelHeader';
+import { ClientInfo } from '@/features/messages/components/ClientInfo';
+import { ProductsPromotions } from '@/features/messages/components/ProductsPromotions';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
-import { useTakeControl } from '../api/useTakeControl';
-import { useReturnToAi } from '../api/useReturnToAi';
+import { useTakeControl } from '@/features/messages/api/useTakeControl';
+import { useReturnToAi } from '@/features/messages/api/useReturnToAi';
+import { useCloseConversation } from '@/features/messages/api/useCloseConversation';
 import { useToast } from '@/shared/hooks/useToast';
-import { socket } from '@/lib/websocket';
-import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
-import type { Message } from '../types';
-import { authKeys } from '@/features/auth/api/useGetMe';
+import { getErrorMessage } from '@/shared/lib/errors';
+import { useMessagesRealtimeSync } from '@/features/messages/hooks/useMessagesRealtimeSync';
+import { useAutoScroll } from '@/features/messages/hooks/useAutoScroll';
+import type { Message } from '@/features/messages/types';
 import { usePhoneReconnectStore } from '@/features/phones/store';
 import { PhoneDisconnectedModal } from '@/features/phones/components/PhoneDisconnectedModal';
 
@@ -38,10 +37,9 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  const isInitialLoad = useRef(true);
   const { setSelectedConversationId, selectedConversationType } = useConversationsStore();
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
   const { showToast } = useToast();
   const { showModal: showDisconnectedModal, closeModal: closeDisconnectedModal } = usePhoneReconnectStore();
@@ -52,9 +50,8 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
       },
-      onError: (error: any) => {
-        const msg = error?.response?.data?.message || 'Error al analizar la conversación';
-        showToast(msg, 'error');
+      onError: (error) => {
+        showToast(getErrorMessage(error, 'Error al analizar la conversación'), 'error');
       },
     });
   };
@@ -80,208 +77,35 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
   // HITL mutation hooks
   const takeControl = useTakeControl({
     onError: (error) => {
-      const msg = (error as any)?.response?.data?.message || 'Error al tomar control';
-      showToast(msg, 'error');
+      showToast(getErrorMessage(error, 'Error al tomar control'), 'error');
     },
   });
   const returnToAi = useReturnToAi({
     onError: (error) => {
-      const msg = (error as any)?.response?.data?.message || 'Error al devolver a IA';
-      showToast(msg, 'error');
+      showToast(getErrorMessage(error, 'Error al devolver a IA'), 'error');
+    },
+  });
+  const closeConversation = useCloseConversation({
+    onSuccess: (data) => {
+      setIsMenuOpen(false);
+      const msg = data.movedMessages > 0
+        ? `Conversación cerrada. ${data.movedMessages} mensajes archivados.`
+        : 'Conversación cerrada.';
+      showToast(msg, 'success');
+    },
+    onError: (error) => {
+      showToast(getErrorMessage(error, 'Error al cerrar la conversación'), 'error');
     },
   });
 
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
-  };
+  const { showScrollButton, scrollToBottom } = useAutoScroll(
+    scrollContainerRef,
+    messagesEndRef,
+    displayMessages,
+    `${conversationId}:${historicalConversationId ?? ''}`,
+  );
 
-  const isNearBottom = () => {
-    const el = scrollContainerRef.current;
-    if (!el) return true;
-    return el.scrollHeight - el.scrollTop - el.clientHeight < 200;
-  };
-
-  // Auto-scroll to bottom when messages change (always on initial load, then only if near bottom)
-  useEffect(() => {
-    if (displayMessages.length === 0) return;
-    if (isInitialLoad.current) {
-      scrollToBottom('instant');
-      isInitialLoad.current = false;
-    } else if (isNearBottom()) {
-      scrollToBottom();
-    }
-  }, [displayMessages]);
-
-  // Reset initial load flag when conversation changes
-  useEffect(() => {
-    isInitialLoad.current = true;
-  }, [conversationId, historicalConversationId]);
-
-  // Track scroll position to show/hide the scroll-to-bottom button
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const handleScroll = () => {
-      setShowScrollButton(!isNearBottom());
-    };
-    el.addEventListener('scroll', handleScroll, { passive: true });
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Re-scroll when images load and expand the container (if near bottom)
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(() => {
-      if (isNearBottom()) scrollToBottom('instant');
-    });
-    // Observe all images inside the container
-    const images = el.querySelectorAll('img');
-    images.forEach((img) => observer.observe(img));
-    return () => observer.disconnect();
-  }, [displayMessages]);
-
-  // WebSocket integration for real-time message updates
-  useEffect(() => {
-    // message:incoming — mensaje entrante del cliente WhatsApp (broadcast)
-    const handleMessageIncoming = (data: MessageIncomingPayload) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
-      }
-    };
-
-    // message:new — mensaje enviado desde el backend/bot (broadcast)
-    const handleMessageNew = (data: { conversationId: string }) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
-      }
-    };
-
-    // message:sent — mensaje enviado desde WhatsApp Web, no desde el sistema (broadcast)
-    const handleMessageSent = (data: MessageSentPayload) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
-      }
-    };
-
-    const handleMessageStatusUpdated = (data: { messageId: string; conversationId: string; status: string }) => {
-      // Only update if message belongs to current conversation
-      if (data.conversationId === conversationId) {
-        // Update message status in cache
-        queryClient.setQueryData<Message[]>(
-          messageKeys.list(conversationId),
-          (oldMessages = []) => {
-            return oldMessages.map((msg) =>
-              msg.id === data.messageId
-                ? { ...msg, status: data.status as Message['status'] }
-                : msg
-            );
-          }
-        );
-      }
-    };
-
-    const handleMessageError = (data: { conversationId: string; error: string; tempId?: string }) => {
-      // Only handle if error belongs to current conversation
-      if (data.conversationId === conversationId) {
-        // Show error toast
-        showToast(data.error || 'Error al enviar el mensaje', 'error');
-
-        // If we have a tempId, mark that message as failed
-        if (data.tempId) {
-          queryClient.setQueryData<Message[]>(
-            messageKeys.list(conversationId),
-            (oldMessages = []) => {
-              return oldMessages.map((msg) =>
-                msg.id === data.tempId
-                  ? { ...msg, status: 'failed' as Message['status'] }
-                  : msg
-              );
-            }
-          );
-        }
-      }
-    };
-
-    // conversation:hitl — cliente solicita hablar con humano, refetch detail para actualizar mode
-    const handleHitl = (data: { conversationId: string }) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
-      }
-    };
-
-    // conversation:taken — agente toma la conversación
-    const handleTaken = (data: { conversationId: string }) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
-      }
-    };
-
-    // conversation:returned — conversación devuelta a IA
-    const handleReturned = (data: { conversationId: string }) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
-      }
-    };
-
-    // message:media_ready — media procesada, actualizar mediaUrl del mensaje en cache
-    const handleMediaReady = (data: MediaReadyPayload) => {
-      if (data.conversationId === conversationId) {
-        queryClient.setQueryData<Message[]>(
-          messageKeys.list(conversationId),
-          (oldMessages = []) =>
-            oldMessages.map((msg) =>
-              msg.keyId === data.keyId
-                ? { ...msg, mediaUrl: data.mediaUrl, mediaLoading: false }
-                : msg
-            )
-        );
-      }
-    };
-
-    // credits:exhausted — créditos agotados, conversación movida a HITL
-    const handleCreditsExhausted = (data: CreditsExhaustedPayload) => {
-      if (data.conversationId === conversationId) {
-        // Show toast notification
-        const usedFormatted = data.creditsUsed.toFixed(2);
-        const limitFormatted = data.creditsLimit.toFixed(0);
-        showToast(
-          `⚠️ Créditos agotados. Usado: ${usedFormatted} / ${limitFormatted}. La conversación se movió a modo manual (HITL).`,
-          'error'
-        );
-
-        // Refresh conversation detail to update mode to HITL
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
-
-        // Refresh user data to update creditsUsed
-        queryClient.invalidateQueries({ queryKey: authKeys.me() });
-      }
-    };
-
-    socket.on('message:media_ready', handleMediaReady);
-    socket.on('message:incoming', handleMessageIncoming);
-    socket.on('message:new', handleMessageNew);
-    socket.on('message:sent', handleMessageSent);
-    socket.on('message:status_updated', handleMessageStatusUpdated);
-    socket.on('message:error', handleMessageError);
-    socket.on('conversation:hitl', handleHitl);
-    socket.on('conversation:taken', handleTaken);
-    socket.on('conversation:returned', handleReturned);
-    socket.on('credits:exhausted', handleCreditsExhausted);
-
-    return () => {
-      socket.off('message:media_ready', handleMediaReady);
-      socket.off('message:incoming', handleMessageIncoming);
-      socket.off('message:new', handleMessageNew);
-      socket.off('message:sent', handleMessageSent);
-      socket.off('message:status_updated', handleMessageStatusUpdated);
-      socket.off('message:error', handleMessageError);
-      socket.off('conversation:hitl', handleHitl);
-      socket.off('conversation:taken', handleTaken);
-      socket.off('conversation:returned', handleReturned);
-      socket.off('credits:exhausted', handleCreditsExhausted);
-    };
-  }, [conversationId, queryClient, showToast]);
+  useMessagesRealtimeSync(conversationId);
 
   // Back button handler (mobile)
   const handleBack = () => {
@@ -304,88 +128,23 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
     }
   };
 
-  // Get initials for avatar fallback
-  const initials = client?.name
-    ? client.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : '?';
-
   return (
     <div className="flex-1 min-w-0 flex flex-col h-full bg-bg-primary">
-      {/* Header */}
-      <header className="flex items-center gap-3 p-4 border-b border-border-primary bg-bg-secondary shrink-0">
-        {/* Back button (mobile + medium screens when conversations list is hidden) */}
-        <button
-          onClick={handleBack}
-          className="xl:hidden min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-bg-tertiary transition-colors"
-          aria-label="Volver a lista"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-
-        {/* Avatar */}
-        <Avatar
-          alt={client?.name}
-          initials={initials}
-          size="md"
-        />
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-base text-text-primary truncate">
-            {client?.name || 'Cargando...'}
-          </h2>
-          <p className="text-xs text-text-secondary truncate">
-            {client?.phone || ''}
-          </p>
-        </div>
-
-        {/* HITL action button */}
-        {conversationMode === 'AI' ? (
-          <Button
-            variant="primary"
-            size="sm"
-            isLoading={takeControl.isPending}
-            onClick={() => takeControl.mutate({ conversationId })}
-          >
-            <Hand className="w-4 h-4" />
-            <span className="hidden sm:inline">Tomar Control</span>
-          </Button>
-        ) : conversationMode === 'HITL' ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            isLoading={returnToAi.isPending}
-            onClick={() => returnToAi.mutate({ conversationId })}
-          >
-            <Bot className="w-4 h-4" />
-            <span className="hidden sm:inline">Devolver a IA</span>
-          </Button>
-        ) : null}
-
-        {/* Status badge (based on conversation isActive) */}
-        {conversationDetail?.conversation && (
-          <Badge
-            variant={conversationDetail.conversation.isActive ? 'success' : 'default'}
-            size="sm"
-          >
-            {conversationDetail.conversation.isActive ? 'Activa' : 'Cerrada'}
-          </Badge>
-        )}
-
-        {/* Info button (mobile only) - opens bottom sheet */}
-        <button
-          onClick={() => setIsBottomSheetOpen(true)}
-          className="lg:hidden min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-accent-blue/10 hover:bg-accent-blue/20 transition-colors"
-          aria-label="Ver información del cliente"
-        >
-          <Info className="w-5 h-5 text-accent-blue" />
-        </button>
-      </header>
+      <MessagesPanelHeader
+        client={client}
+        conversationDetail={conversationDetail}
+        isMenuOpen={isMenuOpen}
+        onToggleMenu={() => setIsMenuOpen((v) => !v)}
+        onCloseMenu={() => setIsMenuOpen(false)}
+        onBack={handleBack}
+        onOpenInfo={() => setIsBottomSheetOpen(true)}
+        onTakeControl={() => takeControl.mutate({ conversationId })}
+        isTakingControl={takeControl.isPending}
+        onReturnToAi={() => returnToAi.mutate({ conversationId })}
+        isReturningToAi={returnToAi.isPending}
+        onCloseConversation={() => closeConversation.mutate(conversationId)}
+        isClosingConversation={closeConversation.isPending}
+      />
 
       {/* Historical conversation warning banner */}
       {isViewingHistorical && (
@@ -470,7 +229,7 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
       >
         {client && conversationDetail && (
           <div className="space-y-4">
-            <ClientInfo client={client} />
+            <ClientInfo client={client} conversationId={conversationId} />
             <ProductsPromotions
               products={conversationDetail.products}
               promotions={conversationDetail.promotions}

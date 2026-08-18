@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { productKeys } from './productKeys';
-import type { ProductDiscount, CreateDiscountDto } from '../types';
+import { productKeys } from '@/features/catalog/products/api/productKeys';
+import type { ProductDiscount, CreateDiscountDto } from '@/features/catalog/products/types';
 
 export const useCreateDiscount = (productId: string) => {
   const queryClient = useQueryClient();

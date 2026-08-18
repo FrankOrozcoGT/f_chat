@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Building2, Check, Plus } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
-import { useGetMe, useSwitchTenant } from '@/features/auth/api';
-import { useCreateTenant } from '../api';
-import { PendingInvitationsSection } from './PendingInvitationsSection';
+import { useGetMe } from '@/features/auth/api/useGetMe';
+import { useSwitchTenant } from '@/features/auth/api/useSwitchTenant';
+import { useCreateTenant } from '@/features/tenants/api/useCreateTenant';
+import { PendingInvitationsSection } from '@/features/tenants/components/PendingInvitationsSection';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
 import { Button } from '@/shared/ui/Button';
 

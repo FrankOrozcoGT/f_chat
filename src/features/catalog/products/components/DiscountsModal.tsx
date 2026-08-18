@@ -6,12 +6,13 @@ import { FormField } from '@/shared/ui/FormField';
 import { Input } from '@/shared/ui/Input';
 import { SelectField } from '@/shared/ui/SelectField';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import { useGetProductDiscounts } from '../api/useGetProductDiscounts';
-import { useCreateDiscount } from '../api/useCreateDiscount';
-import { useDeleteDiscount } from '../api/useDeleteDiscount';
+import { useGetProductDiscounts } from '@/features/catalog/products/api/useGetProductDiscounts';
+import { useCreateDiscount } from '@/features/catalog/products/api/useCreateDiscount';
+import { useDeleteDiscount } from '@/features/catalog/products/api/useDeleteDiscount';
 import { useGetContactsSelect } from '@/features/contacts/api/useGetContactsSelect';
 import { useToast } from '@/shared/hooks/useToast';
-import type { Product, ProductDiscount } from '../types';
+import { getErrorMessage } from '@/shared/lib/errors';
+import type { Product, ProductDiscount } from '@/features/catalog/products/types';
 
 interface DiscountsModalProps {
   product: Product | null;
@@ -64,8 +65,8 @@ export const DiscountsModal = ({ product, onClose }: DiscountsModalProps) => {
       });
       showToast('Descuento creado', 'success');
       resetForm();
-    } catch {
-      showToast('Error al crear el descuento', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al crear el descuento'), 'error');
     }
   };
 
@@ -74,8 +75,8 @@ export const DiscountsModal = ({ product, onClose }: DiscountsModalProps) => {
     try {
       await deleteDiscount.mutateAsync(deleteTarget.id);
       showToast('Descuento eliminado', 'success');
-    } catch {
-      showToast('Error al eliminar el descuento', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar el descuento'), 'error');
     } finally {
       setDeleteTarget(null);
     }
@@ -141,7 +142,7 @@ export const DiscountsModal = ({ product, onClose }: DiscountsModalProps) => {
                   <div className="flex items-center gap-3 shrink-0">
                     <div className="text-right">
                       <p className="text-sm font-semibold text-text-primary">${d.discountPrice.toLocaleString()}</p>
-                      {product && (
+                      {product && product.basePrice > 0 && (
                         <p className="text-xs text-accent-green">
                           -{Math.round(((product.basePrice - d.discountPrice) / product.basePrice) * 100)}%
                         </p>

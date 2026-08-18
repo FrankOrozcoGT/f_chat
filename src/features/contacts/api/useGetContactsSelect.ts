@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { contactKeys } from './contactKeys';
+import { contactKeys } from '@/features/contacts/api/contactKeys';
 
 export interface ContactSelectItem {
   id: string;

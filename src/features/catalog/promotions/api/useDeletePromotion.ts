@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { promotionKeys } from './promotionKeys';
+import { promotionKeys } from '@/features/catalog/promotions/api/promotionKeys';
 
 export const useDeletePromotion = () => {
   const queryClient = useQueryClient();

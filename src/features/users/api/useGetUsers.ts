@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { adminTenantKeys } from './userKeys';
-import type { AdminTenant } from '../types';
+import { adminTenantKeys } from '@/features/users/api/userKeys';
+import type { AdminTenant } from '@/features/users/types';
 
 export const useGetAdminTenants = () => {
   return useQuery({

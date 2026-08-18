@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle, CardBody } from '@/shared/ui/Card';
-import type { ApiHealth } from '../types';
+import { formatRelativeTime } from '@/shared/lib/date';
+import type { ApiHealth } from '@/features/health/types';
 
 interface HealthCardProps {
   health: ApiHealth;
@@ -13,25 +14,8 @@ const API_DISPLAY_NAMES: Record<string, string> = {
   kimi: 'Kimi K2.5',
 };
 
-const formatTimeSince = (isoTimestamp: string | null): string => {
-  if (!isoTimestamp) return 'Nunca';
-  const now = new Date();
-  const then = new Date(isoTimestamp);
-  const diffMs = now.getTime() - then.getTime();
-  const diffMinutes = Math.floor(diffMs / 60000);
-
-  if (diffMinutes < 1) return 'Justo ahora';
-  if (diffMinutes === 1) return 'Hace 1 minuto';
-  if (diffMinutes < 60) return `Hace ${diffMinutes} minutos`;
-
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours === 1) return 'Hace 1 hora';
-  if (diffHours < 24) return `Hace ${diffHours} horas`;
-
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return 'Hace 1 día';
-  return `Hace ${diffDays} días`;
-};
+const formatTimeSince = (isoTimestamp: string | null): string =>
+  isoTimestamp ? formatRelativeTime(isoTimestamp) : 'Nunca';
 
 export const HealthCard = ({ health }: HealthCardProps) => {
   const isUp = health.status === 'up';

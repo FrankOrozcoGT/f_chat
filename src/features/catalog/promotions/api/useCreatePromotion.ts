@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { promotionKeys } from './promotionKeys';
-import type { Promotion, CreatePromotionDto } from '../types';
+import { promotionKeys } from '@/features/catalog/promotions/api/promotionKeys';
+import type { Promotion, CreatePromotionDto } from '@/features/catalog/promotions/types';
 
 export const useCreatePromotion = () => {
   const queryClient = useQueryClient();

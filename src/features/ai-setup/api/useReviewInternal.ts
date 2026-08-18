@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import type { InternalStatus } from './useGetInternals';
+import type { InternalStatus } from '@/features/ai-setup/api/useGetInternals';
 
 interface ReviewPayload {
   id: string;

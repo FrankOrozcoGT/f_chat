@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { settingsKeys } from './settingsKeys';
-import type { UserSettings } from '../types';
+import { settingsKeys } from '@/features/settings/api/settingsKeys';
+import type { UserSettings } from '@/features/settings/types';
 
 export const useGetSettings = () => {
   return useQuery({

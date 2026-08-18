@@ -5,15 +5,11 @@ import { Select } from '@/shared/ui/Select';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
 import { Button } from '@/shared/ui/Button';
 import { useToast } from '@/shared/hooks/useToast';
-import { useChangeMemberRole, useRemoveMember } from '../api';
-import type { TenantMember } from '../types';
+import { useChangeMemberRole } from '@/features/tenants/api/useChangeMemberRole';
+import { useRemoveMember } from '@/features/tenants/api/useRemoveMember';
+import { roleOptions } from '@/features/tenants/types';
+import type { TenantMember } from '@/features/tenants/types';
 import type { TenantRole } from '@/features/auth/types';
-
-const roleOptions = [
-  { value: 'owner' as TenantRole, label: 'Owner' },
-  { value: 'user' as TenantRole, label: 'Usuario' },
-  { value: 'tecnico' as TenantRole, label: 'Técnico' },
-];
 
 const getRoleStyles = (role: string) => {
   if (role === 'owner') return 'bg-accent-blue/10 text-accent-blue border-accent-blue/30';

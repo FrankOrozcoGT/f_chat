@@ -1,8 +1,8 @@
 import { type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useGetMe } from '@/features/auth/api';
-import { ComingSoonPage } from '@/features/dashboard/components/ComingSoonPage';
-import { ForbiddenPage } from '@/features/dashboard/components/ForbiddenPage';
+import { useGetMe } from '@/features/auth/api/useGetMe';
+import { ComingSoonPage } from '@/routing/ComingSoonPage';
+import { ForbiddenPage } from '@/routing/ForbiddenPage';
 
 export type AppAccess = 'authenticated' | 'full-plan' | 'conversations' | 'flows' | 'ai-setup' | 'super-admin' | 'tenant-owner';
 

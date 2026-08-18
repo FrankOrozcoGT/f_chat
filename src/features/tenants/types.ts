@@ -15,3 +15,9 @@ export interface MyTenant {
   name: string;
   role: TenantRole;
 }
+
+export const roleOptions: { value: TenantRole; label: string }[] = [
+  { value: 'user', label: 'Usuario' },
+  { value: 'tecnico', label: 'Técnico' },
+  { value: 'owner', label: 'Owner' },
+];

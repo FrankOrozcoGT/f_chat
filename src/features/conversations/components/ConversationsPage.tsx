@@ -2,16 +2,16 @@
 // Left: ConversationsList, Center: MessagesPanel, Right: HITLPanel
 // Includes WebSocket integration for real-time updates
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Header } from '@/layouts/components/Header';
 import { Sidebar } from '@/layouts/components/Sidebar';
 import { useSidebarStore } from '@/stores/useSidebarStore';
-import { ConversationsList } from './ConversationsList';
-import { conversationKeys } from '../api/conversationKeys';
-import { useConversationsStore } from '../store';
-import { socket } from '@/lib/websocket';
+import { ConversationsList } from '@/features/conversations/components/ConversationsList';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
+import { useConversationsStore } from '@/features/conversations/store';
+import { useSocketEvent } from '@/lib/websocket';
 import { messageKeys } from '@/features/messages/api/messageKeys';
 import { MessagesPanel } from '@/features/messages/components/MessagesPanel';
 import { HITLPanel } from '@/features/messages/components/HITLPanel';
@@ -29,64 +29,24 @@ export const ConversationsPage = () => {
   }, [selectedConversationId]);
 
   // WebSocket integration for real-time updates
-  useEffect(() => {
-    // Listen for incoming messages - invalidate to refresh conversation list
-    const handleMessageIncoming = () => {
-      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-    };
+  const invalidateConversationLists = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+  }, [queryClient]);
 
-    // Listen for new conversations created
-    const handleConversationCreated = () => {
-      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-    };
-
-    // Listen for messages sent from backend/bot
-    const handleMessageNew = () => {
-      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-    };
-
-    // conversation:hitl — refrescar lista para mostrar indicador
-    const handleHitl = () => {
-      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-    };
-
-    const handleConversationTaken = () => {
-      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-      if (selectedConversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(selectedConversationId) });
-      }
-    };
-
-    const handleConversationReturned = () => {
-      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-      if (selectedConversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(selectedConversationId) });
-      }
-    };
-
-    const handleCreditsExhausted = () => {
-      // Refresh conversation list to show updated mode (HITL)
-      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-    };
-
-    socket.on('message:incoming', handleMessageIncoming);
-    socket.on('message:new', handleMessageNew);
-    socket.on('conversation:created', handleConversationCreated);
-    socket.on('conversation:hitl', handleHitl);
-    socket.on('conversation:taken', handleConversationTaken);
-    socket.on('conversation:returned', handleConversationReturned);
-    socket.on('credits:exhausted', handleCreditsExhausted);
-
-    return () => {
-      socket.off('message:incoming', handleMessageIncoming);
-      socket.off('message:new', handleMessageNew);
-      socket.off('conversation:created', handleConversationCreated);
-      socket.off('conversation:hitl', handleHitl);
-      socket.off('conversation:taken', handleConversationTaken);
-      socket.off('conversation:returned', handleConversationReturned);
-      socket.off('credits:exhausted', handleCreditsExhausted);
-    };
+  const invalidateConversationAndSelectedMessages = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+    if (selectedConversationId) {
+      queryClient.invalidateQueries({ queryKey: messageKeys.detail(selectedConversationId) });
+    }
   }, [queryClient, selectedConversationId]);
+
+  useSocketEvent('message:incoming', invalidateConversationLists);
+  useSocketEvent('message:new', invalidateConversationLists);
+  useSocketEvent('conversation:created', invalidateConversationLists);
+  useSocketEvent('conversation:hitl', invalidateConversationLists);
+  useSocketEvent('credits:exhausted', invalidateConversationLists);
+  useSocketEvent('conversation:taken', invalidateConversationAndSelectedMessages);
+  useSocketEvent('conversation:returned', invalidateConversationAndSelectedMessages);
 
   return (
     <div className="min-h-screen bg-bg-primary">

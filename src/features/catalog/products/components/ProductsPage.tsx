@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { Plus, Package, Pencil, Trash2 } from 'lucide-react';
-import { CrmLayout } from '@/layouts/CrmLayout';
-import { useGetProducts } from '../api/useGetProducts';
-import { useCreateProduct } from '../api/useCreateProduct';
-import { useUpdateProduct } from '../api/useUpdateProduct';
-import { useDeleteProduct } from '../api/useDeleteProduct';
+import { useRef, useState } from 'react';
+import { Package, Pencil, Trash2, ImagePlus } from 'lucide-react';
+import { useGetProducts } from '@/features/catalog/products/api/useGetProducts';
+import { useCreateProduct } from '@/features/catalog/products/api/useCreateProduct';
+import { useUpdateProduct } from '@/features/catalog/products/api/useUpdateProduct';
+import { useDeleteProduct } from '@/features/catalog/products/api/useDeleteProduct';
+import { useUploadProductImage } from '@/features/catalog/products/api/useUploadProductImage';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
+import { useCrudModalState } from '@/shared/hooks/useCrudModalState';
+import { CatalogPageLayout } from '@/shared/components/CatalogPageLayout';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
@@ -13,8 +16,8 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Badge } from '@/shared/ui/Badge';
-import { DiscountsModal } from './DiscountsModal';
-import type { Product, CreateProductDto, UpdateProductDto } from '../types';
+import { DiscountsModal } from '@/features/catalog/products/components/DiscountsModal';
+import type { Product, CreateProductDto, UpdateProductDto } from '@/features/catalog/products/types';
 
 const emptyForm = { name: '', basePrice: '', description: '' };
 
@@ -23,36 +26,31 @@ export const ProductsPage = () => {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
+  const uploadImage = useUploadProductImage();
   const { showToast } = useToast();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Product | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
+
+  const {
+    modalOpen, editing, deleteTarget, setDeleteTarget, form, setForm,
+    openCreate: openCreateBase, openEdit: openEditBase, closeModal,
+  } = useCrudModalState<Product, typeof emptyForm>(emptyForm, (product) => ({
+    name: product.name,
+    basePrice: String(product.basePrice),
+    description: product.description ?? '',
+  }));
   const [discountsProduct, setDiscountsProduct] = useState<Product | null>(null);
-  const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Partial<typeof emptyForm>>({});
 
   const openCreate = () => {
-    setEditing(null);
-    setForm(emptyForm);
     setErrors({});
-    setModalOpen(true);
+    openCreateBase();
   };
 
   const openEdit = (product: Product) => {
-    setEditing(product);
-    setForm({
-      name: product.name,
-      basePrice: String(product.basePrice),
-      description: product.description ?? '',
-    });
     setErrors({});
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditing(null);
+    openEditBase(product);
   };
 
   const validate = () => {
@@ -82,8 +80,8 @@ export const ProductsPage = () => {
         showToast('Producto creado', 'success');
       }
       closeModal();
-    } catch {
-      showToast('Error al guardar el producto', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al guardar el producto'), 'error');
     }
   };
 
@@ -92,10 +90,29 @@ export const ProductsPage = () => {
     try {
       await deleteProduct.mutateAsync(deleteTarget.id);
       showToast('Producto eliminado', 'success');
-    } catch {
-      showToast('Error al eliminar el producto', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar el producto'), 'error');
     } finally {
       setDeleteTarget(null);
+    }
+  };
+
+  const openImageUpload = (productId: string) => {
+    setUploadTargetId(productId);
+    imageInputRef.current?.click();
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadTargetId) return;
+    e.target.value = '';
+    try {
+      await uploadImage.mutateAsync({ id: uploadTargetId, file });
+      showToast('Imagen actualizada', 'success');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al subir la imagen'), 'error');
+    } finally {
+      setUploadTargetId(null);
     }
   };
 
@@ -111,9 +128,17 @@ export const ProductsPage = () => {
         >
           <div className="flex items-start justify-between gap-3 mb-2">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-bg-tertiary flex items-center justify-center shrink-0">
-                <Package size={16} className="text-text-secondary" />
-              </div>
+              <button
+                onClick={() => openImageUpload(product.id)}
+                className="w-9 h-9 rounded-full bg-bg-tertiary flex items-center justify-center shrink-0 overflow-hidden hover:opacity-80 transition-opacity"
+                title="Cambiar imagen"
+              >
+                {product.imageUrl ? (
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Package size={16} className="text-text-secondary" />
+                )}
+              </button>
               <div>
                 <p className="font-medium text-text-primary text-sm">{product.name}</p>
                 {product.description && (
@@ -135,6 +160,9 @@ export const ProductsPage = () => {
             </button>
           </div>
           <div className="flex gap-2">
+            <Button variant="secondary" size="sm" className="flex-1 min-h-11" onClick={() => openImageUpload(product.id)} isLoading={uploadImage.isPending && uploadTargetId === product.id}>
+              <ImagePlus size={14} /> Imagen
+            </Button>
             <Button variant="secondary" size="sm" className="flex-1 min-h-11" onClick={() => openEdit(product)}>
               <Pencil size={14} /> Editar
             </Button>
@@ -153,9 +181,17 @@ export const ProductsPage = () => {
       header: 'Producto',
       render: (p) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-bg-tertiary flex items-center justify-center shrink-0">
-            <Package size={16} className="text-text-secondary" />
-          </div>
+          <button
+            onClick={() => openImageUpload(p.id)}
+            className="w-9 h-9 rounded-full bg-bg-tertiary flex items-center justify-center shrink-0 overflow-hidden hover:opacity-80 transition-opacity"
+            title="Cambiar imagen"
+          >
+            {p.imageUrl ? (
+              <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+            ) : (
+              <Package size={16} className="text-text-secondary" />
+            )}
+          </button>
           <div>
             <p className="font-medium text-text-primary">{p.name}</p>
             {p.description && (
@@ -188,6 +224,9 @@ export const ProductsPage = () => {
       header: '',
       render: (p) => (
         <div className="flex items-center justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => openImageUpload(p.id)} title="Subir imagen" isLoading={uploadImage.isPending && uploadTargetId === p.id}>
+            <ImagePlus size={16} />
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => openEdit(p)} title="Editar">
             <Pencil size={16} />
           </Button>
@@ -200,134 +239,106 @@ export const ProductsPage = () => {
   ];
 
   return (
-    <CrmLayout>
-      <div className="space-y-4 md:space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Productos</h1>
-            <p className="text-sm text-text-secondary mt-1">
-              {products.length} producto{products.length !== 1 ? 's' : ''} en el catálogo
-            </p>
-          </div>
-          <Button onClick={openCreate} size="md">
-            <Plus size={18} />
-            <span className="hidden sm:inline">Nuevo producto</span>
-          </Button>
-        </div>
+    <CatalogPageLayout
+      title="Productos"
+      subtitle={`${products.length} producto${products.length !== 1 ? 's' : ''} en el catálogo`}
+      createLabel="Nuevo producto"
+      onCreate={openCreate}
+      isLoading={isLoading}
+      isError={isError}
+      isEmpty={products.length === 0}
+      loadingLabel="Cargando productos..."
+      errorMessage="Error al cargar los productos"
+      emptyState={{
+        icon: Package,
+        title: 'Sin productos',
+        description: 'Agrega tu primer producto al catálogo.',
+        createLabel: 'Nuevo producto',
+      }}
+      modals={
+        <>
+          {/* Form Modal */}
+          <Modal isOpen={modalOpen} onClose={closeModal} size="md">
+            <ModalHeader onClose={closeModal}>
+              <ModalTitle>{editing ? 'Editar producto' : 'Nuevo producto'}</ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <FormField label="Nombre" required error={errors.name}>
+                  <Input
+                    placeholder="Ej: Caja de cartón grande"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    error={!!errors.name}
+                  />
+                </FormField>
+                <FormField label="Precio base" required error={errors.basePrice}>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={form.basePrice}
+                    onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
+                    error={!!errors.basePrice}
+                  />
+                </FormField>
+                <FormField label="Descripción" optional>
+                  <Textarea
+                    placeholder="Descripción del producto..."
+                    value={form.description}
+                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                    rows={3}
+                  />
+                </FormField>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="secondary" onClick={closeModal} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit} isLoading={isSubmitting}>
+                {editing ? 'Guardar cambios' : 'Crear producto'}
+              </Button>
+            </ModalFooter>
+          </Modal>
 
-        {/* Loading */}
-        {isLoading && (
-          <div className="flex items-center justify-center min-h-64">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 border-4 border-border-primary border-t-accent-blue rounded-full animate-spin" />
-              <p className="text-sm text-text-secondary">Cargando productos...</p>
-            </div>
-          </div>
-        )}
+          {/* Discounts Modal */}
+          <DiscountsModal
+            product={discountsProduct}
+            onClose={() => setDiscountsProduct(null)}
+          />
 
-        {/* Error */}
-        {isError && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-text-secondary mb-4">Error al cargar los productos</p>
-            <Button variant="secondary" onClick={() => window.location.reload()}>
-              Reintentar
-            </Button>
-          </div>
-        )}
+          {/* Hidden image input */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageChange}
+          />
 
-        {/* Empty */}
-        {!isLoading && !isError && products.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center">
-            <Package size={48} className="text-text-tertiary mb-4" />
-            <h3 className="text-lg font-semibold text-text-primary mb-2">Sin productos</h3>
-            <p className="text-sm text-text-secondary mb-6 max-w-sm">
-              Agrega tu primer producto al catálogo.
-            </p>
-            <Button onClick={openCreate}>
-              <Plus size={18} /> Nuevo producto
-            </Button>
-          </div>
-        )}
-
-        {/* Data */}
-        {!isLoading && !isError && products.length > 0 && (
-          <>
-            <MobileCards />
-            <div className="hidden md:block">
-              <Table
-                data={products}
-                columns={columns}
-                getRowKey={(p) => p.id}
-              />
-            </div>
-          </>
-        )}
+          {/* Delete Confirm */}
+          <ConfirmModal
+            isOpen={!!deleteTarget}
+            onClose={() => setDeleteTarget(null)}
+            onConfirm={handleDelete}
+            title="Eliminar producto"
+            message={`¿Estás seguro de eliminar "${deleteTarget?.name}"? Esta acción no se puede deshacer.`}
+            confirmText="Eliminar"
+            isLoading={deleteProduct.isPending}
+          />
+        </>
+      }
+    >
+      <MobileCards />
+      <div className="hidden md:block">
+        <Table
+          data={products}
+          columns={columns}
+          getRowKey={(p) => p.id}
+        />
       </div>
-
-      {/* Form Modal */}
-      <Modal isOpen={modalOpen} onClose={closeModal} size="md">
-        <ModalHeader onClose={closeModal}>
-          <ModalTitle>{editing ? 'Editar producto' : 'Nuevo producto'}</ModalTitle>
-        </ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            <FormField label="Nombre" required error={errors.name}>
-              <Input
-                placeholder="Ej: Caja de cartón grande"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                error={!!errors.name}
-              />
-            </FormField>
-            <FormField label="Precio base" required error={errors.basePrice}>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={form.basePrice}
-                onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
-                error={!!errors.basePrice}
-              />
-            </FormField>
-            <FormField label="Descripción" optional>
-              <Textarea
-                placeholder="Descripción del producto..."
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                rows={3}
-              />
-            </FormField>
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="secondary" onClick={closeModal} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} isLoading={isSubmitting}>
-            {editing ? 'Guardar cambios' : 'Crear producto'}
-          </Button>
-        </ModalFooter>
-      </Modal>
-
-      {/* Discounts Modal */}
-      <DiscountsModal
-        product={discountsProduct}
-        onClose={() => setDiscountsProduct(null)}
-      />
-
-      {/* Delete Confirm */}
-      <ConfirmModal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        title="Eliminar producto"
-        message={`¿Estás seguro de eliminar "${deleteTarget?.name}"? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        isLoading={deleteProduct.isPending}
-      />
-
-    </CrmLayout>
+    </CatalogPageLayout>
   );
 };

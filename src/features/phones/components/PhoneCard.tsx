@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Smartphone, Circle, Clock, Trash2 } from 'lucide-react';
 import { Card, CardBody } from '@/shared/ui/Card';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useDeletePhone } from '@/features/phones/api/useDeletePhone';
 import { useToast } from '@/shared/hooks/useToast';
-import { socket } from '@/lib/websocket';
+import { getErrorMessage } from '@/shared/lib/errors';
+import { formatDateTime } from '@/shared/lib/date';
+import { useSocketEvent } from '@/lib/websocket';
 import type { Phone, PhoneStatus } from '@/features/phones/types';
 import type { PhoneStatusChangedPayload } from '@/lib/websocket';
 
@@ -18,21 +20,17 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
   const deletePhone = useDeletePhone();
   const { showToast } = useToast();
 
-  // WebSocket listener para actualizaciones de estado en tiempo real
+  // Resincronizar cuando la prop cambia por una vía distinta al socket (ej. refetch de la lista)
   useEffect(() => {
-    const handleStatusChange = (data: PhoneStatusChangedPayload) => {
-      if (data.phoneId === phone.id) {
-        console.log('[PhoneCard] Status cambiado:', data.phoneId, data.status);
-        setCurrentStatus(data.status);
-      }
-    };
+    setCurrentStatus(phone.status);
+  }, [phone.status]);
 
-    socket.on('phone:status_changed', handleStatusChange);
-
-    return () => {
-      socket.off('phone:status_changed', handleStatusChange);
-    };
-  }, [phone.id]);
+  // WebSocket listener para actualizaciones de estado en tiempo real
+  useSocketEvent<PhoneStatusChangedPayload>('phone:status_changed', useCallback((data) => {
+    if (data.phoneId === phone.id) {
+      setCurrentStatus(data.status);
+    }
+  }, [phone.id]));
 
   const handleConfirmDelete = () => {
     deletePhone.mutate(phone.id, {
@@ -40,8 +38,8 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
         showToast('Instancia eliminada correctamente', 'success');
         setShowConfirmDelete(false);
       },
-      onError: (error: Error) => {
-        showToast(error.message || 'Error al eliminar la instancia', 'error');
+      onError: (error) => {
+        showToast(getErrorMessage(error, 'Error al eliminar la instancia'), 'error');
         setShowConfirmDelete(false);
       },
     });
@@ -88,13 +86,7 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateTime(dateString);
   };
 
   return (

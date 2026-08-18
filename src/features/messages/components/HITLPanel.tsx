@@ -4,13 +4,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Search, Loader2 } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
-import { useGetConversationDetail } from '../api/useGetConversationDetail';
-import { useAnalyzeConversation } from '../api/useAnalyzeConversation';
-import { messageKeys } from '../api/messageKeys';
+import { useGetConversationDetail } from '@/features/messages/api/useGetConversationDetail';
+import { useAnalyzeConversation } from '@/features/messages/api/useAnalyzeConversation';
+import { messageKeys } from '@/features/messages/api/messageKeys';
 import { useToast } from '@/shared/hooks/useToast';
-import { ClientInfo } from './ClientInfo';
-import { ProductsPromotions } from './ProductsPromotions';
-import { ConversationSummary } from './ConversationSummary';
+import { getErrorMessage } from '@/shared/lib/errors';
+import { ClientInfo } from '@/features/messages/components/ClientInfo';
+import { ProductsPromotions } from '@/features/messages/components/ProductsPromotions';
+import { ConversationSummary } from '@/features/messages/components/ConversationSummary';
 
 interface HITLPanelProps {
   conversationId: string;
@@ -30,9 +31,8 @@ export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HI
         queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
         showToast(`Análisis completado — ${data.creditsUsed.toFixed(2)} créditos usados`, 'success');
       },
-      onError: (error: any) => {
-        const msg = error?.response?.data?.message || 'Error al analizar la conversación';
-        showToast(msg, 'error');
+      onError: (error) => {
+        showToast(getErrorMessage(error, 'Error al analizar la conversación'), 'error');
       },
     });
   };
@@ -61,7 +61,7 @@ export const HITLPanel = ({ conversationId, onSelectHistoricalConversation }: HI
 
   return (
     <div className="h-full overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 bg-bg-primary">
-      <ClientInfo client={conversationDetail.client} />
+      <ClientInfo client={conversationDetail.client} conversationId={conversationId} />
       <ProductsPromotions
         products={conversationDetail.products}
         promotions={conversationDetail.promotions}

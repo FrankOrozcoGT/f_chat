@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { X, User, Bot, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useGetConversationMessages } from '../api/useGetConversationMessages';
-import type { InternalReview } from '../api/useGetInternals';
+import { useGetConversationMessages } from '@/features/ai-setup/api/useGetConversationMessages';
+import type { InternalReview } from '@/features/ai-setup/api/useGetInternals';
+import { formatTime } from '@/shared/lib/date';
 
 interface Props {
   internal: InternalReview;
@@ -90,7 +91,7 @@ export const InternalConversationDrawer = ({ internal, onClose }: Props) => {
                     <span className="text-[10px] text-text-tertiary italic block mt-0.5">🎤 transcripción</span>
                   )}
                   <p className="text-[10px] text-text-tertiary mt-1 text-right">
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {formatTime(msg.timestamp)}
                   </p>
                 </div>
                 {!isIncoming && (

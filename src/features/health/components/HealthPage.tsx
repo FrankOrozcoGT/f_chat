@@ -1,7 +1,8 @@
 import { Activity, AlertCircle, Loader2 } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
-import { useGetHealth } from '../api/useGetHealth';
-import { HealthGrid } from './HealthGrid';
+import { useGetHealth } from '@/features/health/api/useGetHealth';
+import { HealthGrid } from '@/features/health/components/HealthGrid';
+import { getErrorMessage } from '@/shared/lib/errors';
 
 export const HealthPage = () => {
   const { data: healthData, isLoading, isError, error } = useGetHealth();
@@ -27,7 +28,7 @@ export const HealthPage = () => {
             <AlertCircle size={48} className="text-accent-red" />
             <h2 className="text-xl font-semibold text-text-primary">Error al cargar estado de salud</h2>
             <p className="text-text-secondary max-w-md">
-              {error instanceof Error ? error.message : 'No se pudo cargar el estado de las APIs. Por favor, intenta de nuevo.'}
+              {getErrorMessage(error, 'No se pudo cargar el estado de las APIs. Por favor, intenta de nuevo.')}
             </p>
           </div>
         </div>

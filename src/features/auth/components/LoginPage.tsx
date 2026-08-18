@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AuthLayout } from '../../../layouts/AuthLayout';
-import { Toast } from '../../../shared/ui/Toast';
-import type { ToastType } from '../../../shared/ui/Toast';
+import { AuthLayout } from '@/layouts/AuthLayout';
+import { Toast } from '@/shared/ui/Toast';
+import type { ToastType } from '@/shared/ui/Toast';
 
 export const LoginPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();

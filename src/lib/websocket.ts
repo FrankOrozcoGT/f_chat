@@ -1,28 +1,7 @@
+import { useEffect } from 'react';
 import { io } from 'socket.io-client';
-import type { BackendMessageDirection, BackendMessageType, BackendSenderType, BackendMessageStatus } from '@/features/messages/types';
 
 // Event payload types
-export interface MessageIncomingPayload {
-  id: string;
-  conversationId: string;
-  type: BackendMessageType;
-  content: string;
-  mediaUrl: string | null;
-  fileName: string | null;
-  fileSize: number | null;
-  mimeType: string | null;
-  direction: BackendMessageDirection;
-  senderType: BackendSenderType;
-  status: BackendMessageStatus;
-  costUsd: number | null;
-  metadata: unknown | null;
-  transcription: string | null;
-  analyzedAt: string | null;
-  createdAt: string;
-  conversationName: string;
-  senderName: string | null;
-}
-
 export interface MessageSentPayload {
   id: string;
   phoneId: string;
@@ -144,21 +123,16 @@ export const socket = io(WS_URL, {
 // Helper types para listeners
 export type EventCallback<T> = (data: T) => void;
 
-// Helpers para rooms (agent:join_room / agent:leave_room)
-export const joinPhoneRoom = (phoneId: string): void => {
-  if (!socket.connected) {
-    console.error('[WebSocket] Cannot join room, not connected');
-    return;
-  }
-  socket.emit('agent:join_room', { phoneId });
-  console.log(`[WebSocket] Joined room for phone: ${phoneId}`);
-};
-
-export const leavePhoneRoom = (phoneId: string): void => {
-  if (!socket.connected) {
-    console.error('[WebSocket] Cannot leave room, not connected');
-    return;
-  }
-  socket.emit('agent:leave_room', { phoneId });
-  console.log(`[WebSocket] Left room for phone: ${phoneId}`);
-};
+/**
+ * Suscribe un handler a un evento del socket global durante la vida del componente.
+ * Encapsula el patrón socket.on/socket.off en useEffect, repetido antes en cada
+ * componente que escucha eventos en tiempo real.
+ */
+export function useSocketEvent<T>(event: string, handler: EventCallback<T>): void {
+  useEffect(() => {
+    socket.on(event, handler);
+    return () => {
+      socket.off(event, handler);
+    };
+  }, [event, handler]);
+}

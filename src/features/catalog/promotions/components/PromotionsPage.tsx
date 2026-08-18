@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Plus, Tag, Pencil, Trash2, Package } from 'lucide-react';
-import { CrmLayout } from '@/layouts/CrmLayout';
-import { useGetPromotions } from '../api/useGetPromotions';
-import { useCreatePromotion } from '../api/useCreatePromotion';
-import { useUpdatePromotion } from '../api/useUpdatePromotion';
-import { useDeletePromotion } from '../api/useDeletePromotion';
+import { Tag, Pencil, Trash2, Package } from 'lucide-react';
+import { useGetPromotions } from '@/features/catalog/promotions/api/useGetPromotions';
+import { useCreatePromotion } from '@/features/catalog/promotions/api/useCreatePromotion';
+import { useUpdatePromotion } from '@/features/catalog/promotions/api/useUpdatePromotion';
+import { useDeletePromotion } from '@/features/catalog/promotions/api/useDeletePromotion';
 import { useGetProducts } from '@/features/catalog/products/api/useGetProducts';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
+import { useCrudModalState } from '@/shared/hooks/useCrudModalState';
+import { CatalogPageLayout } from '@/shared/components/CatalogPageLayout';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
@@ -15,7 +17,7 @@ import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Badge } from '@/shared/ui/Badge';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
-import type { Promotion, CreatePromotionDto, UpdatePromotionDto } from '../types';
+import type { Promotion, CreatePromotionDto, UpdatePromotionDto } from '@/features/catalog/promotions/types';
 
 const emptyForm = { name: '', description: '', specialPrice: '', productIds: [] as string[] };
 
@@ -27,10 +29,15 @@ export const PromotionsPage = () => {
   const deletePromotion = useDeletePromotion();
   const { showToast } = useToast();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Promotion | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Promotion | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const {
+    modalOpen, editing, deleteTarget, setDeleteTarget, form, setForm,
+    openCreate: openCreateBase, openEdit: openEditBase, closeModal,
+  } = useCrudModalState<Promotion, typeof emptyForm>(emptyForm, (promotion) => ({
+    name: promotion.name ?? '',
+    description: promotion.description ?? '',
+    specialPrice: String(promotion.specialPrice),
+    productIds: promotion.promotionProducts.map((pp) => pp.productId),
+  }));
   const [errors, setErrors] = useState<{ specialPrice?: string; productIds?: string }>({});
 
   const productOptions = products.map((p) => ({
@@ -40,27 +47,13 @@ export const PromotionsPage = () => {
   }));
 
   const openCreate = () => {
-    setEditing(null);
-    setForm(emptyForm);
     setErrors({});
-    setModalOpen(true);
+    openCreateBase();
   };
 
   const openEdit = (promotion: Promotion) => {
-    setEditing(promotion);
-    setForm({
-      name: promotion.name ?? '',
-      description: promotion.description ?? '',
-      specialPrice: String(promotion.specialPrice),
-      productIds: promotion.promotionProducts.map((pp) => pp.productId),
-    });
     setErrors({});
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditing(null);
+    openEditBase(promotion);
   };
 
   const validate = () => {
@@ -92,8 +85,8 @@ export const PromotionsPage = () => {
         showToast('Promoción creada', 'success');
       }
       closeModal();
-    } catch {
-      showToast('Error al guardar la promoción', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al guardar la promoción'), 'error');
     }
   };
 
@@ -102,8 +95,8 @@ export const PromotionsPage = () => {
     try {
       await deletePromotion.mutateAsync(deleteTarget.id);
       showToast('Promoción eliminada', 'success');
-    } catch {
-      showToast('Error al eliminar la promoción', 'error');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Error al eliminar la promoción'), 'error');
     } finally {
       setDeleteTarget(null);
     }
@@ -229,129 +222,98 @@ export const PromotionsPage = () => {
   ];
 
   return (
-    <CrmLayout>
-      <div className="space-y-4 md:space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Promociones</h1>
-            <p className="text-sm text-text-secondary mt-1">
-              {promotions.length} promoción{promotions.length !== 1 ? 'es' : ''} activa{promotions.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <Button onClick={openCreate} size="md">
-            <Plus size={18} />
-            <span className="hidden sm:inline">Nueva promoción</span>
-          </Button>
-        </div>
+    <CatalogPageLayout
+      title="Promociones"
+      subtitle={`${promotions.length} promoción${promotions.length !== 1 ? 'es' : ''} activa${promotions.length !== 1 ? 's' : ''}`}
+      createLabel="Nueva promoción"
+      onCreate={openCreate}
+      isLoading={isLoading}
+      isError={isError}
+      isEmpty={promotions.length === 0}
+      loadingLabel="Cargando promociones..."
+      errorMessage="Error al cargar las promociones"
+      emptyState={{
+        icon: Tag,
+        title: 'Sin promociones',
+        description: 'Crea tu primera promoción agrupando productos con un precio especial.',
+        createLabel: 'Nueva promoción',
+      }}
+      modals={
+        <>
+          {/* Form Modal */}
+          <Modal isOpen={modalOpen} onClose={closeModal} size="md">
+            <ModalHeader onClose={closeModal}>
+              <ModalTitle>{editing ? 'Editar promoción' : 'Nueva promoción'}</ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <FormField label="Nombre" optional>
+                  <Input
+                    placeholder="Ej: Pack verano"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  />
+                </FormField>
+                <FormField label="Precio especial" required error={errors.specialPrice}>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={form.specialPrice}
+                    onChange={(e) => setForm((f) => ({ ...f, specialPrice: e.target.value }))}
+                    error={!!errors.specialPrice}
+                  />
+                </FormField>
+                <FormField label="Productos" required error={errors.productIds}>
+                  <MultiSelect
+                    options={productOptions}
+                    value={form.productIds}
+                    onChange={(ids) => setForm((f) => ({ ...f, productIds: ids }))}
+                    placeholder="Selecciona productos..."
+                    searchPlaceholder="Buscar producto..."
+                    isLoading={productsLoading}
+                    isError={productsError}
+                    errorMessage="Error al cargar productos"
+                    emptyMessage="No hay productos disponibles"
+                  />
+                </FormField>
+                <FormField label="Descripción" optional>
+                  <Textarea
+                    placeholder="Descripción de la promoción..."
+                    value={form.description}
+                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                    rows={3}
+                  />
+                </FormField>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="secondary" onClick={closeModal} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit} isLoading={isSubmitting}>
+                {editing ? 'Guardar cambios' : 'Crear promoción'}
+              </Button>
+            </ModalFooter>
+          </Modal>
 
-        {isLoading && (
-          <div className="flex items-center justify-center min-h-64">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 border-4 border-border-primary border-t-accent-blue rounded-full animate-spin" />
-              <p className="text-sm text-text-secondary">Cargando promociones...</p>
-            </div>
-          </div>
-        )}
-
-        {isError && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-text-secondary mb-4">Error al cargar las promociones</p>
-            <Button variant="secondary" onClick={() => window.location.reload()}>Reintentar</Button>
-          </div>
-        )}
-
-        {!isLoading && !isError && promotions.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center">
-            <Tag size={48} className="text-text-tertiary mb-4" />
-            <h3 className="text-lg font-semibold text-text-primary mb-2">Sin promociones</h3>
-            <p className="text-sm text-text-secondary mb-6 max-w-sm">
-              Crea tu primera promoción agrupando productos con un precio especial.
-            </p>
-            <Button onClick={openCreate}>
-              <Plus size={18} /> Nueva promoción
-            </Button>
-          </div>
-        )}
-
-        {!isLoading && !isError && promotions.length > 0 && (
-          <>
-            <MobileCards />
-            <div className="hidden md:block">
-              <Table data={promotions} columns={columns} getRowKey={(p) => p.id} />
-            </div>
-          </>
-        )}
+          <ConfirmModal
+            isOpen={!!deleteTarget}
+            onClose={() => setDeleteTarget(null)}
+            onConfirm={handleDelete}
+            title="Eliminar promoción"
+            message={`¿Estás seguro de eliminar "${deleteTarget?.name ?? 'esta promoción'}"? Esta acción no se puede deshacer.`}
+            confirmText="Eliminar"
+            isLoading={deletePromotion.isPending}
+          />
+        </>
+      }
+    >
+      <MobileCards />
+      <div className="hidden md:block">
+        <Table data={promotions} columns={columns} getRowKey={(p) => p.id} />
       </div>
-
-      {/* Form Modal */}
-      <Modal isOpen={modalOpen} onClose={closeModal} size="md">
-        <ModalHeader onClose={closeModal}>
-          <ModalTitle>{editing ? 'Editar promoción' : 'Nueva promoción'}</ModalTitle>
-        </ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            <FormField label="Nombre" optional>
-              <Input
-                placeholder="Ej: Pack verano"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              />
-            </FormField>
-            <FormField label="Precio especial" required error={errors.specialPrice}>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={form.specialPrice}
-                onChange={(e) => setForm((f) => ({ ...f, specialPrice: e.target.value }))}
-                error={!!errors.specialPrice}
-              />
-            </FormField>
-            <FormField label="Productos" required error={errors.productIds}>
-              <MultiSelect
-                options={productOptions}
-                value={form.productIds}
-                onChange={(ids) => setForm((f) => ({ ...f, productIds: ids }))}
-                placeholder="Selecciona productos..."
-                searchPlaceholder="Buscar producto..."
-                isLoading={productsLoading}
-                isError={productsError}
-                errorMessage="Error al cargar productos"
-                emptyMessage="No hay productos disponibles"
-              />
-            </FormField>
-            <FormField label="Descripción" optional>
-              <Textarea
-                placeholder="Descripción de la promoción..."
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                rows={3}
-              />
-            </FormField>
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="secondary" onClick={closeModal} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} isLoading={isSubmitting}>
-            {editing ? 'Guardar cambios' : 'Crear promoción'}
-          </Button>
-        </ModalFooter>
-      </Modal>
-
-      <ConfirmModal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        title="Eliminar promoción"
-        message={`¿Estás seguro de eliminar "${deleteTarget?.name ?? 'esta promoción'}"? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        isLoading={deletePromotion.isPending}
-      />
-
-    </CrmLayout>
+    </CatalogPageLayout>
   );
 };

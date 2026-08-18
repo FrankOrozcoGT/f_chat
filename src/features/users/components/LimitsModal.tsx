@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
 import { Button } from '@/shared/ui/Button';
-import { useUpdateLimits } from '../api/useUpdateLimits';
-import type { AdminTenant } from '../types';
+import { useUpdateLimits } from '@/features/users/api/useUpdateLimits';
+import type { AdminTenant } from '@/features/users/types';
+import { getErrorMessage } from '@/shared/lib/errors';
 
 interface LimitsModalProps {
   tenant: AdminTenant;
@@ -55,13 +56,12 @@ export const LimitsModal = ({ tenant, isOpen, onClose, onSuccess, onError }: Lim
           onSuccess?.('Límites actualizados correctamente');
           onClose();
         },
-        onError: (error: any) => {
-          const status = error?.response?.status;
-          let message = 'Error de conexión';
-          if (status === 400) message = 'Valores inválidos';
-          else if (status === 403) message = 'No autorizado';
-          else if (status === 404) message = 'Organización no encontrada';
-          onError?.(message);
+        onError: (error) => {
+          onError?.(getErrorMessage(error, 'Error de conexión', {
+            400: 'Valores inválidos',
+            403: 'No autorizado',
+            404: 'Organización no encontrada',
+          }));
         },
       }
     );

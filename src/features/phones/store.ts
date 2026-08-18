@@ -2,6 +2,7 @@
 // Tracks latest QR code received via WebSocket and dismiss cooldown
 
 import { create } from 'zustand';
+import { dismiss, isDismissed } from '@/shared/lib/dismissCooldown';
 
 const DISMISS_KEY = 'phone_reconnect_dismissed_at';
 const DISMISS_DURATION_MS = 60 * 60 * 1000; // 1 hour
@@ -35,13 +36,9 @@ export const usePhoneReconnectStore = create<PhoneReconnectState>((set) => ({
   closeModal: () => set({ showModal: false }),
 
   dismissFor1Hour: () => {
-    localStorage.setItem(DISMISS_KEY, Date.now().toString());
+    dismiss(DISMISS_KEY);
     set({ showModal: false });
   },
 
-  isDismissed: () => {
-    const dismissedAt = localStorage.getItem(DISMISS_KEY);
-    if (!dismissedAt) return false;
-    return Date.now() - parseInt(dismissedAt, 10) < DISMISS_DURATION_MS;
-  },
+  isDismissed: () => isDismissed(DISMISS_KEY, DISMISS_DURATION_MS),
 }));

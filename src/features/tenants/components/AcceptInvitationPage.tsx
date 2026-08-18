@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { Button } from '@/shared/ui/Button';
-import { useGetMe } from '@/features/auth/api';
-import { useSwitchTenant } from '@/features/auth/api';
-import { useAcceptInvitation, useRejectInvitation } from '../api';
+import { useGetMe } from '@/features/auth/api/useGetMe';
+import { useSwitchTenant } from '@/features/auth/api/useSwitchTenant';
+import { useAcceptInvitation } from '@/features/tenants/api/useAcceptInvitation';
+import { useRejectInvitation } from '@/features/tenants/api/useRejectInvitation';
 
 const ERROR_MESSAGES: Record<string, string> = {
   '404': 'El enlace de invitación no existe o ya fue usado.',

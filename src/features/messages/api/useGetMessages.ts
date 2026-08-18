@@ -3,9 +3,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { messageKeys } from './messageKeys';
-import type { BackendMessage, Message } from '../types';
-import { mapBackendMessage } from '../types';
+import { messageKeys } from '@/features/messages/api/messageKeys';
+import type { BackendMessage, Message } from '@/features/messages/types';
+import { mapBackendMessage } from '@/features/messages/types';
 
 export const useGetMessages = (conversationId: string) => {
   return useQuery({

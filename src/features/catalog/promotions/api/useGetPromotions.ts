@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { promotionKeys } from './promotionKeys';
-import type { Promotion } from '../types';
+import { promotionKeys } from '@/features/catalog/promotions/api/promotionKeys';
+import type { Promotion } from '@/features/catalog/promotions/types';
 
 export const useGetPromotions = () => {
   return useQuery({

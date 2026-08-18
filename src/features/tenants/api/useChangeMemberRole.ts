@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { tenantKeys } from './tenantKeys';
+import { tenantKeys } from '@/features/tenants/api/tenantKeys';
 import type { TenantRole } from '@/features/auth/types';
 
 interface ChangeRolePayload {

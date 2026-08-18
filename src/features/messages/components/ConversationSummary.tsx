@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, MessageSquare, History, Search } from 'lucide-react';
 import { Card } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
-import type { AnalyzedConversation } from '../types';
+import type { AnalyzedConversation } from '@/features/messages/types';
 
 interface ConversationSummaryProps {
   analyzedConversations: AnalyzedConversation[];

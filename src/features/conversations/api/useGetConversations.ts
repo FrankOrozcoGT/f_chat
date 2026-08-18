@@ -3,8 +3,8 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { conversationKeys } from './conversationKeys';
-import type { GetConversationsParams, Participant } from '../types';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
+import type { GetConversationsParams, Participant } from '@/features/conversations/types';
 
 // Backend response structure (based on actual API response)
 interface BackendConversation {
@@ -66,6 +66,7 @@ export const useGetConversations = (params: GetConversationsParams = {}) => {
         type: conv.type ?? 'individual',
         clientPhone: conv.client?.phoneNumber ?? conv.participants?.[0]?.phoneNumber ?? '',
         clientName: conv.type === 'group' ? (conv.groupName ?? 'Grupo') : (conv.client?.name ?? ''),
+        clientId: conv.client?.id,
         clientAvatar: conv.type === 'individual' ? (conv.client?.profilePicUrl ?? undefined) : undefined,
         groupName: conv.groupName ?? undefined,
         participants: conv.participants,

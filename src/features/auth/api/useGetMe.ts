@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import type { AuthMe } from '../types';
+import type { AuthMe } from '@/features/auth/types';
 
 // Query keys siguiendo patrón jerárquico de la arquitectura
 export const authKeys = {

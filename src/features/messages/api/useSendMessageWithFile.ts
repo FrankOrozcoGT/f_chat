@@ -4,10 +4,11 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { messageKeys } from './messageKeys';
+import { messageKeys } from '@/features/messages/api/messageKeys';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
-import { MessageDirection, MessageSenderType, MessageStatus } from '../types';
-import type { Message, BackendMessageType } from '../types';
+import { MessageDirection, MessageSenderType, MessageStatus, mapBackendMessageType, mapBackendDirection, mapBackendStatus } from '@/features/messages/types';
+import type { Message, BackendMessageType, BackendMessageDirection, BackendSenderType, BackendMessageStatus } from '@/features/messages/types';
+import { generateTempId, snapshotMessages, rollbackMessages, classifySendError, type SendErrorType } from '@/features/messages/api/optimisticSend';
 
 interface SendMessageWithFilePayload {
   file: File | Blob;
@@ -19,22 +20,22 @@ interface SendMessageWithFilePayload {
 interface SendMessageWithFileResponse {
   id: string;
   conversationId: string;
-  type: string;
+  type: BackendMessageType;
   content: string;
   mediaUrl: string;
   fileName: string;
   fileSize: number;
   mimeType: string;
-  direction: string;
-  senderType: string;
-  status: string;
+  direction: BackendMessageDirection;
+  senderType: BackendSenderType;
+  status: BackendMessageStatus;
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
 
 interface UseSendMessageWithFileOptions {
-  onError?: (error: Error, errorType?: 'credits_limit' | 'phone_disconnected' | 'generic') => void;
+  onError?: (error: Error, errorType?: SendErrorType) => void;
 }
 
 export const useSendMessageWithFile = (
@@ -72,12 +73,9 @@ export const useSendMessageWithFile = (
       await queryClient.cancelQueries({ queryKey: messageKeys.list(conversationId) });
 
       // Snapshot previous messages (for rollback)
-      const previousMessages = queryClient.getQueryData<Message[]>(
-        messageKeys.list(conversationId)
-      );
+      const previousMessages = snapshotMessages(queryClient, conversationId);
 
-      // Generate temporary ID
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const tempId = generateTempId();
 
       // Map backend type to frontend type
       const frontendType = tipo === 'audio' ? 'voice' : tipo;
@@ -114,34 +112,15 @@ export const useSendMessageWithFile = (
 
     // On error: rollback + cleanup
     onError: (error, _variables, context) => {
-      if (context?.previousMessages) {
-        queryClient.setQueryData(
-          messageKeys.list(conversationId),
-          context.previousMessages
-        );
-      }
+      rollbackMessages(queryClient, conversationId, context?.previousMessages);
 
       // Cleanup preview URL
       if (context?.previewUrl) {
         URL.revokeObjectURL(context.previewUrl);
       }
 
-      // Detect error type
-      let errorType: 'credits_limit' | 'phone_disconnected' | 'generic' = 'generic';
-
-      const resp = error && typeof error === 'object' && 'response' in error
-        ? (error as any).response
-        : null;
-
-      if (resp?.status === 403 && typeof resp?.data?.message === 'string' && resp.data.message.includes('Credits limit')) {
-        errorType = 'credits_limit';
-      } else if (resp?.status === 503) {
-        errorType = 'phone_disconnected';
-      }
-
-      // Call external error handler if provided
       if (options?.onError) {
-        options.onError(error as Error, errorType);
+        options.onError(error as Error, classifySendError(error));
       }
     },
 
@@ -167,10 +146,10 @@ export const useSendMessageWithFile = (
                 fileName: data.fileName,
                 fileSize: data.fileSize,
                 mimeType: data.mimeType,
-                type: (data.type === 'audio' ? 'voice' : data.type) as Message['type'],
-                direction: data.direction as Message['direction'],
-                senderType: data.senderType as Message['senderType'],
-                status: data.status as Message['status'],
+                type: mapBackendMessageType(data.type),
+                direction: mapBackendDirection(data.direction),
+                senderType: data.senderType,
+                status: mapBackendStatus(data.status),
                 timestamp: data.createdAt,
               };
             }

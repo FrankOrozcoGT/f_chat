@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { productKeys } from './productKeys';
+import { productKeys } from '@/features/catalog/products/api/productKeys';
 
 export const useDeleteDiscount = (productId: string) => {
   const queryClient = useQueryClient();

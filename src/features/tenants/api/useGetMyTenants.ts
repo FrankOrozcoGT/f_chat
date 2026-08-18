@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { tenantKeys } from './tenantKeys';
-import type { MyTenant } from '../types';
+import { tenantKeys } from '@/features/tenants/api/tenantKeys';
+import type { MyTenant } from '@/features/tenants/types';
 
 export const useGetMyTenants = () => {
   return useQuery({

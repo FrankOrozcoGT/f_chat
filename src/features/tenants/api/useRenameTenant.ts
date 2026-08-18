@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { authKeys } from '@/features/auth/api';
+import { authKeys } from '@/features/auth/api/useGetMe';
 
 export const useRenameTenant = (tenantId: string) => {
   const queryClient = useQueryClient();

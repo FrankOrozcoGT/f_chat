@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { X, User, Bot, Shield, Loader2, Users } from 'lucide-react';
-import { useGetConversationMessages } from '../api/useGetConversationMessages';
-import { useMarkInternal } from '../api/useMarkInternal';
-import type { FlowAnalysisParticipant } from '../api/useGetFlowAnalyses';
+import { useGetConversationMessages } from '@/features/ai-setup/api/useGetConversationMessages';
+import { useMarkInternal } from '@/features/ai-setup/api/useMarkInternal';
+import type { FlowAnalysisParticipant } from '@/features/ai-setup/api/useGetFlowAnalyses';
+import { formatTime } from '@/shared/lib/date';
 
 interface Props {
   conversationId: string;
@@ -126,7 +127,7 @@ export const ConversationDrawer = ({ conversationId, title, subtitle, groupJid, 
                     <span className="text-[10px] text-text-tertiary italic block mt-0.5">🎤 transcripción</span>
                   )}
                   <p className="text-[10px] text-text-tertiary mt-1 text-right">
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {formatTime(msg.timestamp)}
                   </p>
                 </div>
                 {!isIncoming && (

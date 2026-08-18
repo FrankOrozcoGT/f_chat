@@ -23,3 +23,8 @@ export interface UpdateSettingsPayload {
   messageLimit?: number;
   workSchedule?: WorkSchedule;
 }
+
+export interface NodeTemplate {
+  code: string;
+  content: string;
+}

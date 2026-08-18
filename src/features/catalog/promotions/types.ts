@@ -1,4 +1,4 @@
-import type { Product } from '../products/types';
+import type { Product } from '@/features/catalog/products/types';
 
 export interface PromotionProduct {
   id: string;
@@ -12,7 +12,16 @@ export interface PromotionDiscount {
   promotionId: string;
   clientId: string;
   discountPrice: number;
-  client: Record<string, unknown>;
+  client: {
+    id: string;
+    phoneNumber: string;
+    name: string | null;
+    profilePicUrl: string | null;
+    location: string | null;
+    metadata: object | null;
+    firstContactAt: string;
+    lastContactAt: string;
+  };
 }
 
 export interface Promotion {

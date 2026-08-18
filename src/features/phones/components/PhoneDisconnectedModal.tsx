@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { WifiOff, QrCode } from 'lucide-react';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
 import { Button } from '@/shared/ui/Button';
-import { usePhoneReconnectStore } from '../store';
+import { usePhoneReconnectStore } from '@/features/phones/store';
 
 interface PhoneDisconnectedModalProps {
   isOpen: boolean;

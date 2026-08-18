@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle, Info, X } from 'lucide-react';
-import { useToast } from '../hooks/useToast';
-import type { ToastType } from '../hooks/useToast';
+import { useToast } from '@/shared/hooks/useToast';
+import type { ToastType } from '@/shared/hooks/useToast';
 
 export type { ToastType };
 

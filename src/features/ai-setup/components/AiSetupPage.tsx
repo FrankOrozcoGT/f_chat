@@ -1,7 +1,7 @@
 import { MainLayout } from '@/layouts/MainLayout';
-import { BatchAnalysisSection } from './BatchAnalysisSection';
-import { InternalsReviewSection } from './InternalsReviewSection';
-import { DiagramReviewSection } from './DiagramReviewSection';
+import { BatchAnalysisSection } from '@/features/ai-setup/components/BatchAnalysisSection';
+import { InternalsReviewSection } from '@/features/ai-setup/components/InternalsReviewSection';
+import { DiagramReviewSection } from '@/features/ai-setup/components/DiagramReviewSection';
 
 export const AiSetupPage = () => {
   return (

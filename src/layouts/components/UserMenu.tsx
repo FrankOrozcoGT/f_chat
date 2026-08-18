@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Building2, Settings } from 'lucide-react';
-import { useGetMe, useLogout } from '@/features/auth/api';
+import { useGetMe } from '@/features/auth/api/useGetMe';
+import { useLogout } from '@/features/auth/api/useLogout';
 
 const roleLabel: Record<string, string> = {
   owner: 'Owner',

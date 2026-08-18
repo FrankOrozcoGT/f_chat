@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { tenantKeys } from './tenantKeys';
+import { tenantKeys } from '@/features/tenants/api/tenantKeys';
 
 interface SetTenantMemoryParams {
   path: string; // e.g. "banking_info" or "banking_info/banrural"

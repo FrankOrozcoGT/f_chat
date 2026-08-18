@@ -1,14 +1,17 @@
 import { X, Wrench, Code, AlertTriangle, Users, SlidersHorizontal, ListTodo } from 'lucide-react';
-import type { Node, PreCodeItem } from '../types';
-import { preCodeItemCode } from '../types';
+import type { Node, PreCodeItem } from '@/features/flows/types';
+import { preCodeItemCode } from '@/features/flows/types';
 
-function parseJsonArray(value: string | null): PreCodeItem[] {
-  if (!value) return [];
+function parseJsonArray(value: string | null, fieldLabel: string): { items: PreCodeItem[]; error: string | null } {
+  if (!value) return { items: [], error: null };
   try {
     const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) {
+      return { items: [], error: `${fieldLabel} tiene un formato inválido` };
+    }
+    return { items: parsed, error: null };
   } catch {
-    return [];
+    return { items: [], error: `No se pudo leer ${fieldLabel} (dato corrupto)` };
   }
 }
 
@@ -21,8 +24,8 @@ interface NodeDetailPanelProps {
 
 export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: NodeDetailPanelProps) => {
   const tools = node.tools ?? [];
-  const preCodeItems = parseJsonArray(node.preCode);
-  const postCodeItems = parseJsonArray(node.postCode);
+  const { items: preCodeItems, error: preCodeError } = parseJsonArray(node.preCode, 'Pre Code');
+  const { items: postCodeItems, error: postCodeError } = parseJsonArray(node.postCode, 'Post Code');
 
   return (
     <div className="absolute right-0 top-0 h-full w-96 bg-bg-secondary border-l border-border-primary z-10 overflow-y-auto shadow-xl">
@@ -85,11 +88,16 @@ export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: Nod
         )}
 
         {/* Pre Code */}
-        {preCodeItems.length > 0 && (
+        {(preCodeItems.length > 0 || preCodeError) && (
           <section>
             <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2 flex items-center gap-1">
               <Code size={12} /> Pre Code
             </h4>
+            {preCodeError && (
+              <p className="flex items-center gap-1.5 text-xs text-accent-red mb-2">
+                <AlertTriangle size={12} /> {preCodeError}
+              </p>
+            )}
             <div className="flex flex-col gap-1.5">
               {preCodeItems.map((item) => {
                 const code = preCodeItemCode(item);
@@ -119,11 +127,16 @@ export const NodeDetailPanel = ({ node, activeSessions, isRouter, onClose }: Nod
         )}
 
         {/* Post Code */}
-        {postCodeItems.length > 0 && (
+        {(postCodeItems.length > 0 || postCodeError) && (
           <section>
             <h4 className="text-xs font-semibold text-text-tertiary uppercase mb-2 flex items-center gap-1">
               <Code size={12} /> Post Code
             </h4>
+            {postCodeError && (
+              <p className="flex items-center gap-1.5 text-xs text-accent-red mb-2">
+                <AlertTriangle size={12} /> {postCodeError}
+              </p>
+            )}
             <div className="flex flex-col gap-1.5">
               {postCodeItems.map((item) => {
                 const code = preCodeItemCode(item);

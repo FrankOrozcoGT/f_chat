@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
 import { Button } from '@/shared/ui/Button';
-import { useGetMe } from '@/features/auth/api';
-import { useGetTenantMembers } from '../api';
-import { MembersTable } from './MembersTable';
-import { InviteMemberModal } from './InviteMemberModal';
-import { RenameTenantSection } from './RenameTenantSection';
-import { PendingInvitationsSection } from './PendingInvitationsSection';
+import { useGetMe } from '@/features/auth/api/useGetMe';
+import { useGetTenantMembers } from '@/features/tenants/api/useGetTenantMembers';
+import { MembersTable } from '@/features/tenants/components/MembersTable';
+import { InviteMemberModal } from '@/features/tenants/components/InviteMemberModal';
+import { RenameTenantSection } from '@/features/tenants/components/RenameTenantSection';
+import { PendingInvitationsSection } from '@/features/tenants/components/PendingInvitationsSection';
 
 export const TenantPage = () => {
   const [isInviteOpen, setIsInviteOpen] = useState(false);

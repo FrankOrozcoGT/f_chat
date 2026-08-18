@@ -1,7 +1,7 @@
 // Query keys factory for conversations
 // Provides type-safe cache key generation for TanStack Query
 
-import type { GetConversationsParams } from '../types';
+import type { GetConversationsParams } from '@/features/conversations/types';
 
 export const conversationKeys = {
   all: ['conversations'] as const,

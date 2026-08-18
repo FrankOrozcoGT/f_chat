@@ -11,6 +11,18 @@ import { Button } from '@/shared/ui/Button';
 import { useCreatePhone } from '@/features/phones/api/useCreatePhone';
 import { QRCodeDisplay } from '@/features/phones/components/QRCodeDisplay';
 import type { PhoneStatus } from '@/features/phones/types';
+import { getErrorMessage } from '@/shared/lib/errors';
+
+const translateCreatePhoneError = (backendMessage: string): string | null => {
+  if (backendMessage.includes('WhatsApp limit reached')) {
+    const match = backendMessage.match(/Current: (\d+), Limit: (\d+)/);
+    if (match) {
+      const [, current, limit] = match;
+      return `Límite de instancias WhatsApp alcanzado. Actual: ${current}, Límite: ${limit}`;
+    }
+  }
+  return null;
+};
 
 interface CreatePhoneModalProps {
   isOpen: boolean;
@@ -27,10 +39,12 @@ export const CreatePhoneModal = ({ isOpen, onClose, onSuccess }: CreatePhoneModa
   } | null>(null);
 
   const createPhone = useCreatePhone();
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const handleCreate = async () => {
     if (!instanceName.trim()) return;
 
+    setCreateError(null);
     try {
       const result = await createPhone.mutateAsync({ instanceName: instanceName.trim() });
       setCreatedPhone({
@@ -40,13 +54,14 @@ export const CreatePhoneModal = ({ isOpen, onClose, onSuccess }: CreatePhoneModa
       });
       onSuccess?.();
     } catch (error) {
-      console.error('Error creating phone:', error);
+      setCreateError(getErrorMessage(error, 'Error al crear la instancia', undefined, translateCreatePhoneError));
     }
   };
 
   const handleClose = () => {
     setInstanceName('');
     setCreatedPhone(null);
+    setCreateError(null);
     createPhone.reset();
     onClose();
   };
@@ -104,13 +119,9 @@ export const CreatePhoneModal = ({ isOpen, onClose, onSuccess }: CreatePhoneModa
               </p>
             </div>
 
-            {createPhone.isError && (
+            {createError && (
               <div className="p-3 bg-accent-red/10 border border-accent-red/20 rounded-lg">
-                <p className="text-sm text-accent-red">
-                  {createPhone.error instanceof Error
-                    ? createPhone.error.message
-                    : 'Error al crear la instancia'}
-                </p>
+                <p className="text-sm text-accent-red">{createError}</p>
               </div>
             )}
           </div>

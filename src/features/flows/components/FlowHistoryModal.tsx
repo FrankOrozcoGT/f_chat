@@ -1,8 +1,9 @@
 import { History, RotateCcw, Loader2, AlertCircle, CheckCircle2, Wrench } from 'lucide-react';
 import { Modal, ModalHeader, ModalTitle, ModalBody } from '@/shared/ui/Modal';
-import { useGetFlowVersions } from '../api/useGetFlowVersions';
-import { useRestoreFlowVersion } from '../api/useRestoreFlowVersion';
-import type { Flow } from '../types';
+import { useGetFlowVersions } from '@/features/flows/api/useGetFlowVersions';
+import { useRestoreFlowVersion } from '@/features/flows/api/useRestoreFlowVersion';
+import { formatDateTime } from '@/shared/lib/date';
+import type { Flow } from '@/features/flows/types';
 
 interface FlowHistoryModalProps {
   flow: Flow | null;
@@ -53,14 +54,7 @@ export const FlowHistoryModal = ({ flow, onClose }: FlowHistoryModalProps) => {
           <div className="flex flex-col gap-2">
             {versions.map((v) => {
               const isBeingRestored = isRestoring && restoringVars?.versionId === v.id;
-              const date = new Date(v.createdAt);
-              const label = date.toLocaleString('es', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              });
+              const label = formatDateTime(v.createdAt);
 
               return (
                 <div

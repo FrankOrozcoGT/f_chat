@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { LoginPage } from '@/features/auth/components/LoginPage';
@@ -18,17 +18,18 @@ import { AcceptInvitationPage } from '@/features/tenants/components/AcceptInvita
 import { ProductsPage } from '@/features/catalog/products/components/ProductsPage';
 import { PromotionsPage } from '@/features/catalog/promotions/components/PromotionsPage';
 import { ShippingPage } from '@/features/catalog/shipping/components/ShippingPage';
-import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
+import { ProtectedRoute } from '@/routing/ProtectedRoute';
 import { ToastContainer } from '@/shared/ui/Toast';
 import { useToast } from '@/shared/hooks/useToast';
-import { socket } from '@/lib/websocket';
-import type { ConversationHitlPayload, ApiDownPayload, ApiUpPayload, PhoneQRUpdatedPayload, PhoneStatusChangedPayload, MessageIncomingPayload } from '@/lib/websocket';
+import { socket, useSocketEvent } from '@/lib/websocket';
+import type { ConversationHitlPayload, ApiDownPayload, ApiUpPayload, PhoneQRUpdatedPayload, PhoneStatusChangedPayload } from '@/lib/websocket';
 import { MessageDirection } from '@/features/messages/types';
-import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { messageKeys } from '@/features/messages/api/messageKeys';
-import { useGetMe } from '@/features/auth/api';
-import { usePhoneReconnectStore } from '@/features/phones/store';
+import type { MessageIncomingPayload } from '@/features/messages/types';
+import { useGetMe } from '@/features/auth/api/useGetMe';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { useConversationsStore } from '@/features/conversations/store';
+import { usePhoneReconnectStore } from '@/features/phones/store';
 
 /** Listeners globales que requieren estar dentro de BrowserRouter (useNavigate) */
 const GlobalListeners = () => {
@@ -36,25 +37,20 @@ const GlobalListeners = () => {
   const { showToast } = useToast();
   const { setSelectedConversation } = useConversationsStore();
 
-  useEffect(() => {
-    const handleMessageIncoming = (data: MessageIncomingPayload) => {
-      if (data.direction !== MessageDirection.Incoming) return;
-      if (!data.content) return;
+  useSocketEvent<MessageIncomingPayload>('message:incoming', useCallback((data) => {
+    if (data.direction !== MessageDirection.Incoming) return;
+    if (!data.content) return;
 
-      const preview = `${data.content.slice(0, 60)}${data.content.length > 60 ? '...' : ''}`;
-      showToast(
-        data.conversationName ? `${data.conversationName}: ${preview}` : preview,
-        'info',
-        () => {
-          setSelectedConversation(data.conversationId, 'individual');
-          navigate('/conversations');
-        }
-      );
-    };
-
-    socket.on('message:incoming', handleMessageIncoming);
-    return () => { socket.off('message:incoming', handleMessageIncoming); };
-  }, [navigate, showToast, setSelectedConversation]);
+    const preview = `${data.content.slice(0, 60)}${data.content.length > 60 ? '...' : ''}`;
+    showToast(
+      data.conversationName ? `${data.conversationName}: ${preview}` : preview,
+      'info',
+      () => {
+        setSelectedConversation(data.conversationId, 'individual');
+        navigate('/conversations');
+      }
+    );
+  }, [navigate, showToast, setSelectedConversation]));
 
   return null;
 };
@@ -89,95 +85,41 @@ function App() {
 
     // Conectar socket
     socket.connect();
-
-    // Event listeners de conexión
-    function onConnect() {
-      console.log('[WebSocket] Connected:', socket.id);
-    }
-
-    function onDisconnect() {
-      console.log('[WebSocket] Disconnected');
-    }
-
-    function onConnectError(error: Error) {
-      console.error('[WebSocket] Connection error:', error.message);
-    }
-
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-    socket.on('connect_error', onConnectError);
   }, []);
 
   // Global HITL notification listener
-  useEffect(() => {
-    const handleHitl = (data: ConversationHitlPayload) => {
-      console.log('[HITL] Event received:', data);
-      // Reproducir sonido de notificación
-      const audio = new Audio('/sounds/hitl-notification.wav');
-      audio.play().catch(() => {
-        console.warn('[HITL] Could not play notification sound');
-      });
+  useSocketEvent<ConversationHitlPayload>('conversation:hitl', useCallback((data) => {
+    // Reproducir sonido de notificación
+    const audio = new Audio('/sounds/hitl-notification.wav');
+    audio.play().catch(() => {});
 
-      // Invalidar queries para que la UI refleje el cambio de mode
-      queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: messageKeys.detail(data.conversationId) });
+    // Invalidar queries para que la UI refleje el cambio de mode
+    queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
+    queryClient.invalidateQueries({ queryKey: messageKeys.detail(data.conversationId) });
 
-      // Mostrar toast global
-      showToast(`Cliente ${data.clientPhone} solicita hablar con un humano`, 'info');
-    };
-
-    socket.on('conversation:hitl', handleHitl);
-
-    return () => {
-      socket.off('conversation:hitl', handleHitl);
-    };
-  }, [queryClient, showToast]);
+    // Mostrar toast global
+    showToast(`Cliente ${data.clientPhone} solicita hablar con un humano`, 'info');
+  }, [queryClient, showToast]));
 
   // Global phone:qr_updated & phone:status_changed listeners
-  useEffect(() => {
-    const { setLatestQR, clearQR } = usePhoneReconnectStore.getState();
+  useSocketEvent<PhoneQRUpdatedPayload>('phone:qr_updated', useCallback((data) => {
+    usePhoneReconnectStore.getState().setLatestQR(data.phoneId, data.qrCode);
+  }, []));
 
-    const handleQRUpdated = (data: PhoneQRUpdatedPayload) => {
-      console.log('[Phone] QR updated:', data.phoneId);
-      setLatestQR(data.phoneId, data.qrCode);
-    };
-
-    const handleStatusChanged = (data: PhoneStatusChangedPayload) => {
-      console.log('[Phone] Status changed:', data.phoneId, data.status);
-      if (data.status === 'connected') {
-        clearQR();
-      }
-    };
-
-    socket.on('phone:qr_updated', handleQRUpdated);
-    socket.on('phone:status_changed', handleStatusChanged);
-
-    return () => {
-      socket.off('phone:qr_updated', handleQRUpdated);
-      socket.off('phone:status_changed', handleStatusChanged);
-    };
-  }, []);
+  useSocketEvent<PhoneStatusChangedPayload>('phone:status_changed', useCallback((data) => {
+    if (data.status === 'connected') {
+      usePhoneReconnectStore.getState().clearQR();
+    }
+  }, []));
 
   // Global Health alerts listener
-  useEffect(() => {
-    const handleApiDown = (data: ApiDownPayload) => {
-      console.log('[Health] API down:', data);
-      showToast(`${data.apiName} no está disponible: ${data.error}`, 'error');
-    };
+  useSocketEvent<ApiDownPayload>('api:down', useCallback((data) => {
+    showToast(`${data.apiName} no está disponible: ${data.error}`, 'error');
+  }, [showToast]));
 
-    const handleApiUp = (data: ApiUpPayload) => {
-      console.log('[Health] API recovered:', data);
-      showToast(`${data.apiName} recuperada`, 'success');
-    };
-
-    socket.on('api:down', handleApiDown);
-    socket.on('api:up', handleApiUp);
-
-    return () => {
-      socket.off('api:down', handleApiDown);
-      socket.off('api:up', handleApiUp);
-    };
-  }, [showToast]);
+  useSocketEvent<ApiUpPayload>('api:up', useCallback((data) => {
+    showToast(`${data.apiName} recuperada`, 'success');
+  }, [showToast]));
 
   return (
     <>

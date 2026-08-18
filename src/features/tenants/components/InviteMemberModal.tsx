@@ -3,14 +3,10 @@ import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared
 import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
 import { useToast } from '@/shared/hooks/useToast';
-import { useInviteMember } from '../api';
+import { getErrorMessage } from '@/shared/lib/errors';
+import { useInviteMember } from '@/features/tenants/api/useInviteMember';
+import { roleOptions } from '@/features/tenants/types';
 import type { TenantRole } from '@/features/auth/types';
-
-const roleOptions = [
-  { value: 'user' as TenantRole, label: 'Usuario' },
-  { value: 'tecnico' as TenantRole, label: 'Técnico' },
-  { value: 'owner' as TenantRole, label: 'Owner' },
-];
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -55,8 +51,7 @@ export const InviteMemberModal = ({ isOpen, onClose, tenantId }: InviteMemberMod
           onClose();
         },
         onError: (error: unknown) => {
-          showToast('Error al invitar al miembro', 'error');
-          console.error(error);
+          showToast(getErrorMessage(error, 'Error al invitar al miembro'), 'error');
         },
       }
     );

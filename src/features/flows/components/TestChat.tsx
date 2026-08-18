@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bot, User, Zap, Info, ArrowRight } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
-import { TestIntent, SideEffectAction } from '../types';
-import type { TestMessage } from '../types';
+import { TestIntent, SideEffectAction } from '@/features/flows/types';
+import type { TestMessage } from '@/features/flows/types';
 
 const INTENT_CONFIG: Record<string, { label: string; color: string }> = {
   [TestIntent.Normal]: { label: 'normal', color: 'bg-bg-tertiary text-text-secondary' },

@@ -92,7 +92,7 @@ export interface BackendClient {
   id: string;
   phoneNumber: string;
   name: string;
-  metadata: any | null;
+  metadata: Record<string, unknown> | null;
   firstContactAt: string;
   lastContactAt: string;
 }
@@ -233,3 +233,25 @@ export const mapBackendClient = (client: BackendClient): Client => ({
   lastContactAt: client.lastContactAt,
   createdAt: client.firstContactAt,
 });
+
+// Payload del evento de socket 'message:incoming'
+export interface MessageIncomingPayload {
+  id: string;
+  conversationId: string;
+  type: BackendMessageType;
+  content: string;
+  mediaUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  mimeType: string | null;
+  direction: BackendMessageDirection;
+  senderType: BackendSenderType;
+  status: BackendMessageStatus;
+  costUsd: number | null;
+  metadata: unknown | null;
+  transcription: string | null;
+  analyzedAt: string | null;
+  createdAt: string;
+  conversationName: string;
+  senderName: string | null;
+}
