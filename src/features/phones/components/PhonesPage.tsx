@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Smartphone, AlertCircle, Loader2, Plus } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useGetPhones } from '@/features/phones/api/useGetPhones';
@@ -8,7 +8,7 @@ import { Button } from '@/shared/ui/Button';
 import { PhoneCard } from '@/features/phones/components/PhoneCard';
 import { CreatePhoneModal } from '@/features/phones/components/CreatePhoneModal';
 import { PhoneSyncModal } from '@/features/phones/components/PhoneSyncModal';
-import { socket } from '@/lib/websocket';
+import { useSocketEvent } from '@/lib/websocket';
 import type { PhoneSyncingPayload, PhoneSyncProgressPayload, PhoneSyncCompletePayload } from '@/lib/websocket';
 
 export const PhonesPage = () => {
@@ -28,29 +28,17 @@ export const PhonesPage = () => {
     setSyncModal({ isOpen: false, phase: 'syncing', contactsCount: 0, phoneId: null });
   }, []);
 
-  useEffect(() => {
-    const handleSyncing = (data: PhoneSyncingPayload) => {
-      setSyncModal({ isOpen: true, phase: 'syncing', contactsCount: data.contactsCount, phoneId: data.phoneId });
-    };
+  useSocketEvent<PhoneSyncingPayload>('phone:syncing', useCallback((data) => {
+    setSyncModal({ isOpen: true, phase: 'syncing', contactsCount: data.contactsCount, phoneId: data.phoneId });
+  }, []));
 
-    const handleProgress = (data: PhoneSyncProgressPayload) => {
-      setSyncModal((prev) => ({ ...prev, isOpen: true, phase: 'progress', contactsCount: data.contactsCount, phoneId: data.phoneId }));
-    };
+  useSocketEvent<PhoneSyncProgressPayload>('phone:sync_progress', useCallback((data) => {
+    setSyncModal((prev) => ({ ...prev, isOpen: true, phase: 'progress', contactsCount: data.contactsCount, phoneId: data.phoneId }));
+  }, []));
 
-    const handleComplete = (data: PhoneSyncCompletePayload) => {
-      setSyncModal((prev) => ({ ...prev, isOpen: true, phase: 'complete', contactsCount: data.contactsCount, phoneId: data.phoneId }));
-    };
-
-    socket.on('phone:syncing', handleSyncing);
-    socket.on('phone:sync_progress', handleProgress);
-    socket.on('phone:sync_complete', handleComplete);
-
-    return () => {
-      socket.off('phone:syncing', handleSyncing);
-      socket.off('phone:sync_progress', handleProgress);
-      socket.off('phone:sync_complete', handleComplete);
-    };
-  }, []);
+  useSocketEvent<PhoneSyncCompletePayload>('phone:sync_complete', useCallback((data) => {
+    setSyncModal((prev) => ({ ...prev, isOpen: true, phase: 'complete', contactsCount: data.contactsCount, phoneId: data.phoneId }));
+  }, []));
 
   if (isLoading) {
     return (

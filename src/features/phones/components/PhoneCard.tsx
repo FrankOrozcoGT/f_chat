@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Smartphone, Circle, Clock, Trash2 } from 'lucide-react';
 import { Card, CardBody } from '@/shared/ui/Card';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useDeletePhone } from '@/features/phones/api/useDeletePhone';
 import { useToast } from '@/shared/hooks/useToast';
 import { formatDateTime } from '@/shared/lib/date';
-import { socket } from '@/lib/websocket';
+import { useSocketEvent } from '@/lib/websocket';
 import type { Phone, PhoneStatus } from '@/features/phones/types';
 import type { PhoneStatusChangedPayload } from '@/lib/websocket';
 
@@ -20,20 +20,12 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
   const { showToast } = useToast();
 
   // WebSocket listener para actualizaciones de estado en tiempo real
-  useEffect(() => {
-    const handleStatusChange = (data: PhoneStatusChangedPayload) => {
-      if (data.phoneId === phone.id) {
-        console.log('[PhoneCard] Status cambiado:', data.phoneId, data.status);
-        setCurrentStatus(data.status);
-      }
-    };
-
-    socket.on('phone:status_changed', handleStatusChange);
-
-    return () => {
-      socket.off('phone:status_changed', handleStatusChange);
-    };
-  }, [phone.id]);
+  useSocketEvent<PhoneStatusChangedPayload>('phone:status_changed', useCallback((data) => {
+    if (data.phoneId === phone.id) {
+      console.log('[PhoneCard] Status cambiado:', data.phoneId, data.status);
+      setCurrentStatus(data.status);
+    }
+  }, [phone.id]));
 
   const handleConfirmDelete = () => {
     deletePhone.mutate(phone.id, {

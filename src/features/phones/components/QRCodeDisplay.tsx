@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { QrCode, Loader2 } from 'lucide-react';
 import QRCodeLib from 'qrcode';
-import { socket } from '@/lib/websocket';
+import { useSocketEvent } from '@/lib/websocket';
+import type { PhoneQRUpdatedPayload, PhoneStatusChangedPayload } from '@/lib/websocket';
 import type { PhoneStatus } from '@/features/phones/types';
 
 interface QRCodeDisplayProps {
@@ -59,36 +60,25 @@ export const QRCodeDisplay = ({
     }
   }, [initialQR]);
 
-  // WebSocket listener para actualizaciones en tiempo real
-  useEffect(() => {
-    const handleQRUpdate = async (data: { phoneId: string; qrCode: string }) => {
-      if (data.phoneId === phoneId) {
-        console.log('[QRCodeDisplay] QR actualizado:', data.phoneId);
-        // Generar nueva imagen QR del string actualizado
-        const qrDataURL = await QRCodeLib.toDataURL(data.qrCode, {
-          width: 400,
-          margin: 2,
-          errorCorrectionLevel: 'M',
-        });
-        setQrCodeImage(qrDataURL);
-      }
-    };
+  // WebSocket listeners para actualizaciones en tiempo real
+  useSocketEvent<PhoneQRUpdatedPayload>('phone:qr_updated', useCallback(async (data) => {
+    if (data.phoneId === phoneId) {
+      console.log('[QRCodeDisplay] QR actualizado:', data.phoneId);
+      const qrDataURL = await QRCodeLib.toDataURL(data.qrCode, {
+        width: 400,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+      });
+      setQrCodeImage(qrDataURL);
+    }
+  }, [phoneId]));
 
-    const handleStatusChange = (data: { phoneId: string; status: typeof status }) => {
-      if (data.phoneId === phoneId && onStatusChange) {
-        console.log('[QRCodeDisplay] Status cambiado:', data.phoneId, data.status);
-        onStatusChange(data.status);
-      }
-    };
-
-    socket.on('phone:qr_updated', handleQRUpdate);
-    socket.on('phone:status_changed', handleStatusChange);
-
-    return () => {
-      socket.off('phone:qr_updated', handleQRUpdate);
-      socket.off('phone:status_changed', handleStatusChange);
-    };
-  }, [phoneId, onStatusChange]);
+  useSocketEvent<PhoneStatusChangedPayload>('phone:status_changed', useCallback((data) => {
+    if (data.phoneId === phoneId && onStatusChange) {
+      console.log('[QRCodeDisplay] Status cambiado:', data.phoneId, data.status);
+      onStatusChange(data.status);
+    }
+  }, [phoneId, onStatusChange]));
 
   if (status === 'connected') {
     return (

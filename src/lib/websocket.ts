@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { io } from 'socket.io-client';
 import type { BackendMessageDirection, BackendMessageType, BackendSenderType, BackendMessageStatus } from '@/features/messages/types';
 
@@ -143,6 +144,20 @@ export const socket = io(WS_URL, {
 
 // Helper types para listeners
 export type EventCallback<T> = (data: T) => void;
+
+/**
+ * Suscribe un handler a un evento del socket global durante la vida del componente.
+ * Encapsula el patrón socket.on/socket.off en useEffect, repetido antes en cada
+ * componente que escucha eventos en tiempo real.
+ */
+export function useSocketEvent<T>(event: string, handler: EventCallback<T>): void {
+  useEffect(() => {
+    socket.on(event, handler);
+    return () => {
+      socket.off(event, handler);
+    };
+  }, [event, handler]);
+}
 
 // Helpers para rooms (agent:join_room / agent:leave_room)
 export const joinPhoneRoom = (phoneId: string): void => {

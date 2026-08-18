@@ -2,7 +2,7 @@
 // Header + Messages body + Input footer
 // WebSocket integration for real-time updates
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bot, Hand, Info, AlertTriangle, Search, Loader2, ChevronDown, MoreVertical, X as XCircle } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
@@ -23,7 +23,7 @@ import { useReturnToAi } from '../api/useReturnToAi';
 import { useCloseConversation } from '../api/useCloseConversation';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
-import { socket } from '@/lib/websocket';
+import { useSocketEvent } from '@/lib/websocket';
 import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
 import type { Message } from '../types';
 import { authKeys } from '@/features/auth/api/useGetMe';
@@ -154,146 +154,100 @@ export const MessagesPanel = ({ conversationId, historicalConversationId, onExit
   }, [displayMessages]);
 
   // WebSocket integration for real-time message updates
-  useEffect(() => {
-    // message:incoming — mensaje entrante del cliente WhatsApp (broadcast)
-    const handleMessageIncoming = (data: MessageIncomingPayload) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
-      }
-    };
+  // message:incoming — mensaje entrante del cliente WhatsApp (broadcast)
+  useSocketEvent<MessageIncomingPayload>('message:incoming', useCallback((data) => {
+    if (data.conversationId === conversationId) {
+      queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
+    }
+  }, [conversationId, queryClient]));
 
-    // message:new — mensaje enviado desde el backend/bot (broadcast)
-    const handleMessageNew = (data: { conversationId: string }) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
-      }
-    };
+  // message:new — mensaje enviado desde el backend/bot (broadcast)
+  useSocketEvent<{ conversationId: string }>('message:new', useCallback((data) => {
+    if (data.conversationId === conversationId) {
+      queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
+    }
+  }, [conversationId, queryClient]));
 
-    // message:sent — mensaje enviado desde WhatsApp Web, no desde el sistema (broadcast)
-    const handleMessageSent = (data: MessageSentPayload) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
-      }
-    };
+  // message:sent — mensaje enviado desde WhatsApp Web, no desde el sistema (broadcast)
+  useSocketEvent<MessageSentPayload>('message:sent', useCallback((data) => {
+    if (data.conversationId === conversationId) {
+      queryClient.invalidateQueries({ queryKey: messageKeys.list(conversationId) });
+    }
+  }, [conversationId, queryClient]));
 
-    const handleMessageStatusUpdated = (data: { messageId: string; conversationId: string; status: string }) => {
-      // Only update if message belongs to current conversation
-      if (data.conversationId === conversationId) {
-        // Update message status in cache
-        queryClient.setQueryData<Message[]>(
-          messageKeys.list(conversationId),
-          (oldMessages = []) => {
-            return oldMessages.map((msg) =>
-              msg.id === data.messageId
-                ? { ...msg, status: data.status as Message['status'] }
-                : msg
-            );
-          }
-        );
-      }
-    };
+  useSocketEvent<{ messageId: string; conversationId: string; status: string }>(
+    'message:status_updated',
+    useCallback((data) => {
+      if (data.conversationId !== conversationId) return;
+      queryClient.setQueryData<Message[]>(
+        messageKeys.list(conversationId),
+        (oldMessages = []) =>
+          oldMessages.map((msg) =>
+            msg.id === data.messageId
+              ? { ...msg, status: data.status as Message['status'] }
+              : msg
+          )
+      );
+    }, [conversationId, queryClient]),
+  );
 
-    const handleMessageError = (data: { conversationId: string; error: string; tempId?: string }) => {
-      // Only handle if error belongs to current conversation
-      if (data.conversationId === conversationId) {
-        // Show error toast
-        showToast(data.error || 'Error al enviar el mensaje', 'error');
-
-        // If we have a tempId, mark that message as failed
-        if (data.tempId) {
-          queryClient.setQueryData<Message[]>(
-            messageKeys.list(conversationId),
-            (oldMessages = []) => {
-              return oldMessages.map((msg) =>
-                msg.id === data.tempId
-                  ? { ...msg, status: 'failed' as Message['status'] }
-                  : msg
-              );
-            }
-          );
-        }
-      }
-    };
-
-    // conversation:hitl — cliente solicita hablar con humano, refetch detail para actualizar mode
-    const handleHitl = (data: { conversationId: string }) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
-      }
-    };
-
-    // conversation:taken — agente toma la conversación
-    const handleTaken = (data: { conversationId: string }) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
-      }
-    };
-
-    // conversation:returned — conversación devuelta a IA
-    const handleReturned = (data: { conversationId: string }) => {
-      if (data.conversationId === conversationId) {
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
-      }
-    };
-
-    // message:media_ready — media procesada, actualizar mediaUrl del mensaje en cache
-    const handleMediaReady = (data: MediaReadyPayload) => {
-      if (data.conversationId === conversationId) {
+  useSocketEvent<{ conversationId: string; error: string; tempId?: string }>(
+    'message:error',
+    useCallback((data) => {
+      if (data.conversationId !== conversationId) return;
+      showToast(data.error || 'Error al enviar el mensaje', 'error');
+      if (data.tempId) {
         queryClient.setQueryData<Message[]>(
           messageKeys.list(conversationId),
           (oldMessages = []) =>
             oldMessages.map((msg) =>
-              msg.keyId === data.keyId
-                ? { ...msg, mediaUrl: data.mediaUrl, mediaLoading: false }
+              msg.id === data.tempId
+                ? { ...msg, status: 'failed' as Message['status'] }
                 : msg
             )
         );
       }
-    };
+    }, [conversationId, queryClient, showToast]),
+  );
 
-    // credits:exhausted — créditos agotados, conversación movida a HITL
-    const handleCreditsExhausted = (data: CreditsExhaustedPayload) => {
-      if (data.conversationId === conversationId) {
-        // Show toast notification
-        const usedFormatted = data.creditsUsed.toFixed(2);
-        const limitFormatted = data.creditsLimit.toFixed(0);
-        showToast(
-          `⚠️ Créditos agotados. Usado: ${usedFormatted} / ${limitFormatted}. La conversación se movió a modo manual (HITL).`,
-          'error'
-        );
+  // conversation:hitl — cliente solicita hablar con humano, refetch detail para actualizar mode
+  const invalidateConversationDetail = useCallback((data: { conversationId: string }) => {
+    if (data.conversationId === conversationId) {
+      queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+    }
+  }, [conversationId, queryClient]);
+  useSocketEvent('conversation:hitl', invalidateConversationDetail);
+  // conversation:taken — agente toma la conversación
+  useSocketEvent('conversation:taken', invalidateConversationDetail);
+  // conversation:returned — conversación devuelta a IA
+  useSocketEvent('conversation:returned', invalidateConversationDetail);
 
-        // Refresh conversation detail to update mode to HITL
-        queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+  // message:media_ready — media procesada, actualizar mediaUrl del mensaje en cache
+  useSocketEvent<MediaReadyPayload>('message:media_ready', useCallback((data) => {
+    if (data.conversationId !== conversationId) return;
+    queryClient.setQueryData<Message[]>(
+      messageKeys.list(conversationId),
+      (oldMessages = []) =>
+        oldMessages.map((msg) =>
+          msg.keyId === data.keyId
+            ? { ...msg, mediaUrl: data.mediaUrl, mediaLoading: false }
+            : msg
+        )
+    );
+  }, [conversationId, queryClient]));
 
-        // Refresh user data to update creditsUsed
-        queryClient.invalidateQueries({ queryKey: authKeys.me() });
-      }
-    };
-
-    socket.on('message:media_ready', handleMediaReady);
-    socket.on('message:incoming', handleMessageIncoming);
-    socket.on('message:new', handleMessageNew);
-    socket.on('message:sent', handleMessageSent);
-    socket.on('message:status_updated', handleMessageStatusUpdated);
-    socket.on('message:error', handleMessageError);
-    socket.on('conversation:hitl', handleHitl);
-    socket.on('conversation:taken', handleTaken);
-    socket.on('conversation:returned', handleReturned);
-    socket.on('credits:exhausted', handleCreditsExhausted);
-
-    return () => {
-      socket.off('message:media_ready', handleMediaReady);
-      socket.off('message:incoming', handleMessageIncoming);
-      socket.off('message:new', handleMessageNew);
-      socket.off('message:sent', handleMessageSent);
-      socket.off('message:status_updated', handleMessageStatusUpdated);
-      socket.off('message:error', handleMessageError);
-      socket.off('conversation:hitl', handleHitl);
-      socket.off('conversation:taken', handleTaken);
-      socket.off('conversation:returned', handleReturned);
-      socket.off('credits:exhausted', handleCreditsExhausted);
-    };
-  }, [conversationId, queryClient, showToast]);
+  // credits:exhausted — créditos agotados, conversación movida a HITL
+  useSocketEvent<CreditsExhaustedPayload>('credits:exhausted', useCallback((data) => {
+    if (data.conversationId !== conversationId) return;
+    const usedFormatted = data.creditsUsed.toFixed(2);
+    const limitFormatted = data.creditsLimit.toFixed(0);
+    showToast(
+      `⚠️ Créditos agotados. Usado: ${usedFormatted} / ${limitFormatted}. La conversación se movió a modo manual (HITL).`,
+      'error'
+    );
+    queryClient.invalidateQueries({ queryKey: messageKeys.detail(conversationId) });
+    queryClient.invalidateQueries({ queryKey: authKeys.me() });
+  }, [conversationId, queryClient, showToast]));
 
   // Back button handler (mobile)
   const handleBack = () => {
