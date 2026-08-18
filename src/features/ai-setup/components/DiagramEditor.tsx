@@ -22,7 +22,6 @@ interface DiagramEditorProps {
   internalQueues?: InternalQueue[];
   nodeCategories?: Record<string, string>;
   analyses?: FlowAnalysis[];
-  selectedConversationId?: string | null;
   onSave: (newMermaid: string) => void;
   onCancel: () => void;
   isSaving?: boolean;
@@ -35,7 +34,6 @@ export const DiagramEditor = ({
   internalQueues,
   nodeCategories,
   analyses,
-  selectedConversationId: externalSelectedConv,
   onSave,
   onCancel,
   isSaving,
@@ -48,9 +46,8 @@ export const DiagramEditor = ({
   const [selectMode, setSelectMode] = useState<SelectionMode>('none');
   const [mode, setMode] = useState<'move' | 'edit'>('move');
   const [showSidebar, setShowSidebar] = useState(false);
-  const [localSelectedConv, setLocalSelectedConv] = useState<string | null>(externalSelectedConv ?? null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [viewingConversationId, setViewingConversationId] = useState<string | null>(null);
-  const selectedConversationId = localSelectedConv;
   const [selectModeEdge, setSelectModeEdge] = useState<{ source: string; target: string; field: 'source' | 'target' } | null>(null);
   const [editingLabel, setEditingLabel] = useState<EditingLabelState | null>(null);
 
@@ -467,7 +464,7 @@ export const DiagramEditor = ({
           <DiagramConversationsSidebar
             analyses={analyses}
             selectedConversationId={selectedConversationId}
-            onSelectConversation={setLocalSelectedConv}
+            onSelectConversation={setSelectedConversationId}
             onViewConversation={setViewingConversationId}
           />
         )}

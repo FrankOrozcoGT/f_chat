@@ -1,29 +1,7 @@
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
-import type { BackendMessageDirection, BackendMessageType, BackendSenderType, BackendMessageStatus } from '@/features/messages';
 
 // Event payload types
-export interface MessageIncomingPayload {
-  id: string;
-  conversationId: string;
-  type: BackendMessageType;
-  content: string;
-  mediaUrl: string | null;
-  fileName: string | null;
-  fileSize: number | null;
-  mimeType: string | null;
-  direction: BackendMessageDirection;
-  senderType: BackendSenderType;
-  status: BackendMessageStatus;
-  costUsd: number | null;
-  metadata: unknown | null;
-  transcription: string | null;
-  analyzedAt: string | null;
-  createdAt: string;
-  conversationName: string;
-  senderName: string | null;
-}
-
 export interface MessageSentPayload {
   id: string;
   phoneId: string;

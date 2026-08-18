@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocketEvent } from '@/lib/websocket';
-import type { MessageIncomingPayload, MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
+import type { MessageSentPayload, CreditsExhaustedPayload, MediaReadyPayload } from '@/lib/websocket';
 import { messageKeys } from '../api/messageKeys';
 import { authKeys } from '@/features/auth/api';
 import { useToast } from '@/shared/hooks/useToast';
-import type { Message } from '../types';
+import type { Message, MessageIncomingPayload } from '../types';
 
 /**
  * Suscribe la conversación activa a todos los eventos de WebSocket que afectan

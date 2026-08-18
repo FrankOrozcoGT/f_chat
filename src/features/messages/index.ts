@@ -13,4 +13,5 @@ export type {
   BackendMessageType,
   BackendSenderType,
   BackendMessageStatus,
+  MessageIncomingPayload,
 } from './types';
