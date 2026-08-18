@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react';
 import { Smartphone, AlertCircle, Loader2, Plus } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
-import { useGetPhones } from '@/features/phones/api/useGetPhones';
+import { useGetPhones } from '../api/useGetPhones';
 import { useToast } from '@/shared/hooks/useToast';
 import { Toast } from '@/shared/ui/Toast';
 import { Button } from '@/shared/ui/Button';
-import { PhoneCard } from '@/features/phones/components/PhoneCard';
-import { CreatePhoneModal } from '@/features/phones/components/CreatePhoneModal';
-import { PhoneSyncModal } from '@/features/phones/components/PhoneSyncModal';
+import { PhoneCard } from './PhoneCard';
+import { CreatePhoneModal } from './CreatePhoneModal';
+import { PhoneSyncModal } from './PhoneSyncModal';
 import { useSocketEvent } from '@/lib/websocket';
 import type { PhoneSyncingPayload, PhoneSyncProgressPayload, PhoneSyncCompletePayload } from '@/lib/websocket';
 

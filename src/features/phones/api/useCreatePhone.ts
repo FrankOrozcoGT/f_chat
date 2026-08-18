@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { phoneKeys } from '@/features/phones/api/phoneKeys';
-import type { CreatePhoneResponse } from '@/features/phones/types';
+import { phoneKeys } from './phoneKeys';
+import type { CreatePhoneResponse } from '../types';
 
 interface CreatePhoneParams {
   instanceName: string;

@@ -3,7 +3,7 @@ import { QrCode, Loader2 } from 'lucide-react';
 import QRCodeLib from 'qrcode';
 import { useSocketEvent } from '@/lib/websocket';
 import type { PhoneQRUpdatedPayload, PhoneStatusChangedPayload } from '@/lib/websocket';
-import type { PhoneStatus } from '@/features/phones/types';
+import type { PhoneStatus } from '../types';
 import { getErrorMessage } from '@/shared/lib/errors';
 
 interface QRCodeDisplayProps {
