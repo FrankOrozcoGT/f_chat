@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
-import { useCreateTransition } from '../api/useCreateTransition';
-import { useDeleteTransition } from '../api/useDeleteTransition';
-import { useCreateNode } from '../api/useCreateNode';
-import type { Node } from '../types';
+import { useCreateTransition } from '@/features/flows/api/useCreateTransition';
+import { useDeleteTransition } from '@/features/flows/api/useDeleteTransition';
+import { useCreateNode } from '@/features/flows/api/useCreateNode';
+import type { Node } from '@/features/flows/types';
 
 interface TransitionForm {
   toNodeId: string;

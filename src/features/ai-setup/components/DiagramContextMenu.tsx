@@ -1,6 +1,6 @@
 import { Plus, Trash2, Pencil, ArrowRight, Diamond, Square, Circle } from 'lucide-react';
-import type { InternalQueue } from '../api/useGetFlowDiagram';
-import type { NodeShape } from '../hooks/useMermaidChartEditor';
+import type { InternalQueue } from '@/features/ai-setup/api/useGetFlowDiagram';
+import type { NodeShape } from '@/features/ai-setup/hooks/useMermaidChartEditor';
 
 interface Selection {
   type: 'node' | 'edge';

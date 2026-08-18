@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Layers, Merge, GitBranch, Loader2 } from 'lucide-react';
 import { useGetFlows } from '@/features/flows/api/useGetFlows';
-import { useMergeIntents } from '../api/useMergeIntents';
-import { useGenerateFlows } from '../api/useGenerateFlows';
-import { IntentReviewSection } from './IntentReviewSection';
-import { FlowCard } from './FlowCard';
+import { useMergeIntents } from '@/features/ai-setup/api/useMergeIntents';
+import { useGenerateFlows } from '@/features/ai-setup/api/useGenerateFlows';
+import { IntentReviewSection } from '@/features/ai-setup/components/IntentReviewSection';
+import { FlowCard } from '@/features/ai-setup/components/FlowCard';
 
 export const DiagramReviewSection = () => {
   const { data: flows, isLoading } = useGetFlows();

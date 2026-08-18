@@ -3,8 +3,8 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { conversationKeys } from './conversationKeys';
-import type { GetConversationsParams, Participant } from '../types';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
+import type { GetConversationsParams, Participant } from '@/features/conversations/types';
 
 // Backend response structure (based on actual API response)
 interface BackendConversation {

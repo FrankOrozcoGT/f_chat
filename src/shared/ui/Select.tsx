@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
-import { Portal } from './Portal';
+import { Portal } from '@/shared/ui/Portal';
 
 export interface SelectOption<T = string> {
   value: T;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, User, Bot, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useGetConversationMessages } from '../api/useGetConversationMessages';
-import type { InternalReview } from '../api/useGetInternals';
+import { useGetConversationMessages } from '@/features/ai-setup/api/useGetConversationMessages';
+import type { InternalReview } from '@/features/ai-setup/api/useGetInternals';
 import { formatTime } from '@/shared/lib/date';
 
 interface Props {

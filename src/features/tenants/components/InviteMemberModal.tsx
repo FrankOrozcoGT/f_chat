@@ -4,8 +4,8 @@ import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
-import { useInviteMember } from '../api/useInviteMember';
-import { roleOptions } from '../types';
+import { useInviteMember } from '@/features/tenants/api/useInviteMember';
+import { roleOptions } from '@/features/tenants/types';
 import type { TenantRole } from '@/features/auth/types';
 
 interface InviteMemberModalProps {

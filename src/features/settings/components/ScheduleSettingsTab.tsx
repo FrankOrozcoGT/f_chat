@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { useToast } from '@/shared/hooks/useToast';
-import { useGetSettings } from '../api/useGetSettings';
-import { useUpdateSettings } from '../api/useUpdateSettings';
-import type { WorkSchedule } from '../types';
+import { useGetSettings } from '@/features/settings/api/useGetSettings';
+import { useUpdateSettings } from '@/features/settings/api/useUpdateSettings';
+import type { WorkSchedule } from '@/features/settings/types';
 
 const DAY_NAMES: Record<string, string> = {
   '1': 'Lunes',

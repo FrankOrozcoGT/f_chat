@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Building2, Check, X, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useGetPendingInvitations } from '../api/useGetPendingInvitations';
-import { useAcceptInvitation } from '../api/useAcceptInvitation';
-import { useRejectInvitation } from '../api/useRejectInvitation';
-import { tenantKeys } from '../api/tenantKeys';
+import { useGetPendingInvitations } from '@/features/tenants/api/useGetPendingInvitations';
+import { useAcceptInvitation } from '@/features/tenants/api/useAcceptInvitation';
+import { useRejectInvitation } from '@/features/tenants/api/useRejectInvitation';
+import { tenantKeys } from '@/features/tenants/api/tenantKeys';
 import { useSwitchTenant } from '@/features/auth/api/useSwitchTenant';
 import { useToast } from '@/shared/hooks/useToast';
 

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { intentKeys } from './flowKeys';
-import type { Intent, UpdateIntentDto } from '../types';
+import { intentKeys } from '@/features/flows/api/flowKeys';
+import type { Intent, UpdateIntentDto } from '@/features/flows/types';
 
 export const useUpdateIntent = () => {
   const queryClient = useQueryClient();

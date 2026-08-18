@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api';
-import type { HealthResponse } from '../types';
+import { apiClient } from '@/lib/api';
+import type { HealthResponse } from '@/features/health/types';
 
 export const healthKeys = {
   all: ['health'] as const,

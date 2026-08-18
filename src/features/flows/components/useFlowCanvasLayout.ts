@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { type Node as RFNode, type Edge, MarkerType } from '@xyflow/react';
-import type { Flow, Node, ActiveSessionsResponse, FlowNode, FlowTransition } from '../types';
+import type { Flow, Node, ActiveSessionsResponse, FlowNode, FlowTransition } from '@/features/flows/types';
 
 const FLOW_COL_X = 350;
 const COLLAPSED_HEIGHT = 130;

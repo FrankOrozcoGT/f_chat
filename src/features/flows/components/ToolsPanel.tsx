@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { List, Tag, GitBranch, Brain, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
-import type { Flow, Node, Intent, FlowTransition } from '../types';
-import { MemoryTab } from './MemoryTab';
+import type { Flow, Node, Intent, FlowTransition } from '@/features/flows/types';
+import { MemoryTab } from '@/features/flows/components/MemoryTab';
 
 type ToolTab = 'nodes' | 'intents' | 'transitions' | 'memory';
 

@@ -2,8 +2,8 @@
 // Left column showing all conversations, resizable width
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useGetConversations } from '../api/useGetConversations';
-import { ConversationItem } from './ConversationItem';
+import { useGetConversations } from '@/features/conversations/api/useGetConversations';
+import { ConversationItem } from '@/features/conversations/components/ConversationItem';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 
 const STORAGE_KEY = 'conversations_list_width';

@@ -1,7 +1,7 @@
 import { Activity, AlertCircle, Loader2 } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
-import { useGetHealth } from '../api/useGetHealth';
-import { HealthGrid } from './HealthGrid';
+import { useGetHealth } from '@/features/health/api/useGetHealth';
+import { HealthGrid } from '@/features/health/components/HealthGrid';
 
 export const HealthPage = () => {
   const { data: healthData, isLoading, isError, error } = useGetHealth();

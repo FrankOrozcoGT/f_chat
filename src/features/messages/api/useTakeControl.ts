@@ -3,7 +3,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { messageKeys } from './messageKeys';
+import { messageKeys } from '@/features/messages/api/messageKeys';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 
 interface TakeControlPayload {

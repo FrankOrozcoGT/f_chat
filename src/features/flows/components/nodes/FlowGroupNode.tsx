@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Workflow, Users, Minimize2, Pencil, Trash2, ArrowRightLeft, History } from 'lucide-react';
-import type { FlowStatus } from '../../types';
+import type { FlowStatus } from '@/features/flows/types';
 
 const statusConfig: Record<FlowStatus, { label: string; className: string }> = {
   draft:    { label: 'Borrador', className: 'bg-accent-yellow/15 text-accent-yellow border border-accent-yellow/30' },

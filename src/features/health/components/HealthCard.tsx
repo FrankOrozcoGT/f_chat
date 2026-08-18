@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardBody } from '@/shared/ui/Card';
 import { formatRelativeTime } from '@/shared/lib/date';
-import type { ApiHealth } from '../types';
+import type { ApiHealth } from '@/features/health/types';
 
 interface HealthCardProps {
   health: ApiHealth;

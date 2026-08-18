@@ -4,14 +4,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Search, Loader2 } from 'lucide-react';
 import { useConversationsStore } from '@/features/conversations/store';
-import { useGetConversationDetail } from '../api/useGetConversationDetail';
-import { useAnalyzeConversation } from '../api/useAnalyzeConversation';
-import { messageKeys } from '../api/messageKeys';
+import { useGetConversationDetail } from '@/features/messages/api/useGetConversationDetail';
+import { useAnalyzeConversation } from '@/features/messages/api/useAnalyzeConversation';
+import { messageKeys } from '@/features/messages/api/messageKeys';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
-import { ClientInfo } from './ClientInfo';
-import { ProductsPromotions } from './ProductsPromotions';
-import { ConversationSummary } from './ConversationSummary';
+import { ClientInfo } from '@/features/messages/components/ClientInfo';
+import { ProductsPromotions } from '@/features/messages/components/ProductsPromotions';
+import { ConversationSummary } from '@/features/messages/components/ConversationSummary';
 
 interface HITLPanelProps {
   conversationId: string;

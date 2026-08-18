@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { flowKeys } from './flowKeys';
-import type { Flow, UpdateFlowDto } from '../types';
+import { flowKeys } from '@/features/flows/api/flowKeys';
+import type { Flow, UpdateFlowDto } from '@/features/flows/types';
 
 export const useUpdateFlow = () => {
   const queryClient = useQueryClient();

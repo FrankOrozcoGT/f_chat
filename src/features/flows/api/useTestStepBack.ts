@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import type { TestStepBackResponse } from '../types';
+import type { TestStepBackResponse } from '@/features/flows/types';
 
 interface TestStepBackPayload {
   testId: string;

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { shippingKeys } from './shippingKeys';
-import type { ShippingLocation, UpdateShippingLocationDto } from '../types';
+import { shippingKeys } from '@/features/catalog/shipping/api/shippingKeys';
+import type { ShippingLocation, UpdateShippingLocationDto } from '@/features/catalog/shipping/types';
 
 export const useUpdateShippingLocation = () => {
   const queryClient = useQueryClient();

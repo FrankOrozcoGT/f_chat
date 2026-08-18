@@ -8,9 +8,9 @@ import {
   ModalFooter,
 } from '@/shared/ui/Modal';
 import { Button } from '@/shared/ui/Button';
-import { useCreatePhone } from '../api/useCreatePhone';
-import { QRCodeDisplay } from './QRCodeDisplay';
-import type { PhoneStatus } from '../types';
+import { useCreatePhone } from '@/features/phones/api/useCreatePhone';
+import { QRCodeDisplay } from '@/features/phones/components/QRCodeDisplay';
+import type { PhoneStatus } from '@/features/phones/types';
 import { getErrorMessage } from '@/shared/lib/errors';
 
 const translateCreatePhoneError = (backendMessage: string): string | null => {

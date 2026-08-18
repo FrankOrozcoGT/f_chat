@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, Package, Tag, Percent } from 'lucide-react';
 import { Card } from '@/shared/ui/Card';
 import { Badge } from '@/shared/ui/Badge';
-import type { Product, Promotion, ClientDiscount, ClientPromotionDiscount } from '../types';
+import type { Product, Promotion, ClientDiscount, ClientPromotionDiscount } from '@/features/messages/types';
 
 interface ProductsPromotionsProps {
   products: Product[];

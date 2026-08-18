@@ -4,11 +4,11 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { messageKeys } from './messageKeys';
+import { messageKeys } from '@/features/messages/api/messageKeys';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
-import { MessageDirection, MessageSenderType, MessageStatus, mapBackendMessageType, mapBackendDirection, mapBackendStatus } from '../types';
-import type { Message, BackendMessageType, BackendMessageDirection, BackendSenderType, BackendMessageStatus } from '../types';
-import { generateTempId, snapshotMessages, rollbackMessages, classifySendError, type SendErrorType } from './optimisticSend';
+import { MessageDirection, MessageSenderType, MessageStatus, mapBackendMessageType, mapBackendDirection, mapBackendStatus } from '@/features/messages/types';
+import type { Message, BackendMessageType, BackendMessageDirection, BackendSenderType, BackendMessageStatus } from '@/features/messages/types';
+import { generateTempId, snapshotMessages, rollbackMessages, classifySendError, type SendErrorType } from '@/features/messages/api/optimisticSend';
 
 interface SendMessageWithFilePayload {
   file: File | Blob;

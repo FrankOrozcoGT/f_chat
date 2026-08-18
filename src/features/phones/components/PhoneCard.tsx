@@ -2,11 +2,12 @@ import { useState, useCallback } from 'react';
 import { Smartphone, Circle, Clock, Trash2 } from 'lucide-react';
 import { Card, CardBody } from '@/shared/ui/Card';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import { useDeletePhone } from '../api/useDeletePhone';
+import { useDeletePhone } from '@/features/phones/api/useDeletePhone';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { formatDateTime } from '@/shared/lib/date';
 import { useSocketEvent } from '@/lib/websocket';
-import type { Phone, PhoneStatus } from '../types';
+import type { Phone, PhoneStatus } from '@/features/phones/types';
 import type { PhoneStatusChangedPayload } from '@/lib/websocket';
 
 interface PhoneCardProps {
@@ -32,8 +33,8 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
         showToast('Instancia eliminada correctamente', 'success');
         setShowConfirmDelete(false);
       },
-      onError: (error: Error) => {
-        showToast(error.message || 'Error al eliminar la instancia', 'error');
+      onError: (error) => {
+        showToast(getErrorMessage(error, 'Error al eliminar la instancia'), 'error');
         setShowConfirmDelete(false);
       },
     });

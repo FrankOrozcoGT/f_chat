@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { useToast } from '@/shared/hooks/useToast';
-import { useGetFarewellTemplate } from '../api/useGetFarewellTemplate';
-import { useUpdateFarewellTemplate } from '../api/useUpdateFarewellTemplate';
+import { useGetFarewellTemplate } from '@/features/settings/api/useGetFarewellTemplate';
+import { useUpdateFarewellTemplate } from '@/features/settings/api/useUpdateFarewellTemplate';
 
 export const MessagesSettingsTab = () => {
   const { data: farewellTemplate } = useGetFarewellTemplate();

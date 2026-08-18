@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Merge, GitBranch, Loader2, Tag } from 'lucide-react';
-import { useGenerateDiagrams } from '../api/useGenerateDiagrams';
-import { useGetIntents } from '../api/useGetIntents';
-import { useMergeAnalyses } from '../api/useMergeAnalyses';
+import { useGenerateDiagrams } from '@/features/ai-setup/api/useGenerateDiagrams';
+import { useGetIntents } from '@/features/ai-setup/api/useGetIntents';
+import { useMergeAnalyses } from '@/features/ai-setup/api/useMergeAnalyses';
 
 export const IntentReviewSection = () => {
   const { data: intents, isLoading } = useGetIntents();

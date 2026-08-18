@@ -2,8 +2,8 @@ import { ArrowLeft, Bot, Hand, Info, MoreVertical, X as XCircle } from 'lucide-r
 import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
-import type { Client } from '../types';
-import type { useGetConversationDetail } from '../api/useGetConversationDetail';
+import type { Client } from '@/features/messages/types';
+import type { useGetConversationDetail } from '@/features/messages/api/useGetConversationDetail';
 
 function getInitials(name?: string | null): string {
   if (!name) return '?';

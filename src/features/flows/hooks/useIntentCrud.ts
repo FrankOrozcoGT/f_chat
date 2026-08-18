@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
-import { useCreateIntent } from '../api/useCreateIntent';
-import { useUpdateIntent } from '../api/useUpdateIntent';
-import { useDeleteIntent } from '../api/useDeleteIntent';
-import type { Intent } from '../types';
+import { useCreateIntent } from '@/features/flows/api/useCreateIntent';
+import { useUpdateIntent } from '@/features/flows/api/useUpdateIntent';
+import { useDeleteIntent } from '@/features/flows/api/useDeleteIntent';
+import type { Intent } from '@/features/flows/types';
 
 interface IntentForm {
   name: string;

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { dashboardKeys } from './dashboardKeys';
-import type { DashboardStats } from '../types';
+import { dashboardKeys } from '@/features/dashboard/api/dashboardKeys';
+import type { DashboardStats } from '@/features/dashboard/types';
 
 export const useGetDashboard = (from?: string, to?: string) => {
   return useQuery({

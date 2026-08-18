@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Tag, Pencil, Trash2, Package } from 'lucide-react';
-import { useGetPromotions } from '../api/useGetPromotions';
-import { useCreatePromotion } from '../api/useCreatePromotion';
-import { useUpdatePromotion } from '../api/useUpdatePromotion';
-import { useDeletePromotion } from '../api/useDeletePromotion';
+import { useGetPromotions } from '@/features/catalog/promotions/api/useGetPromotions';
+import { useCreatePromotion } from '@/features/catalog/promotions/api/useCreatePromotion';
+import { useUpdatePromotion } from '@/features/catalog/promotions/api/useUpdatePromotion';
+import { useDeletePromotion } from '@/features/catalog/promotions/api/useDeletePromotion';
 import { useGetProducts } from '@/features/catalog/products/api/useGetProducts';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
@@ -17,7 +17,7 @@ import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Badge } from '@/shared/ui/Badge';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
-import type { Promotion, CreatePromotionDto, UpdatePromotionDto } from '../types';
+import type { Promotion, CreatePromotionDto, UpdatePromotionDto } from '@/features/catalog/promotions/types';
 
 const emptyForm = { name: '', description: '', specialPrice: '', productIds: [] as string[] };
 

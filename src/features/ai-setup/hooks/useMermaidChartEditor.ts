@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { parseMermaidFlowchart, type ParsedNode, type ParsedEdge } from '../utils/parseMermaid';
-import { useUndoHistory } from './useUndoHistory';
+import { parseMermaidFlowchart, type ParsedNode, type ParsedEdge } from '@/features/ai-setup/utils/parseMermaid';
+import { useUndoHistory } from '@/features/ai-setup/hooks/useUndoHistory';
 
 export type NodeShape = '[]' | '{}' | '()';
 

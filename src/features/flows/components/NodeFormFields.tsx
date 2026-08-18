@@ -4,9 +4,9 @@ import { Button } from '@/shared/ui/Button';
 import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
-import { NodeFunctionType, preCodeItemCode } from '../types';
-import type { NodeFunction, PreCodeItem } from '../types';
-import type { NodeForm, NodeFormTab } from '../hooks/useNodeCrud';
+import { NodeFunctionType, preCodeItemCode } from '@/features/flows/types';
+import type { NodeFunction, PreCodeItem } from '@/features/flows/types';
+import type { NodeForm, NodeFormTab } from '@/features/flows/hooks/useNodeCrud';
 
 const TAB_ORDER: NodeFormTab[] = ['general', 'precode', 'todos', 'tools', 'postcode'];
 

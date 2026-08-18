@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { NodeMappingEntry, InternalQueue } from '../api/useGetFlowDiagram';
-import type { useMermaidChartEditor } from './useMermaidChartEditor';
+import type { NodeMappingEntry, InternalQueue } from '@/features/ai-setup/api/useGetFlowDiagram';
+import type { useMermaidChartEditor } from '@/features/ai-setup/hooks/useMermaidChartEditor';
 
 interface Selection {
   type: 'node' | 'edge';

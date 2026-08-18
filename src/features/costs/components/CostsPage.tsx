@@ -3,8 +3,8 @@ import { DollarSign, TrendingUp, Mic, MessageSquare, Volume2, Loader2, AlertCirc
 import { MainLayout } from '@/layouts/MainLayout';
 import { Card, CardBody } from '@/shared/ui/Card';
 import { Select, type SelectOption } from '@/shared/ui/Select';
-import { useGetCosts } from '../api/useGetCosts';
-import { Period, type Period as PeriodType } from '../types';
+import { useGetCosts } from '@/features/costs/api/useGetCosts';
+import { Period, type Period as PeriodType } from '@/features/costs/types';
 import { formatDate } from '@/shared/lib/date';
 
 export const CostsPage = () => {

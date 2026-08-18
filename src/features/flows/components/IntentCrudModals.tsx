@@ -4,7 +4,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
-import type { useIntentCrud } from '../hooks/useIntentCrud';
+import type { useIntentCrud } from '@/features/flows/hooks/useIntentCrud';
 
 interface IntentCrudModalsProps {
   intentCrud: ReturnType<typeof useIntentCrud>;

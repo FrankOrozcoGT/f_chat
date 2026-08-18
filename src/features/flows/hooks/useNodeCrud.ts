@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
-import { useCreateNode } from '../api/useCreateNode';
-import { useUpdateNode } from '../api/useUpdateNode';
-import { preCodeItemCode } from '../types';
-import type { Node, OnErrorStrategy, PreCodeItem, NodeTodo, NodeFunction } from '../types';
+import { useCreateNode } from '@/features/flows/api/useCreateNode';
+import { useUpdateNode } from '@/features/flows/api/useUpdateNode';
+import { preCodeItemCode } from '@/features/flows/types';
+import type { Node, OnErrorStrategy, PreCodeItem, NodeTodo, NodeFunction } from '@/features/flows/types';
 
 export type NodeFormTab = 'general' | 'precode' | 'todos' | 'tools' | 'postcode';
 

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { productKeys } from './productKeys';
-import type { Product, UpdateProductDto } from '../types';
+import { productKeys } from '@/features/catalog/products/api/productKeys';
+import type { Product, UpdateProductDto } from '@/features/catalog/products/types';
 
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();

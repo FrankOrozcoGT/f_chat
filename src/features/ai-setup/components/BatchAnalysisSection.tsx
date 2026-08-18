@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Play, CheckCircle, AlertCircle, Layers, Tag, DollarSign, Users } from 'lucide-react';
 import { StatCard } from '@/shared/ui/StatCard';
-import { useBatchAnalysis } from '../api/useBatchAnalysis';
+import { useBatchAnalysis } from '@/features/ai-setup/api/useBatchAnalysis';
 
 export const BatchAnalysisSection = () => {
   const [channelCount, setChannelCount] = useState(10);

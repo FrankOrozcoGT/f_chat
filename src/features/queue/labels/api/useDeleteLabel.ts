@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { labelKeys } from './labelKeys';
+import { labelKeys } from '@/features/queue/labels/api/labelKeys';
 
 export const useDeleteLabel = () => {
   const queryClient = useQueryClient();

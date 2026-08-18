@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useStartTest } from '../api/useStartTest';
-import { useTestSend } from '../api/useTestSend';
-import { useTestStepBack } from '../api/useTestStepBack';
-import { useTestStop } from '../api/useTestStop';
-import { TestIntent, SideEffectAction } from '../types';
-import type { TestMessage, ConversationTestMessage } from '../types';
+import { useStartTest } from '@/features/flows/api/useStartTest';
+import { useTestSend } from '@/features/flows/api/useTestSend';
+import { useTestStepBack } from '@/features/flows/api/useTestStepBack';
+import { useTestStop } from '@/features/flows/api/useTestStop';
+import { TestIntent, SideEffectAction } from '@/features/flows/types';
+import type { TestMessage, ConversationTestMessage } from '@/features/flows/types';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
 

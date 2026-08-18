@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import type { TestSession } from '../types';
+import type { TestSession } from '@/features/flows/types';
 
 interface StartTestPayload {
   conversationId: string;

@@ -4,9 +4,9 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
-import { FlowHistoryModal } from './FlowHistoryModal';
-import type { useFlowCrud } from '../hooks/useFlowCrud';
-import type { Node } from '../types';
+import { FlowHistoryModal } from '@/features/flows/components/FlowHistoryModal';
+import type { useFlowCrud } from '@/features/flows/hooks/useFlowCrud';
+import type { Node } from '@/features/flows/types';
 
 interface FlowCrudModalsProps {
   flowCrud: ReturnType<typeof useFlowCrud>;

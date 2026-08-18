@@ -7,7 +7,7 @@ import { useGetFlowVersions } from '@/features/flows/api/useGetFlowVersions';
 import { usePromoteFlow } from '@/features/flows/api/usePromoteFlow';
 import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
 import { TestPanel } from '@/features/flows/components/TestPanel';
-import { useGetFlowAnalyses } from '../api/useGetFlowAnalyses';
+import { useGetFlowAnalyses } from '@/features/ai-setup/api/useGetFlowAnalyses';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
 import { formatDate } from '@/shared/lib/date';
 

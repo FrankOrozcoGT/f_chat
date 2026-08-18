@@ -1,18 +1,18 @@
 import { useState, useRef } from 'react';
-import type { NodeMappingEntry, InternalQueue } from '../api/useGetFlowDiagram';
-import type { FlowAnalysis } from '../api/useGetFlowAnalyses';
-import { ConversationDrawer } from './ConversationDrawer';
-import { DiagramContextMenu, type ContextMenuState } from './DiagramContextMenu';
-import { DiagramConversationsSidebar } from './DiagramConversationsSidebar';
-import { DiagramLabelEditorModal, type EditingLabelState } from './DiagramLabelEditorModal';
-import { DiagramEditorToolbar } from './DiagramEditorToolbar';
-import { DiagramZoomControls } from './DiagramZoomControls';
-import { DiagramLegendFooter } from './DiagramLegendFooter';
-import { usePanZoom } from '../hooks/usePanZoom';
-import { useMermaidChartEditor, type NodeShape } from '../hooks/useMermaidChartEditor';
-import { useDiagramRender } from '../hooks/useDiagramRender';
-import { useDiagramKeyboardShortcuts } from '../hooks/useDiagramKeyboardShortcuts';
-import { useStyledDiagramChart } from '../hooks/useStyledDiagramChart';
+import type { NodeMappingEntry, InternalQueue } from '@/features/ai-setup/api/useGetFlowDiagram';
+import type { FlowAnalysis } from '@/features/ai-setup/api/useGetFlowAnalyses';
+import { ConversationDrawer } from '@/features/ai-setup/components/ConversationDrawer';
+import { DiagramContextMenu, type ContextMenuState } from '@/features/ai-setup/components/DiagramContextMenu';
+import { DiagramConversationsSidebar } from '@/features/ai-setup/components/DiagramConversationsSidebar';
+import { DiagramLabelEditorModal, type EditingLabelState } from '@/features/ai-setup/components/DiagramLabelEditorModal';
+import { DiagramEditorToolbar } from '@/features/ai-setup/components/DiagramEditorToolbar';
+import { DiagramZoomControls } from '@/features/ai-setup/components/DiagramZoomControls';
+import { DiagramLegendFooter } from '@/features/ai-setup/components/DiagramLegendFooter';
+import { usePanZoom } from '@/features/ai-setup/hooks/usePanZoom';
+import { useMermaidChartEditor, type NodeShape } from '@/features/ai-setup/hooks/useMermaidChartEditor';
+import { useDiagramRender } from '@/features/ai-setup/hooks/useDiagramRender';
+import { useDiagramKeyboardShortcuts } from '@/features/ai-setup/hooks/useDiagramKeyboardShortcuts';
+import { useStyledDiagramChart } from '@/features/ai-setup/hooks/useStyledDiagramChart';
 
 // --- Types ---
 type SelectionMode = 'none' | 'select-origin' | 'select-destination';

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { costKeys } from './costKeys';
-import type { CostsSummary, Period } from '../types';
+import { costKeys } from '@/features/costs/api/costKeys';
+import type { CostsSummary, Period } from '@/features/costs/types';
 
 export const useGetCosts = (period: Period) => {
   return useQuery({

@@ -3,12 +3,12 @@ import { Tag, Clock, Settings, MessageSquare, SlidersHorizontal } from 'lucide-r
 import { MainLayout } from '@/layouts/MainLayout';
 import { useToast } from '@/shared/hooks/useToast';
 import { Toast } from '@/shared/ui/Toast';
-import { useGetSettings } from '../api/useGetSettings';
+import { useGetSettings } from '@/features/settings/api/useGetSettings';
 import { useGetMe } from '@/features/auth/api/useGetMe';
-import { AnalysisSettingsTab } from './AnalysisSettingsTab';
-import { ScheduleSettingsTab } from './ScheduleSettingsTab';
-import { LabelsSettingsTab } from './LabelsSettingsTab';
-import { MessagesSettingsTab } from './MessagesSettingsTab';
+import { AnalysisSettingsTab } from '@/features/settings/components/AnalysisSettingsTab';
+import { ScheduleSettingsTab } from '@/features/settings/components/ScheduleSettingsTab';
+import { LabelsSettingsTab } from '@/features/settings/components/LabelsSettingsTab';
+import { MessagesSettingsTab } from '@/features/settings/components/MessagesSettingsTab';
 
 type TabId = 'analysis' | 'schedule' | 'labels' | 'messages';
 

@@ -5,8 +5,8 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { Button } from '@/shared/ui/Button';
 import { useGetMe } from '@/features/auth/api/useGetMe';
 import { useSwitchTenant } from '@/features/auth/api/useSwitchTenant';
-import { useAcceptInvitation } from '../api/useAcceptInvitation';
-import { useRejectInvitation } from '../api/useRejectInvitation';
+import { useAcceptInvitation } from '@/features/tenants/api/useAcceptInvitation';
+import { useRejectInvitation } from '@/features/tenants/api/useRejectInvitation';
 
 const ERROR_MESSAGES: Record<string, string> = {
   '404': 'El enlace de invitación no existe o ya fue usado.',

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { settingsKeys } from './settingsKeys';
-import type { NodeTemplate } from '../types';
+import { settingsKeys } from '@/features/settings/api/settingsKeys';
+import type { NodeTemplate } from '@/features/settings/types';
 
 export const useGetFarewellTemplate = () => {
   return useQuery({

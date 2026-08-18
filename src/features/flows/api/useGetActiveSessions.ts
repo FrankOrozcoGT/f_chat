@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { flowKeys } from './flowKeys';
-import type { ActiveSessionsResponse } from '../types';
+import { flowKeys } from '@/features/flows/api/flowKeys';
+import type { ActiveSessionsResponse } from '@/features/flows/types';
 
 export const useGetActiveSessions = () => {
   return useQuery({

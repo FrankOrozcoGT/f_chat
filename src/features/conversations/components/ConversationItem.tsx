@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
 import { Bot, Hand, Pencil, Check, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Conversation } from '../types';
-import { useConversationsStore } from '../store';
-import { conversationKeys } from '../api/conversationKeys';
+import type { Conversation } from '@/features/conversations/types';
+import { useConversationsStore } from '@/features/conversations/store';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { useUpdateContactName } from '@/features/contacts/api/useUpdateContactName';
 import { useToast } from '@/shared/hooks/useToast';
 import { formatRelativeTime } from '@/shared/lib/date';

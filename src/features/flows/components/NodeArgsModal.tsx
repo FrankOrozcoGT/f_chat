@@ -3,7 +3,7 @@ import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared
 import { Button } from '@/shared/ui/Button';
 import { FormField } from '@/shared/ui/FormField';
 import { Input } from '@/shared/ui/Input';
-import type { NodeFunction } from '../types';
+import type { NodeFunction } from '@/features/flows/types';
 
 interface ArgsModalCtx {
   field: 'preCode' | 'postCode';

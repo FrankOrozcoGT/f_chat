@@ -1,6 +1,6 @@
 import { X, Wrench, Code, AlertTriangle, Users, SlidersHorizontal, ListTodo } from 'lucide-react';
-import type { Node, PreCodeItem } from '../types';
-import { preCodeItemCode } from '../types';
+import type { Node, PreCodeItem } from '@/features/flows/types';
+import { preCodeItemCode } from '@/features/flows/types';
 
 function parseJsonArray(value: string | null, fieldLabel: string): { items: PreCodeItem[]; error: string | null } {
   if (!value) return { items: [], error: null };

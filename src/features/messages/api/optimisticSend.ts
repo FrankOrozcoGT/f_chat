@@ -1,7 +1,7 @@
 import { AxiosError } from 'axios';
 import type { QueryClient } from '@tanstack/react-query';
-import { messageKeys } from './messageKeys';
-import type { Message } from '../types';
+import { messageKeys } from '@/features/messages/api/messageKeys';
+import type { Message } from '@/features/messages/types';
 
 export type SendErrorType = 'credits_limit' | 'phone_disconnected' | 'generic';
 

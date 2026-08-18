@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { phoneKeys } from './phoneKeys';
-import type { Phone } from '../types';
+import { phoneKeys } from '@/features/phones/api/phoneKeys';
+import type { Phone } from '@/features/phones/types';
 
 export const useGetPhones = () => {
   return useQuery({

@@ -1,12 +1,12 @@
 import { Building2, AlertCircle, Loader2, Calendar } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
-import { useGetAdminTenants } from '../api/useGetUsers';
+import { useGetAdminTenants } from '@/features/users/api/useGetUsers';
 import { useToast } from '@/shared/hooks/useToast';
 import { Toast } from '@/shared/ui/Toast';
 import { Table, type TableColumn } from '@/shared/ui/Table';
-import { PlanSelector } from './PlanSelector';
-import { LimitsCell } from './LimitsCell';
-import type { AdminTenant } from '../types';
+import { PlanSelector } from '@/features/users/components/PlanSelector';
+import { LimitsCell } from '@/features/users/components/LimitsCell';
+import type { AdminTenant } from '@/features/users/types';
 import { formatDate as formatDateBase } from '@/shared/lib/date';
 
 export const UsersPage = () => {

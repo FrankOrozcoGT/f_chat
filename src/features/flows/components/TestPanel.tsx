@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { X, Search, Play, Pause, SkipBack, Square, RotateCcw, MessageSquare, Phone, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { useGetMessages } from '@/features/messages/api/useGetMessages';
-import { TestChat } from './TestChat';
-import { useContactSearch } from '../hooks/useContactSearch';
-import { useTestSession } from '../hooks/useTestSession';
+import { TestChat } from '@/features/flows/components/TestChat';
+import { useContactSearch } from '@/features/flows/hooks/useContactSearch';
+import { useTestSession } from '@/features/flows/hooks/useTestSession';
 import { formatDate } from '@/shared/lib/date';
 
 const TEST_PHONE_KEY = 'flowTest_testPhone';

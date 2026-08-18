@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Plus } from 'lucide-react';
 import { CrmLayout } from '@/layouts/CrmLayout';
 import { Button } from '@/shared/ui/Button';
-import { CrudPageStates } from './CrudPageStates';
+import { CrudPageStates } from '@/shared/components/CrudPageStates';
 import type { LucideIcon } from 'lucide-react';
 
 interface CatalogPageLayoutProps {

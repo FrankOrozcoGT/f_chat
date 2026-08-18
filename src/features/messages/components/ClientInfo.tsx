@@ -4,10 +4,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/shared/ui/Card';
 import { useToast } from '@/shared/hooks/useToast';
 import { useUpdateContactName } from '@/features/contacts/api/useUpdateContactName';
-import { messageKeys } from '../api/messageKeys';
+import { messageKeys } from '@/features/messages/api/messageKeys';
 import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { formatRelativeTime } from '@/shared/lib/date';
-import type { Client } from '../types';
+import type { Client } from '@/features/messages/types';
 
 interface ClientInfoProps {
   client: Client;

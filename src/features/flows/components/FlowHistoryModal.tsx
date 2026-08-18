@@ -1,9 +1,9 @@
 import { History, RotateCcw, Loader2, AlertCircle, CheckCircle2, Wrench } from 'lucide-react';
 import { Modal, ModalHeader, ModalTitle, ModalBody } from '@/shared/ui/Modal';
-import { useGetFlowVersions } from '../api/useGetFlowVersions';
-import { useRestoreFlowVersion } from '../api/useRestoreFlowVersion';
+import { useGetFlowVersions } from '@/features/flows/api/useGetFlowVersions';
+import { useRestoreFlowVersion } from '@/features/flows/api/useRestoreFlowVersion';
 import { formatDateTime } from '@/shared/lib/date';
-import type { Flow } from '../types';
+import type { Flow } from '@/features/flows/types';
 
 interface FlowHistoryModalProps {
   flow: Flow | null;

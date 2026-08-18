@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { intentKeys } from './flowKeys';
+import { intentKeys } from '@/features/flows/api/flowKeys';
 
 export const useDeleteIntent = () => {
   const queryClient = useQueryClient();

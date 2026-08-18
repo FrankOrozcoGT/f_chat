@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useSearchContacts } from '../api/useSearchContacts';
-import type { Contact, ContactConversation } from '../types';
+import { useSearchContacts } from '@/features/flows/api/useSearchContacts';
+import type { Contact, ContactConversation } from '@/features/flows/types';
 
 /**
  * Búsqueda de contactos con debounce y expansión de resultados, usada en la

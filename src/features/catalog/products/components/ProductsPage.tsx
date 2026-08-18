@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
 import { Package, Pencil, Trash2, ImagePlus } from 'lucide-react';
-import { useGetProducts } from '../api/useGetProducts';
-import { useCreateProduct } from '../api/useCreateProduct';
-import { useUpdateProduct } from '../api/useUpdateProduct';
-import { useDeleteProduct } from '../api/useDeleteProduct';
-import { useUploadProductImage } from '../api/useUploadProductImage';
+import { useGetProducts } from '@/features/catalog/products/api/useGetProducts';
+import { useCreateProduct } from '@/features/catalog/products/api/useCreateProduct';
+import { useUpdateProduct } from '@/features/catalog/products/api/useUpdateProduct';
+import { useDeleteProduct } from '@/features/catalog/products/api/useDeleteProduct';
+import { useUploadProductImage } from '@/features/catalog/products/api/useUploadProductImage';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
 import { useCrudModalState } from '@/shared/hooks/useCrudModalState';
@@ -16,8 +16,8 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input, Textarea } from '@/shared/ui/Input';
 import { Badge } from '@/shared/ui/Badge';
-import { DiscountsModal } from './DiscountsModal';
-import type { Product, CreateProductDto, UpdateProductDto } from '../types';
+import { DiscountsModal } from '@/features/catalog/products/components/DiscountsModal';
+import type { Product, CreateProductDto, UpdateProductDto } from '@/features/catalog/products/types';
 
 const emptyForm = { name: '', basePrice: '', description: '' };
 

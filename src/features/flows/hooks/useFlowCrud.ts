@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
-import { useCreateFlow } from '../api/useCreateFlow';
-import { useUpdateFlow } from '../api/useUpdateFlow';
-import { useDeleteFlow } from '../api/useDeleteFlow';
-import { useCreateNode } from '../api/useCreateNode';
-import type { Flow } from '../types';
+import { useCreateFlow } from '@/features/flows/api/useCreateFlow';
+import { useUpdateFlow } from '@/features/flows/api/useUpdateFlow';
+import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
+import { useCreateNode } from '@/features/flows/api/useCreateNode';
+import type { Flow } from '@/features/flows/types';
 
 interface FlowForm {
   name: string;

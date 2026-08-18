@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
 import { Button } from '@/shared/ui/Button';
-import { useUpdateLimits } from '../api/useUpdateLimits';
-import type { AdminTenant } from '../types';
+import { useUpdateLimits } from '@/features/users/api/useUpdateLimits';
+import type { AdminTenant } from '@/features/users/types';
 import { getErrorMessage } from '@/shared/lib/errors';
 
 interface LimitsModalProps {

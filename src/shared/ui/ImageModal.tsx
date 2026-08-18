@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
-import { Portal } from './Portal';
+import { Portal } from '@/shared/ui/Portal';
 
 interface ImageModalProps {
   src: string;

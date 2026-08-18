@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Truck, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-react';
-import { useGetShippingLocations } from '../api/useGetShippingLocations';
-import { useCreateShippingLocation } from '../api/useCreateShippingLocation';
-import { useUpdateShippingLocation } from '../api/useUpdateShippingLocation';
-import { useDeleteShippingLocation } from '../api/useDeleteShippingLocation';
+import { useGetShippingLocations } from '@/features/catalog/shipping/api/useGetShippingLocations';
+import { useCreateShippingLocation } from '@/features/catalog/shipping/api/useCreateShippingLocation';
+import { useUpdateShippingLocation } from '@/features/catalog/shipping/api/useUpdateShippingLocation';
+import { useDeleteShippingLocation } from '@/features/catalog/shipping/api/useDeleteShippingLocation';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
 import { useCrudModalState } from '@/shared/hooks/useCrudModalState';
@@ -15,7 +15,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input } from '@/shared/ui/Input';
 import { Badge } from '@/shared/ui/Badge';
-import type { ShippingLocation, CreateShippingLocationDto, UpdateShippingLocationDto } from '../types';
+import type { ShippingLocation, CreateShippingLocationDto, UpdateShippingLocationDto } from '@/features/catalog/shipping/types';
 
 const emptyForm = { name: '', isFreeShipping: false, shippingCost: '' };
 

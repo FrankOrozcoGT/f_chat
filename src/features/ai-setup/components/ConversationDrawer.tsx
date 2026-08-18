@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { X, User, Bot, Shield, Loader2, Users } from 'lucide-react';
-import { useGetConversationMessages } from '../api/useGetConversationMessages';
-import { useMarkInternal } from '../api/useMarkInternal';
-import type { FlowAnalysisParticipant } from '../api/useGetFlowAnalyses';
+import { useGetConversationMessages } from '@/features/ai-setup/api/useGetConversationMessages';
+import { useMarkInternal } from '@/features/ai-setup/api/useMarkInternal';
+import type { FlowAnalysisParticipant } from '@/features/ai-setup/api/useGetFlowAnalyses';
 import { formatTime } from '@/shared/lib/date';
 
 interface Props {

@@ -1,4 +1,4 @@
-import type { Product } from '../products/types';
+import type { Product } from '@/features/catalog/products/types';
 
 export interface PromotionProduct {
   id: string;

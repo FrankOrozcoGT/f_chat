@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Check, CheckCheck, Clock, XCircle, Bot, Cog, User, Reply } from 'lucide-react';
 import { Avatar } from '@/shared/ui/Avatar';
 import { ImageModal } from '@/shared/ui/ImageModal';
-import type { Message } from '../types';
+import type { Message } from '@/features/messages/types';
 import { cn } from '@/shared/lib/utils';
 import { formatRelativeTime } from '@/shared/lib/date';
 

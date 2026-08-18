@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, MessageSquare, Copy, Check } from 'lucide-react';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
 import { formatDate } from '@/shared/lib/date';
-import type { FlowAnalysis } from '../api/useGetFlowAnalyses';
+import type { FlowAnalysis } from '@/features/ai-setup/api/useGetFlowAnalyses';
 
 const CopyId = ({ value }: { value: string }) => {
   const [copied, setCopied] = useState(false);

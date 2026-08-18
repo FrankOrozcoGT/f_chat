@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import type { TestSendResponse } from '../types';
+import type { TestSendResponse } from '@/features/flows/types';
 
 interface TestSendPayload {
   testId: string;

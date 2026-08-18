@@ -6,13 +6,13 @@ import { useState, useRef, useEffect } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Send, Image, Paperclip, Mic, X, Reply } from 'lucide-react';
 import { InfoBanner } from '@/shared/ui/InfoBanner';
-import { useMessageSend } from '../hooks/useMessageSend';
-import { useAudioRecorder } from '../hooks/useAudioRecorder';
-import { useFileAttachment } from '../hooks/useFileAttachment';
-import { RecordingInput } from './RecordingInput';
-import { AudioPreviewInput } from './AudioPreviewInput';
-import { FilePreviewInput } from './FilePreviewInput';
-import type { Message } from '../types';
+import { useMessageSend } from '@/features/messages/hooks/useMessageSend';
+import { useAudioRecorder } from '@/features/messages/hooks/useAudioRecorder';
+import { useFileAttachment } from '@/features/messages/hooks/useFileAttachment';
+import { RecordingInput } from '@/features/messages/components/RecordingInput';
+import { AudioPreviewInput } from '@/features/messages/components/AudioPreviewInput';
+import { FilePreviewInput } from '@/features/messages/components/FilePreviewInput';
+import type { Message } from '@/features/messages/types';
 
 const MAX_MESSAGE_LENGTH = 4096;
 

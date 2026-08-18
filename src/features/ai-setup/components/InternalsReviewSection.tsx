@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Check, X, Users, Pencil, MessageSquare } from 'lucide-react';
-import { useGetInternals } from '../api/useGetInternals';
-import { useReviewInternal } from '../api/useReviewInternal';
-import { InternalConversationDrawer } from './InternalConversationDrawer';
-import type { InternalReview } from '../api/useGetInternals';
+import { useGetInternals } from '@/features/ai-setup/api/useGetInternals';
+import { useReviewInternal } from '@/features/ai-setup/api/useReviewInternal';
+import { InternalConversationDrawer } from '@/features/ai-setup/components/InternalConversationDrawer';
+import type { InternalReview } from '@/features/ai-setup/api/useGetInternals';
 
 const statusBadge = {
   pending: 'bg-accent-yellow/15 text-accent-yellow border-accent-yellow/30',

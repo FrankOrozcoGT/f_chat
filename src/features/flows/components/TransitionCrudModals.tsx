@@ -4,8 +4,8 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { FormField } from '@/shared/ui/FormField';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
-import type { useTransitionCrud } from '../hooks/useTransitionCrud';
-import type { Node } from '../types';
+import type { useTransitionCrud } from '@/features/flows/hooks/useTransitionCrud';
+import type { Node } from '@/features/flows/types';
 
 interface TransitionCrudModalsProps {
   transitionCrud: ReturnType<typeof useTransitionCrud>;

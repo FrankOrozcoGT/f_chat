@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Edit2 } from 'lucide-react';
-import { LimitsModal } from './LimitsModal';
-import type { AdminTenant } from '../types';
+import { LimitsModal } from '@/features/users/components/LimitsModal';
+import type { AdminTenant } from '@/features/users/types';
 
 interface LimitsCellProps {
   tenant: AdminTenant;

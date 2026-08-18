@@ -1,7 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import { Select } from '@/shared/ui/Select';
-import { useUpdatePlan } from '../api/useUpdatePlan';
-import type { AdminTenant } from '../types';
+import { useUpdatePlan } from '@/features/users/api/useUpdatePlan';
+import type { AdminTenant } from '@/features/users/types';
 import type { SelectOption } from '@/shared/ui/Select';
 import { getErrorMessage } from '@/shared/lib/errors';
 

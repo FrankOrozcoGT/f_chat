@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { flowKeys } from './flowKeys';
-import type { FlowVersion } from '../types';
+import { flowKeys } from '@/features/flows/api/flowKeys';
+import type { FlowVersion } from '@/features/flows/types';
 
 export const useGetFlowVersions = (flowId: string | null) => {
   return useQuery({

@@ -1,8 +1,8 @@
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { MainLayout } from '@/layouts/MainLayout';
-import { useGetFlows } from '../api/useGetFlows';
-import { useGetActiveSessions } from '../api/useGetActiveSessions';
-import { UnifiedFlowCanvas } from './UnifiedFlowCanvas';
+import { useGetFlows } from '@/features/flows/api/useGetFlows';
+import { useGetActiveSessions } from '@/features/flows/api/useGetActiveSessions';
+import { UnifiedFlowCanvas } from '@/features/flows/components/UnifiedFlowCanvas';
 
 export const FlowsPage = () => {
   const { data: flows, isLoading, isError, error } = useGetFlows();

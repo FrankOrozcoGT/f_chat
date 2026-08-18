@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Pencil, Layers, Trash2, Loader2, Rocket, Eye } from 'lucide-react';
 import { usePromoteFlow } from '@/features/flows/api/usePromoteFlow';
 import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
-import { useGetFlowDiagram } from '../api/useGetFlowDiagram';
-import { useGetFlowAnalyses } from '../api/useGetFlowAnalyses';
-import { useApproveDiagram } from '../api/useApproveDiagram';
-import { useUpdateFlowDiagram } from '../api/useUpdateFlowDiagram';
-import { DiagramEditor } from './DiagramEditor';
+import { useGetFlowDiagram } from '@/features/ai-setup/api/useGetFlowDiagram';
+import { useGetFlowAnalyses } from '@/features/ai-setup/api/useGetFlowAnalyses';
+import { useApproveDiagram } from '@/features/ai-setup/api/useApproveDiagram';
+import { useUpdateFlowDiagram } from '@/features/ai-setup/api/useUpdateFlowDiagram';
+import { DiagramEditor } from '@/features/ai-setup/components/DiagramEditor';
 import type { Flow } from '@/features/flows/types';
 
 interface FlowCardProps {

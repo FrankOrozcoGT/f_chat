@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Select } from '@/shared/ui/Select';
 import { Button } from '@/shared/ui/Button';
 import { useToast } from '@/shared/hooks/useToast';
-import { useGetSettings } from '../api/useGetSettings';
-import { useUpdateSettings } from '../api/useUpdateSettings';
-import type { AnalysisMode } from '../types';
+import { useGetSettings } from '@/features/settings/api/useGetSettings';
+import { useUpdateSettings } from '@/features/settings/api/useUpdateSettings';
+import type { AnalysisMode } from '@/features/settings/types';
 
 const analysisModeOptions = [
   { value: 'manual' as const, label: 'Manual' },

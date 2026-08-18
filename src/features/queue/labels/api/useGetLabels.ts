@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { labelKeys } from './labelKeys';
-import type { ContactLabelsResponse } from '../types';
+import { labelKeys } from '@/features/queue/labels/api/labelKeys';
+import type { ContactLabelsResponse } from '@/features/queue/labels/types';
 
 export const useGetLabels = () => {
   return useQuery({

@@ -6,13 +6,13 @@ import { FormField } from '@/shared/ui/FormField';
 import { Input } from '@/shared/ui/Input';
 import { SelectField } from '@/shared/ui/SelectField';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import { useGetProductDiscounts } from '../api/useGetProductDiscounts';
-import { useCreateDiscount } from '../api/useCreateDiscount';
-import { useDeleteDiscount } from '../api/useDeleteDiscount';
+import { useGetProductDiscounts } from '@/features/catalog/products/api/useGetProductDiscounts';
+import { useCreateDiscount } from '@/features/catalog/products/api/useCreateDiscount';
+import { useDeleteDiscount } from '@/features/catalog/products/api/useDeleteDiscount';
 import { useGetContactsSelect } from '@/features/contacts/api/useGetContactsSelect';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
-import type { Product, ProductDiscount } from '../types';
+import type { Product, ProductDiscount } from '@/features/catalog/products/types';
 
 interface DiscountsModalProps {
   product: Product | null;

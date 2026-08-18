@@ -1,9 +1,9 @@
 import { Button } from '@/shared/ui/Button';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
-import { NodeFormFields } from './NodeFormFields';
-import { NodeArgsModal } from './NodeArgsModal';
-import type { useNodeCrud } from '../hooks/useNodeCrud';
-import type { NodeFunction } from '../types';
+import { NodeFormFields } from '@/features/flows/components/NodeFormFields';
+import { NodeArgsModal } from '@/features/flows/components/NodeArgsModal';
+import type { useNodeCrud } from '@/features/flows/hooks/useNodeCrud';
+import type { NodeFunction } from '@/features/flows/types';
 
 interface NodeCrudModalsProps {
   nodeCrud: ReturnType<typeof useNodeCrud>;

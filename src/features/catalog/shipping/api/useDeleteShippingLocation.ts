@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { shippingKeys } from './shippingKeys';
+import { shippingKeys } from '@/features/catalog/shipping/api/shippingKeys';
 
 export const useDeleteShippingLocation = () => {
   const queryClient = useQueryClient();

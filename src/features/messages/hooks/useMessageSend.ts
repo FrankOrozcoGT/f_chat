@@ -1,9 +1,9 @@
 import { useToast } from '@/shared/hooks/useToast';
 import { usePhoneReconnectStore } from '@/features/phones/store';
-import { useSendMessage } from '../api/useSendMessage';
-import { useSendMessageWithFile } from '../api/useSendMessageWithFile';
-import type { SendErrorType } from '../api/optimisticSend';
-import type { BackendMessageType } from '../types';
+import { useSendMessage } from '@/features/messages/api/useSendMessage';
+import { useSendMessageWithFile } from '@/features/messages/api/useSendMessageWithFile';
+import type { SendErrorType } from '@/features/messages/api/optimisticSend';
+import type { BackendMessageType } from '@/features/messages/types';
 
 const MAX_MESSAGE_LENGTH = 4096;
 const MAX_FILE_SIZE_BYTES = 16 * 1024 * 1024;
