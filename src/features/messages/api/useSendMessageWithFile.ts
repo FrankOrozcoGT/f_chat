@@ -6,8 +6,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { messageKeys } from './messageKeys';
 import { conversationKeys } from '@/features/conversations';
-import { MessageDirection, MessageSenderType, MessageStatus } from '../types';
-import type { Message, BackendMessageType } from '../types';
+import { MessageDirection, MessageSenderType, MessageStatus, mapBackendMessageType, mapBackendDirection, mapBackendStatus } from '../types';
+import type { Message, BackendMessageType, BackendMessageDirection, BackendSenderType, BackendMessageStatus } from '../types';
 import { generateTempId, snapshotMessages, rollbackMessages, classifySendError, type SendErrorType } from './optimisticSend';
 
 interface SendMessageWithFilePayload {
@@ -20,15 +20,15 @@ interface SendMessageWithFilePayload {
 interface SendMessageWithFileResponse {
   id: string;
   conversationId: string;
-  type: string;
+  type: BackendMessageType;
   content: string;
   mediaUrl: string;
   fileName: string;
   fileSize: number;
   mimeType: string;
-  direction: string;
-  senderType: string;
-  status: string;
+  direction: BackendMessageDirection;
+  senderType: BackendSenderType;
+  status: BackendMessageStatus;
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -146,10 +146,10 @@ export const useSendMessageWithFile = (
                 fileName: data.fileName,
                 fileSize: data.fileSize,
                 mimeType: data.mimeType,
-                type: (data.type === 'audio' ? 'voice' : data.type) as Message['type'],
-                direction: data.direction as Message['direction'],
-                senderType: data.senderType as Message['senderType'],
-                status: data.status as Message['status'],
+                type: mapBackendMessageType(data.type),
+                direction: mapBackendDirection(data.direction),
+                senderType: data.senderType,
+                status: mapBackendStatus(data.status),
                 timestamp: data.createdAt,
               };
             }

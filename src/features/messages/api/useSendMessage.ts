@@ -7,7 +7,7 @@ import { apiClient } from '@/lib/api';
 import { messageKeys } from './messageKeys';
 import { conversationKeys } from '@/features/conversations';
 import { MessageDirection, MessageSenderType, MessageStatus } from '../types';
-import type { Message, BackendMessageType } from '../types';
+import type { Message, BackendMessageType, MessageType } from '../types';
 import { generateTempId, snapshotMessages, rollbackMessages, classifySendError, type SendErrorType } from './optimisticSend';
 
 interface SendMessagePayload {
@@ -22,12 +22,12 @@ interface SendMessageResponse {
   message: {
     id: string;
     conversationId: string;
-    type: string;
+    type: MessageType;
     content: string;
     mediaUrl: string | null;
-    direction: string;
-    senderType: string;
-    status: string;
+    direction: MessageDirection;
+    senderType: MessageSenderType;
+    status: MessageStatus;
     createdAt: string;
     updatedAt: string;
   };
