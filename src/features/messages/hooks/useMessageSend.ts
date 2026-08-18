@@ -1,5 +1,5 @@
 import { useToast } from '@/shared/hooks/useToast';
-import { usePhoneReconnectStore } from '@/features/phones';
+import { usePhoneReconnectStore } from '@/features/phones/store';
 import { useSendMessage } from '../api/useSendMessage';
 import { useSendMessageWithFile } from '../api/useSendMessageWithFile';
 import type { SendErrorType } from '../api/optimisticSend';

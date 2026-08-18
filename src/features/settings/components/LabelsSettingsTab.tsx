@@ -9,10 +9,13 @@ import { Input } from '@/shared/ui/Input';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
-import { useGetLabels, useCreateLabel, useUpdateLabel, useDeleteLabel } from '@/features/queue/labels';
-import { useGetContactsSelect } from '@/features/contacts';
-import { useGetGroupsSelect } from '@/features/conversations';
-import type { ContactLabel, CreateContactLabelDto, UpdateContactLabelDto } from '@/features/queue/labels';
+import { useGetLabels } from '@/features/queue/labels/api/useGetLabels';
+import { useCreateLabel } from '@/features/queue/labels/api/useCreateLabel';
+import { useUpdateLabel } from '@/features/queue/labels/api/useUpdateLabel';
+import { useDeleteLabel } from '@/features/queue/labels/api/useDeleteLabel';
+import { useGetContactsSelect } from '@/features/contacts/api/useGetContactsSelect';
+import { useGetGroupsSelect } from '@/features/conversations/api/useGetGroupsSelect';
+import type { ContactLabel, CreateContactLabelDto, UpdateContactLabelDto } from '@/features/queue/labels/types';
 
 const emptyLabelForm = { label: '', clientId: '', groupJid: '' };
 

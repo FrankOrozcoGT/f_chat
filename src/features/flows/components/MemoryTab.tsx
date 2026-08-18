@@ -2,7 +2,9 @@ import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Loader2, Search, Eye, PenLine } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/shared/ui/Button';
-import { useGetTenantMemory, useSetTenantMemory, useDeleteTenantMemory } from '@/features/tenants';
+import { useGetTenantMemory } from '@/features/tenants/api/useGetTenantMemory';
+import { useSetTenantMemory } from '@/features/tenants/api/useSetTenantMemory';
+import { useDeleteTenantMemory } from '@/features/tenants/api/useDeleteTenantMemory';
 
 interface MdFieldProps {
   value: string;

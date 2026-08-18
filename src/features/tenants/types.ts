@@ -1,4 +1,4 @@
-import type { TenantRole } from '@/features/auth';
+import type { TenantRole } from '@/features/auth/types';
 
 export interface TenantMember {
   id: string;

@@ -5,7 +5,7 @@ import { useGetPromotions } from '../api/useGetPromotions';
 import { useCreatePromotion } from '../api/useCreatePromotion';
 import { useUpdatePromotion } from '../api/useUpdatePromotion';
 import { useDeletePromotion } from '../api/useDeletePromotion';
-import { useGetProducts } from '@/features/catalog/products';
+import { useGetProducts } from '@/features/catalog/products/api/useGetProducts';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
 import { useCrudModalState } from '@/shared/hooks/useCrudModalState';

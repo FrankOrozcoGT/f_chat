@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { tenantKeys } from './tenantKeys';
-import type { TenantRole } from '@/features/auth';
+import type { TenantRole } from '@/features/auth/types';
 
 interface InvitePayload {
   email: string;

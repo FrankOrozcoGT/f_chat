@@ -5,7 +5,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { messageKeys } from './messageKeys';
-import { conversationKeys } from '@/features/conversations';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
 import { MessageDirection, MessageSenderType, MessageStatus, mapBackendMessageType, mapBackendDirection, mapBackendStatus } from '../types';
 import type { Message, BackendMessageType, BackendMessageDirection, BackendSenderType, BackendMessageStatus } from '../types';
 import { generateTempId, snapshotMessages, rollbackMessages, classifySendError, type SendErrorType } from './optimisticSend';

@@ -5,7 +5,7 @@
 import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, AlertTriangle, Search, Loader2, ChevronDown } from 'lucide-react';
-import { useConversationsStore } from '@/features/conversations';
+import { useConversationsStore } from '@/features/conversations/store';
 import { useGetMessages } from '../api/useGetMessages';
 import { useGetConversationDetail } from '../api/useGetConversationDetail';
 import { messageKeys } from '../api/messageKeys';
@@ -24,7 +24,8 @@ import { getErrorMessage } from '@/shared/lib/errors';
 import { useMessagesRealtimeSync } from '../hooks/useMessagesRealtimeSync';
 import { useAutoScroll } from '../hooks/useAutoScroll';
 import type { Message } from '../types';
-import { usePhoneReconnectStore, PhoneDisconnectedModal } from '@/features/phones';
+import { usePhoneReconnectStore } from '@/features/phones/store';
+import { PhoneDisconnectedModal } from '@/features/phones/components/PhoneDisconnectedModal';
 
 interface MessagesPanelProps {
   conversationId: string;

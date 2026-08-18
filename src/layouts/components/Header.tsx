@@ -2,7 +2,7 @@ import { Menu } from 'lucide-react';
 import { UserMenu } from '@/layouts/components/UserMenu';
 import { ThemeToggle } from '@/layouts/components/ThemeToggle';
 import { useSidebarStore } from '@/stores/useSidebarStore';
-import { useGetMe } from '@/features/auth';
+import { useGetMe } from '@/features/auth/api/useGetMe';
 
 export const Header = () => {
   const toggleMobile = useSidebarStore((state) => state.toggleMobile);

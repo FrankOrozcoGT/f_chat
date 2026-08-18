@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Layers, Merge, GitBranch, Loader2 } from 'lucide-react';
-import { useGetFlows } from '@/features/flows';
+import { useGetFlows } from '@/features/flows/api/useGetFlows';
 import { useMergeIntents } from '../api/useMergeIntents';
 import { useGenerateFlows } from '../api/useGenerateFlows';
 import { IntentReviewSection } from './IntentReviewSection';

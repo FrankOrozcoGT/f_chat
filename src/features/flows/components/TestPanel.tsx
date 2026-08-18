@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Search, Play, Pause, SkipBack, Square, RotateCcw, MessageSquare, Phone, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
-import { useGetMessages } from '@/features/messages';
+import { useGetMessages } from '@/features/messages/api/useGetMessages';
 import { TestChat } from './TestChat';
 import { useContactSearch } from '../hooks/useContactSearch';
 import { useTestSession } from '../hooks/useTestSession';

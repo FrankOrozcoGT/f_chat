@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Building2, Check, X, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useGetPendingInvitations, useAcceptInvitation, useRejectInvitation, tenantKeys } from '../api';
-import { useSwitchTenant } from '@/features/auth';
+import { useGetPendingInvitations } from '../api/useGetPendingInvitations';
+import { useAcceptInvitation } from '../api/useAcceptInvitation';
+import { useRejectInvitation } from '../api/useRejectInvitation';
+import { tenantKeys } from '../api/tenantKeys';
+import { useSwitchTenant } from '@/features/auth/api/useSwitchTenant';
 import { useToast } from '@/shared/hooks/useToast';
 
 const roleLabel: Record<string, string> = {

@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useGetMe } from '@/features/auth';
+import { useGetMe } from '@/features/auth/api/useGetMe';
 import { ComingSoonPage } from '@/features/dashboard/components/ComingSoonPage';
 import { ForbiddenPage } from '@/features/dashboard/components/ForbiddenPage';
 

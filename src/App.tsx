@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { LoginPage } from '@/features/auth';
+import { LoginPage } from '@/features/auth/components/LoginPage';
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage';
 import { UsersPage } from '@/features/users/components/UsersPage';
 import { CostsPage } from '@/features/costs/components/CostsPage';
@@ -12,8 +12,10 @@ import { FlowsPage } from '@/features/flows/components/FlowsPage';
 import { AiSetupPage } from '@/features/ai-setup/components/AiSetupPage';
 import { FlowReviewPage } from '@/features/ai-setup/components/FlowReviewPage';
 import { SettingsPage } from '@/features/settings/components/SettingsPage';
-import { TenantPage, OrganizationsPage, AcceptInvitationPage } from '@/features/tenants';
-import { ProductsPage } from '@/features/catalog/products';
+import { TenantPage } from '@/features/tenants/components/TenantPage';
+import { OrganizationsPage } from '@/features/tenants/components/OrganizationsPage';
+import { AcceptInvitationPage } from '@/features/tenants/components/AcceptInvitationPage';
+import { ProductsPage } from '@/features/catalog/products/components/ProductsPage';
 import { PromotionsPage } from '@/features/catalog/promotions/components/PromotionsPage';
 import { ShippingPage } from '@/features/catalog/shipping/components/ShippingPage';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
@@ -21,11 +23,13 @@ import { ToastContainer } from '@/shared/ui/Toast';
 import { useToast } from '@/shared/hooks/useToast';
 import { socket, useSocketEvent } from '@/lib/websocket';
 import type { ConversationHitlPayload, ApiDownPayload, ApiUpPayload, PhoneQRUpdatedPayload, PhoneStatusChangedPayload } from '@/lib/websocket';
-import { MessageDirection, messageKeys } from '@/features/messages';
-import type { MessageIncomingPayload } from '@/features/messages';
-import { useGetMe } from '@/features/auth';
-import { conversationKeys, useConversationsStore } from '@/features/conversations';
-import { usePhoneReconnectStore } from '@/features/phones';
+import { MessageDirection } from '@/features/messages/types';
+import { messageKeys } from '@/features/messages/api/messageKeys';
+import type { MessageIncomingPayload } from '@/features/messages/types';
+import { useGetMe } from '@/features/auth/api/useGetMe';
+import { conversationKeys } from '@/features/conversations/api/conversationKeys';
+import { useConversationsStore } from '@/features/conversations/store';
+import { usePhoneReconnectStore } from '@/features/phones/store';
 
 /** Listeners globales que requieren estar dentro de BrowserRouter (useNavigate) */
 const GlobalListeners = () => {

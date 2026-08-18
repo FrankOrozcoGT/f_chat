@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { useToast } from '@/shared/hooks/useToast';
-import { useRenameTenant } from '../api';
+import { useRenameTenant } from '../api/useRenameTenant';
 
 interface RenameTenantSectionProps {
   tenantId: string;

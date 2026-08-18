@@ -9,7 +9,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useGetProductDiscounts } from '../api/useGetProductDiscounts';
 import { useCreateDiscount } from '../api/useCreateDiscount';
 import { useDeleteDiscount } from '../api/useDeleteDiscount';
-import { useGetContactsSelect } from '@/features/contacts';
+import { useGetContactsSelect } from '@/features/contacts/api/useGetContactsSelect';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
 import type { Product, ProductDiscount } from '../types';

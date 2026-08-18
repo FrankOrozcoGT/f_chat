@@ -6,7 +6,7 @@ import { MainLayout } from '@/layouts/MainLayout';
 import { StatCard } from '@/shared/ui/StatCard';
 import { DateRangePicker } from '@/shared/ui/DateRangePicker';
 import type { DateRange } from '@/shared/ui/DateRangePicker';
-import { useGetMe } from '@/features/auth';
+import { useGetMe } from '@/features/auth/api/useGetMe';
 import { useGetDashboard } from '../api/useGetDashboard';
 
 export const DashboardPage = () => {
