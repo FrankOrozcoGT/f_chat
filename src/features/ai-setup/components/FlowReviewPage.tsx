@@ -9,6 +9,7 @@ import { useDeleteFlow } from '@/features/flows/api/useDeleteFlow';
 import { useGetFlowAnalyses } from '../api/useGetFlowAnalyses';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
 import { TestPanel } from '@/features/flows/components/TestPanel';
+import { formatDate } from '@/shared/lib/date';
 
 type Tab = 'version' | 'conversations' | 'test';
 
@@ -270,7 +271,7 @@ export const FlowReviewPage = () => {
               <div key={a.analysisId} className="bg-bg-secondary border border-border-primary rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-accent-blue/10 text-accent-blue">{a.intent}</span>
-                  <span className="text-xs text-text-tertiary">{new Date(a.analyzedAt).toLocaleDateString('es')}</span>
+                  <span className="text-xs text-text-tertiary">{formatDate(a.analyzedAt)}</span>
                 </div>
                 <p className="text-sm text-text-secondary mb-3">{a.flowSummary}</p>
                 <details className="group">

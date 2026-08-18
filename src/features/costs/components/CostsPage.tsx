@@ -5,6 +5,7 @@ import { Card, CardBody } from '@/shared/ui/Card';
 import { Select, type SelectOption } from '@/shared/ui/Select';
 import { useGetCosts } from '../api/useGetCosts';
 import { Period, type Period as PeriodType } from '../types';
+import { formatDate } from '@/shared/lib/date';
 
 export const CostsPage = () => {
   const [period, setPeriod] = useState<PeriodType>(Period.MONTH);
@@ -181,7 +182,7 @@ export const CostsPage = () => {
                     className="flex items-center justify-between p-3 bg-bg-primary rounded-md border border-border-primary"
                   >
                     <p className="text-sm font-medium text-text-primary">
-                      {new Date(day.date).toLocaleDateString('es-ES', {
+                      {formatDate(day.date, {
                         weekday: 'short',
                         year: 'numeric',
                         month: 'short',

@@ -10,6 +10,7 @@ import { useGetMessages } from '@/features/messages/api/useGetMessages';
 import { TestChat } from './TestChat';
 import { TestIntent, SideEffectAction } from '../types';
 import type { TestMessage, ConversationTestMessage, Contact, ContactConversation } from '../types';
+import { formatDate } from '@/shared/lib/date';
 
 const TERMINAL_INTENTS = new Set<TestIntent>([
   TestIntent.CloseSession,
@@ -344,7 +345,7 @@ export const TestPanel = ({ flowId, onClose, onNodeHighlight }: TestPanelProps) 
                         {conv.summary || conv.lastMessage || 'Sin mensajes'}
                       </div>
                       <div className="text-xs text-text-tertiary mt-0.5">
-                        {new Date(conv.updatedAt).toLocaleDateString()}
+                        {formatDate(conv.updatedAt)}
                       </div>
                     </button>
                   ))}

@@ -4,6 +4,7 @@ import { Card, CardBody } from '@/shared/ui/Card';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useDeletePhone } from '@/features/phones/api/useDeletePhone';
 import { useToast } from '@/shared/hooks/useToast';
+import { formatDateTime } from '@/shared/lib/date';
 import { socket } from '@/lib/websocket';
 import type { Phone, PhoneStatus } from '@/features/phones/types';
 import type { PhoneStatusChangedPayload } from '@/lib/websocket';
@@ -88,13 +89,7 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateTime(dateString);
   };
 
   return (

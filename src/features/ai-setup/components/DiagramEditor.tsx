@@ -6,6 +6,7 @@ import type { FlowAnalysis } from '../api/useGetFlowAnalyses';
 import { parseMermaidFlowchart, type ParsedNode, type ParsedEdge } from '../utils/parseMermaid';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
 import { ConversationDrawer } from './ConversationDrawer';
+import { formatDate } from '@/shared/lib/date';
 
 // --- CopyId ---
 const CopyId = ({ value }: { value: string }) => {
@@ -677,7 +678,7 @@ export const DiagramEditor = ({
                         <ChevronRight size={10} className={`inline mr-1 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
                         {a.intent}
                         <span className="text-text-tertiary ml-1 text-[10px]">
-                          {new Date(a.analyzedAt).toLocaleDateString()}
+                          {formatDate(a.analyzedAt)}
                         </span>
                       </button>
                       <button

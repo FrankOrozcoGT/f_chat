@@ -7,6 +7,7 @@ import { Table, type TableColumn } from '@/shared/ui/Table';
 import { PlanSelector } from './PlanSelector';
 import { LimitsCell } from './LimitsCell';
 import type { AdminTenant } from '../types';
+import { formatDate as formatDateBase } from '@/shared/lib/date';
 
 export const UsersPage = () => {
   const { data: tenants, isLoading, isError, error } = useGetAdminTenants();
@@ -14,11 +15,7 @@ export const UsersPage = () => {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    return formatDateBase(dateString, { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const columns: TableColumn<AdminTenant>[] = [
