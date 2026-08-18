@@ -1,12 +1,13 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import mermaid from 'mermaid';
 import { Plus, Trash2, Save, X, Undo2, Pencil, ArrowRight, Diamond, Square, Circle, Eye, MessageSquare, ChevronRight, Copy, Check, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import type { NodeMappingEntry, InternalQueue } from '../api/useGetFlowDiagram';
 import type { FlowAnalysis } from '../api/useGetFlowAnalyses';
-import { parseMermaidFlowchart, type ParsedNode, type ParsedEdge } from '../utils/parseMermaid';
 import { MermaidDiagram } from '@/shared/components/MermaidDiagram';
 import { ConversationDrawer } from './ConversationDrawer';
 import { formatDate } from '@/shared/lib/date';
+import { usePanZoom } from '../hooks/usePanZoom';
+import { useMermaidChartEditor, type NodeShape } from '../hooks/useMermaidChartEditor';
 
 // --- CopyId ---
 const CopyId = ({ value }: { value: string }) => {
@@ -29,7 +30,6 @@ const CopyId = ({ value }: { value: string }) => {
 };
 
 // --- Types ---
-type NodeShape = '[]' | '{}' | '()';
 type SelectionMode = 'none' | 'select-origin' | 'select-destination';
 
 interface Selection {
@@ -41,38 +41,6 @@ interface ContextMenu {
   x: number;
   y: number;
   selection: Selection;
-}
-
-// --- Helpers ---
-function rebuildMermaid(nodes: ParsedNode[], edges: ParsedEdge[]): string {
-  const lines: string[] = ['flowchart TD'];
-  const shapeMap: Record<string, string> = {};
-
-  for (const node of nodes) {
-    const shape = (node as ParsedNode & { shape?: NodeShape }).shape ?? '[]';
-    const [open, close] = shape === '{}' ? ['{', '}'] : shape === '()' ? ['(', ')'] : ['[', ']'];
-    shapeMap[node.id] = shape;
-    lines.push(`    ${node.id}${open}${node.label}${close}`);
-  }
-
-  for (const edge of edges) {
-    if (edge.label) {
-      lines.push(`    ${edge.source} -->|${edge.label}| ${edge.target}`);
-    } else {
-      lines.push(`    ${edge.source} --> ${edge.target}`);
-    }
-  }
-
-  return lines.join('\n');
-}
-
-function nextNodeId(nodes: ParsedNode[]): string {
-  let max = 0;
-  for (const n of nodes) {
-    const m = n.id.match(/^C(\d+)$/);
-    if (m) max = Math.max(max, parseInt(m[1]));
-  }
-  return `C${max + 1}`;
 }
 
 // --- Props ---
@@ -101,7 +69,6 @@ export const DiagramEditor = ({
   isSaving,
 }: DiagramEditorProps) => {
   // State
-  const [chart, setChart] = useState(mermaidChart);
   const [svg, setSvg] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [showRawEditor, setShowRawEditor] = useState(false);
@@ -110,69 +77,48 @@ export const DiagramEditor = ({
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [selectMode, setSelectMode] = useState<SelectionMode>('none');
   const [mode, setMode] = useState<'move' | 'edit'>('move');
-  const modeRef = useRef(mode);
-  modeRef.current = mode;
   const [showSidebar, setShowSidebar] = useState(false);
   const [localSelectedConv, setLocalSelectedConv] = useState<string | null>(externalSelectedConv ?? null);
   const [viewingConversationId, setViewingConversationId] = useState<string | null>(null);
   const selectedConversationId = localSelectedConv;
   const [selectModeEdge, setSelectModeEdge] = useState<{ source: string; target: string; field: 'source' | 'target' } | null>(null);
   const [editingLabel, setEditingLabel] = useState<{ id: string; type: 'node' | 'edge'; value: string } | null>(null);
-  const [pan, setPan] = useState({ x: 0, y: 0, scale: 1, dragging: false, startX: 0, startY: 0 });
 
-  const historyRef = useRef<string[]>([]);
   const svgContainerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLDivElement>(null);
   const renderIdRef = useRef(0);
 
-  // Pan/zoom handlers
-  const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
-    setPan((prev) => {
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      return { ...prev, scale: Math.min(Math.max(prev.scale * delta, 0.2), 5) };
-    });
-  }, []);
+  const {
+    chart,
+    parsed,
+    setChart,
+    undo: undoChart,
+    editNodeLabel,
+    editEdgeLabel,
+    changeNodeShape,
+    addNodeAfter,
+    deleteNode,
+    deleteEdge,
+    insertNodeInEdge,
+    changeEdgeEndpoint,
+  } = useMermaidChartEditor(mermaidChart);
 
-  useEffect(() => {
-    const el = canvasRef.current;
-    if (!el) return;
-    el.addEventListener('wheel', handleWheel, { passive: false });
-    return () => el.removeEventListener('wheel', handleWheel);
-  }, [handleWheel]);
+  const {
+    pan,
+    containerRef: canvasRef,
+    onMouseDown: onPanMouseDown,
+    onMouseMove: onPanMouseMove,
+    onMouseUp: onPanMouseUp,
+    zoomIn,
+    zoomOut,
+    reset: resetPan,
+  } = usePanZoom(mode === 'move');
 
-  const onPanMouseDown = (e: React.MouseEvent) => {
-    if (mode !== 'move') return;
-    setPan((prev) => ({ ...prev, dragging: true, startX: e.clientX - prev.x, startY: e.clientY - prev.y }));
-  };
-
-  const onPanMouseMove = (e: React.MouseEvent) => {
-    if (mode !== 'move' || !pan.dragging) return;
-    setPan((prev) => ({ ...prev, x: e.clientX - prev.startX, y: e.clientY - prev.startY }));
-  };
-
-  const onPanMouseUp = () => {
-    if (mode !== 'move') return;
-    setPan((prev) => ({ ...prev, dragging: false }));
-  };
-
-  // Parse current chart
-  const parsed = useMemo(() => parseMermaidFlowchart(chart), [chart]);
-
-  // Push to undo history before changes
-  const pushHistory = useCallback(() => {
-    historyRef.current.push(chart);
-    if (historyRef.current.length > 50) historyRef.current.shift();
-  }, [chart]);
-
-  const undo = useCallback(() => {
-    const prev = historyRef.current.pop();
-    if (prev) {
-      setChart(prev);
+  const undo = () => {
+    if (undoChart()) {
       setSelection(null);
       setContextMenu(null);
     }
-  }, []);
+  };
 
   // Apply coverage styles + conversation count in labels
   const styledChart = useMemo(() => {
@@ -314,59 +260,29 @@ export const DiagramEditor = ({
 
   const handleSaveLabel = () => {
     if (!editingLabel) return;
-    pushHistory();
     if (editingLabel.type === 'node') {
-      const newNodes = parsed.nodes.map((n) =>
-        n.id === editingLabel.id ? { ...n, label: editingLabel.value } : n
-      );
-      setChart(rebuildMermaid(newNodes, parsed.edges));
+      editNodeLabel(editingLabel.id, editingLabel.value);
     } else {
       const [src, tgt] = editingLabel.id.split('->');
-      const newEdges = parsed.edges.map((e) =>
-        e.source === src && e.target === tgt ? { ...e, label: editingLabel.value || undefined } : e
-      );
-      setChart(rebuildMermaid(parsed.nodes, newEdges));
+      editEdgeLabel(src, tgt, editingLabel.value);
     }
     setEditingLabel(null);
   };
 
   const handleChangeShape = (nodeId: string, shape: NodeShape) => {
-    pushHistory();
-    const newNodes = parsed.nodes.map((n) =>
-      n.id === nodeId ? { ...n, shape } as ParsedNode & { shape: NodeShape } : n
-    );
-    setChart(rebuildMermaid(newNodes, parsed.edges));
+    changeNodeShape(nodeId, shape);
     setContextMenu(null);
   };
 
   const handleAddNodeAfter = (nodeId: string) => {
-    pushHistory();
-    const newId = nextNodeId(parsed.nodes);
-    const newNodes = [...parsed.nodes, { id: newId, label: 'Nuevo paso' }];
-    const newEdges = [...parsed.edges, { source: nodeId, target: newId }];
-    setChart(rebuildMermaid(newNodes, newEdges));
+    const newId = addNodeAfter(nodeId);
     setContextMenu(null);
     // Immediately edit the new node's label
     setTimeout(() => setEditingLabel({ id: newId, type: 'node', value: 'Nuevo paso' }), 100);
   };
 
   const handleDeleteNode = (nodeId: string) => {
-    pushHistory();
-    // Find incoming and outgoing edges
-    const incoming = parsed.edges.filter((e) => e.target === nodeId);
-    const outgoing = parsed.edges.filter((e) => e.source === nodeId);
-    // Remove the node's edges
-    let newEdges = parsed.edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
-    // Reconnect: each incoming source connects to each outgoing target
-    for (const inc of incoming) {
-      for (const out of outgoing) {
-        if (!newEdges.find((e) => e.source === inc.source && e.target === out.target)) {
-          newEdges.push({ source: inc.source, target: out.target });
-        }
-      }
-    }
-    const newNodes = parsed.nodes.filter((n) => n.id !== nodeId);
-    setChart(rebuildMermaid(newNodes, newEdges));
+    deleteNode(nodeId);
     setSelection(null);
     setContextMenu(null);
   };
@@ -378,32 +294,13 @@ export const DiagramEditor = ({
   };
 
   const handleDeleteEdge = (source: string, target: string) => {
-    pushHistory();
-    const newEdges = parsed.edges.filter((e) => !(e.source === source && e.target === target));
-    // Check if any nodes become disconnected
-    const connectedIds = new Set<string>();
-    newEdges.forEach((e) => { connectedIds.add(e.source); connectedIds.add(e.target); });
-    // Keep only connected nodes (+ nodes that are the only node)
-    const newNodes = parsed.nodes.length <= 1
-      ? parsed.nodes
-      : parsed.nodes.filter((n) => connectedIds.has(n.id));
-    setChart(rebuildMermaid(newNodes, newEdges));
+    deleteEdge(source, target);
     setSelection(null);
     setContextMenu(null);
   };
 
   const handleInsertNodeInEdge = (source: string, target: string) => {
-    pushHistory();
-    const newId = nextNodeId(parsed.nodes);
-    const newNodes = [...parsed.nodes, { id: newId, label: 'Nuevo paso' }];
-    const newEdges = parsed.edges.map((e) => {
-      if (e.source === source && e.target === target) {
-        return { ...e, target: newId }; // original edge now points to new node
-      }
-      return e;
-    });
-    newEdges.push({ source: newId, target }); // new node connects to original target
-    setChart(rebuildMermaid(newNodes, newEdges));
+    const newId = insertNodeInEdge(source, target);
     setContextMenu(null);
     setTimeout(() => setEditingLabel({ id: newId, type: 'node', value: 'Nuevo paso' }), 100);
   };
@@ -515,16 +412,7 @@ export const DiagramEditor = ({
               if (id) {
                 // Handle select mode for edge origin/destination
                 if (selectMode !== 'none' && selectModeEdge) {
-                  pushHistory();
-                  const newEdges = parsed.edges.map((edge) => {
-                    if (edge.source === selectModeEdge.source && edge.target === selectModeEdge.target) {
-                      return selectModeEdge.field === 'source'
-                        ? { ...edge, source: id }
-                        : { ...edge, target: id };
-                    }
-                    return edge;
-                  });
-                  setChart(rebuildMermaid(parsed.nodes, newEdges));
+                  changeEdgeEndpoint(selectModeEdge.source, selectModeEdge.target, selectModeEdge.field, id);
                   setSelectMode('none');
                   setSelectModeEdge(null);
                   setContextMenu(null);
@@ -607,7 +495,6 @@ export const DiagramEditor = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      pushHistory();
                       setChart(rawValue);
                       setShowRawEditor(false);
                       setRenderError(null);
@@ -634,21 +521,21 @@ export const DiagramEditor = ({
           {/* Zoom controls */}
           <div className="absolute bottom-3 right-3 flex items-center gap-1 z-10">
             <button
-              onClick={() => setPan((p) => ({ ...p, scale: Math.min(p.scale * 1.2, 5) }))}
+              onClick={zoomIn}
               className="p-1.5 rounded bg-bg-secondary/80 border border-border-primary text-text-secondary hover:text-text-primary transition-colors"
               title="Zoom in"
             >
               <ZoomIn size={13} />
             </button>
             <button
-              onClick={() => setPan((p) => ({ ...p, scale: Math.max(p.scale * 0.8, 0.2) }))}
+              onClick={zoomOut}
               className="p-1.5 rounded bg-bg-secondary/80 border border-border-primary text-text-secondary hover:text-text-primary transition-colors"
               title="Zoom out"
             >
               <ZoomOut size={13} />
             </button>
             <button
-              onClick={() => setPan({ x: 0, y: 0, scale: 1, dragging: false, startX: 0, startY: 0 })}
+              onClick={resetPan}
               className="p-1.5 rounded bg-bg-secondary/80 border border-border-primary text-text-secondary hover:text-text-primary transition-colors"
               title="Reset"
             >
