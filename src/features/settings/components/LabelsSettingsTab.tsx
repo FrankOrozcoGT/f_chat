@@ -9,6 +9,7 @@ import { Input } from '@/shared/ui/Input';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
+import { useCrudModalState } from '@/shared/hooks/useCrudModalState';
 import { useGetLabels } from '@/features/queue/labels/api/useGetLabels';
 import { useCreateLabel } from '@/features/queue/labels/api/useCreateLabel';
 import { useUpdateLabel } from '@/features/queue/labels/api/useUpdateLabel';
@@ -27,29 +28,31 @@ export const LabelsSettingsTab = () => {
   const deleteLabel = useDeleteLabel();
   const { data: contactsSelect = [] } = useGetContactsSelect();
   const { data: groupsSelect = [] } = useGetGroupsSelect();
-  const [labelModalOpen, setLabelModalOpen] = useState(false);
-  const [editingLabel, setEditingLabel] = useState<ContactLabel | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ContactLabel | null>(null);
-  const [labelForm, setLabelForm] = useState(emptyLabelForm);
+  const {
+    modalOpen: labelModalOpen,
+    editing: editingLabel,
+    deleteTarget,
+    setDeleteTarget,
+    form: labelForm,
+    setForm: setLabelForm,
+    openCreate: openCreateLabelBase,
+    openEdit: openEditLabelBase,
+    closeModal: closeLabelModal,
+  } = useCrudModalState<ContactLabel, typeof emptyLabelForm>(emptyLabelForm, (lbl) => ({
+    label: lbl.label,
+    clientId: lbl.clientId ?? '',
+    groupJid: lbl.groupJid ?? '',
+  }));
   const [labelErrors, setLabelErrors] = useState<Partial<typeof emptyLabelForm>>({});
 
   const openCreateLabel = () => {
-    setEditingLabel(null);
-    setLabelForm(emptyLabelForm);
     setLabelErrors({});
-    setLabelModalOpen(true);
+    openCreateLabelBase();
   };
 
   const openEditLabel = (lbl: ContactLabel) => {
-    setEditingLabel(lbl);
-    setLabelForm({ label: lbl.label, clientId: lbl.clientId ?? '', groupJid: lbl.groupJid ?? '' });
     setLabelErrors({});
-    setLabelModalOpen(true);
-  };
-
-  const closeLabelModal = () => {
-    setLabelModalOpen(false);
-    setEditingLabel(null);
+    openEditLabelBase(lbl);
   };
 
   const validateLabel = () => {

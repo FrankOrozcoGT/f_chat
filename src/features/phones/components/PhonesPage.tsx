@@ -10,6 +10,7 @@ import { CreatePhoneModal } from '@/features/phones/components/CreatePhoneModal'
 import { PhoneSyncModal } from '@/features/phones/components/PhoneSyncModal';
 import { useSocketEvent } from '@/lib/websocket';
 import type { PhoneSyncingPayload, PhoneSyncProgressPayload, PhoneSyncCompletePayload } from '@/lib/websocket';
+import { getErrorMessage } from '@/shared/lib/errors';
 
 export const PhonesPage = () => {
   const { data: phones, isLoading, isError, error } = useGetPhones();
@@ -63,9 +64,7 @@ export const PhonesPage = () => {
               Error al cargar instancias
             </h2>
             <p className="text-text-secondary max-w-md">
-              {error instanceof Error
-                ? error.message
-                : 'No se pudieron cargar las instancias de WhatsApp. Por favor, intenta de nuevo.'}
+              {getErrorMessage(error, 'No se pudieron cargar las instancias de WhatsApp. Por favor, intenta de nuevo.')}
             </p>
           </div>
         </div>

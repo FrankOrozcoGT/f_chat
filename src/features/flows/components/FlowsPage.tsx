@@ -3,6 +3,7 @@ import { MainLayout } from '@/layouts/MainLayout';
 import { useGetFlows } from '@/features/flows/api/useGetFlows';
 import { useGetActiveSessions } from '@/features/flows/api/useGetActiveSessions';
 import { UnifiedFlowCanvas } from '@/features/flows/components/UnifiedFlowCanvas';
+import { getErrorMessage } from '@/shared/lib/errors';
 
 export const FlowsPage = () => {
   const { data: flows, isLoading, isError, error } = useGetFlows();
@@ -29,7 +30,7 @@ export const FlowsPage = () => {
             <AlertCircle size={48} className="text-accent-red" />
             <h2 className="text-xl font-semibold text-text-primary">Error al cargar flujos</h2>
             <p className="text-text-secondary max-w-md">
-              {error instanceof Error ? error.message : 'No se pudieron cargar los flujos. Por favor, intenta de nuevo.'}
+              {getErrorMessage(error, 'No se pudieron cargar los flujos. Por favor, intenta de nuevo.')}
             </p>
           </div>
         </div>

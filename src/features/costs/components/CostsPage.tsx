@@ -6,6 +6,7 @@ import { Select, type SelectOption } from '@/shared/ui/Select';
 import { useGetCosts } from '@/features/costs/api/useGetCosts';
 import { Period, type Period as PeriodType } from '@/features/costs/types';
 import { formatDate } from '@/shared/lib/date';
+import { getErrorMessage } from '@/shared/lib/errors';
 
 export const CostsPage = () => {
   const [period, setPeriod] = useState<PeriodType>(Period.MONTH);
@@ -51,7 +52,7 @@ export const CostsPage = () => {
             <AlertCircle size={48} className="text-accent-red" />
             <h2 className="text-xl font-semibold text-text-primary">Error al cargar costos</h2>
             <p className="text-text-secondary max-w-md">
-              {error instanceof Error ? error.message : 'No se pudieron cargar los costos. Por favor, intenta de nuevo.'}
+              {getErrorMessage(error, 'No se pudieron cargar los costos. Por favor, intenta de nuevo.')}
             </p>
           </div>
         </div>
