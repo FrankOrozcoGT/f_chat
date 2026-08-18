@@ -142,7 +142,7 @@ export const DiscountsModal = ({ product, onClose }: DiscountsModalProps) => {
                   <div className="flex items-center gap-3 shrink-0">
                     <div className="text-right">
                       <p className="text-sm font-semibold text-text-primary">${d.discountPrice.toLocaleString()}</p>
-                      {product && (
+                      {product && product.basePrice > 0 && (
                         <p className="text-xs text-accent-green">
                           -{Math.round(((product.basePrice - d.discountPrice) / product.basePrice) * 100)}%
                         </p>

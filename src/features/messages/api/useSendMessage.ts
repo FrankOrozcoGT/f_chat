@@ -102,9 +102,27 @@ export const useSendMessage = (conversationId: string, options?: UseSendMessageO
       }
     },
 
-    onSuccess: () => {
-      // WebSocket event 'message:sent' will replace temp message with real one
-      // Invalidate conversation list to update stats (unreadCount, lastMessageDirection)
+    // Reemplaza el mensaje optimista aquí mismo: no depender únicamente del
+    // evento WS 'message:sent', que si se pierde deja el mensaje en "pending" para siempre
+    onSuccess: (data, _variables, context) => {
+      queryClient.setQueryData<Message[]>(
+        messageKeys.list(conversationId),
+        (oldMessages = []) =>
+          oldMessages.map((msg) => {
+            if (msg.id !== context?.tempId) return msg;
+            return {
+              ...msg,
+              id: data.message.id,
+              content: data.message.content,
+              mediaUrl: data.message.mediaUrl,
+              type: data.message.type,
+              direction: data.message.direction,
+              senderType: data.message.senderType,
+              status: data.message.status,
+              timestamp: data.message.createdAt,
+            };
+          })
+      );
       queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
     },
   });

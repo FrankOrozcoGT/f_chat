@@ -144,9 +144,9 @@ export function useNodeCrud(functions: NodeFunction[]) {
           name: nodeForm.name.trim(),
           systemPrompt: nodeForm.systemPrompt || undefined,
           tools: nodeForm.tools,
-          preCode: nodeForm.preCode.length ? JSON.stringify(nodeForm.preCode) : undefined,
-          postCode: nodeForm.postCode.length ? JSON.stringify(nodeForm.postCode) : undefined,
-          todos: nodeForm.todos.length ? nodeForm.todos : undefined,
+          preCode: JSON.stringify(nodeForm.preCode),
+          postCode: JSON.stringify(nodeForm.postCode),
+          todos: nodeForm.todos,
           onError: nodeForm.onError as OnErrorStrategy,
         },
       });
@@ -164,9 +164,9 @@ export function useNodeCrud(functions: NodeFunction[]) {
         name: createNodeForm.name.trim(),
         systemPrompt: createNodeForm.systemPrompt || undefined,
         tools: createNodeForm.tools.length ? createNodeForm.tools : undefined,
-        preCode: createNodeForm.preCode.length ? JSON.stringify(createNodeForm.preCode) : undefined,
-        postCode: createNodeForm.postCode.length ? JSON.stringify(createNodeForm.postCode) : undefined,
-        todos: createNodeForm.todos.length ? createNodeForm.todos : undefined,
+        preCode: JSON.stringify(createNodeForm.preCode),
+        postCode: JSON.stringify(createNodeForm.postCode),
+        todos: createNodeForm.todos,
         onError: createNodeForm.onError as OnErrorStrategy,
       });
       showToast('Nodo creado', 'success');
