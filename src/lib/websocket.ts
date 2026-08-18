@@ -136,22 +136,3 @@ export function useSocketEvent<T>(event: string, handler: EventCallback<T>): voi
     };
   }, [event, handler]);
 }
-
-// Helpers para rooms (agent:join_room / agent:leave_room)
-export const joinPhoneRoom = (phoneId: string): void => {
-  if (!socket.connected) {
-    console.error('[WebSocket] Cannot join room, not connected');
-    return;
-  }
-  socket.emit('agent:join_room', { phoneId });
-  console.log(`[WebSocket] Joined room for phone: ${phoneId}`);
-};
-
-export const leavePhoneRoom = (phoneId: string): void => {
-  if (!socket.connected) {
-    console.error('[WebSocket] Cannot leave room, not connected');
-    return;
-  }
-  socket.emit('agent:leave_room', { phoneId });
-  console.log(`[WebSocket] Left room for phone: ${phoneId}`);
-};

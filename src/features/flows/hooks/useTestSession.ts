@@ -5,6 +5,8 @@ import { useTestStepBack } from '../api/useTestStepBack';
 import { useTestStop } from '../api/useTestStop';
 import { TestIntent, SideEffectAction } from '../types';
 import type { TestMessage, ConversationTestMessage } from '../types';
+import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 
 const TERMINAL_INTENTS = new Set<TestIntent>([
   TestIntent.CloseSession,
@@ -21,6 +23,7 @@ type SendResult = 'continue' | 'wait' | 'stop';
  * que el usuario eligió la conversación a testear.
  */
 export function useTestSession(flowId: string | undefined, onNodeHighlight: (nodeId: string | null) => void) {
+  const { showToast } = useToast();
   const [phase, setPhase] = useState<'search' | 'testing'>('search');
   const [testId, setTestId] = useState<string | null>(null);
   const [messages, setMessages] = useState<TestMessage[]>([]);
@@ -147,8 +150,8 @@ export function useTestSession(flowId: string | undefined, onNodeHighlight: (nod
       setMessages([]);
       setCurrentMsgIndex(0);
       setConversationMessages(incomingMessages);
-    } catch {
-      // Error manejado por tanstack query
+    } catch (error) {
+      showToast(getErrorMessage(error, 'No se pudo iniciar el test'), 'error');
     }
   };
 
@@ -159,15 +162,19 @@ export function useTestSession(flowId: string | undefined, onNodeHighlight: (nod
       setMessages((prev) => prev.slice(0, -2));
       setCurrentMsgIndex((prev) => Math.max(0, prev - 1));
       onNodeHighlight(result.currentNodeId);
-    } catch {
-      // Error manejado por tanstack query
+    } catch (error) {
+      showToast(getErrorMessage(error, 'No se pudo retroceder el test'), 'error');
     }
   };
 
   const stop = async () => {
     setIsPlaying(false);
-    if (testId) {
-      await testStop.mutateAsync({ testId });
+    try {
+      if (testId) {
+        await testStop.mutateAsync({ testId });
+      }
+    } catch (error) {
+      showToast(getErrorMessage(error, 'No se pudo detener el test correctamente'), 'error');
     }
     setTestId(null);
     setPhase('search');
@@ -179,20 +186,24 @@ export function useTestSession(flowId: string | undefined, onNodeHighlight: (nod
 
   const restart = async (conversationId: string, testPhone: string, convMessages: { direction: string; content: string; type: string; mediaUrl?: string | null }[] | undefined) => {
     setIsPlaying(false);
-    if (testId) {
-      await testStop.mutateAsync({ testId });
+    try {
+      if (testId) {
+        await testStop.mutateAsync({ testId });
+      }
+      setMessages([]);
+      setCurrentMsgIndex(0);
+      onNodeHighlight(null);
+
+      const incomingMessages = filterIncoming(convMessages);
+      if (incomingMessages.length === 0) return;
+
+      const result = await startTest.mutateAsync({ conversationId, flowId, clientPhone: testPhone.trim() });
+      setTestId(result.testId);
+      setConversationMessages(incomingMessages);
+      setIsPlaying(true);
+    } catch (error) {
+      showToast(getErrorMessage(error, 'No se pudo reiniciar el test'), 'error');
     }
-    setMessages([]);
-    setCurrentMsgIndex(0);
-    onNodeHighlight(null);
-
-    const incomingMessages = filterIncoming(convMessages);
-    if (incomingMessages.length === 0) return;
-
-    const result = await startTest.mutateAsync({ conversationId, flowId, clientPhone: testPhone.trim() });
-    setTestId(result.testId);
-    setConversationMessages(incomingMessages);
-    setIsPlaying(true);
   };
 
   const togglePlay = () => setIsPlaying((prev) => !prev);

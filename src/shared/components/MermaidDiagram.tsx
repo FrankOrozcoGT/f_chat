@@ -176,8 +176,7 @@ export const MermaidDiagram = ({ chart, className }: MermaidDiagramProps) => {
     mermaid
       .render(renderId, chart)
       .then(({ svg: rendered }) => setSvg(rendered))
-      .catch((err) => {
-        console.error('[Mermaid] render error:', err);
+      .catch(() => {
         setError('No se pudo renderizar el diagrama');
       })
       .finally(() => {

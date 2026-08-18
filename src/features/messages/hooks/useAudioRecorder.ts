@@ -84,8 +84,7 @@ export function useAudioRecorder() {
           return prev + 1;
         });
       }, 1000);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
+    } catch {
       showToast('No se pudo acceder al micrófono', 'error');
     }
   };

@@ -22,7 +22,6 @@ export const PhoneCard = ({ phone }: PhoneCardProps) => {
   // WebSocket listener para actualizaciones de estado en tiempo real
   useSocketEvent<PhoneStatusChangedPayload>('phone:status_changed', useCallback((data) => {
     if (data.phoneId === phone.id) {
-      console.log('[PhoneCard] Status cambiado:', data.phoneId, data.status);
       setCurrentStatus(data.status);
     }
   }, [phone.id]));

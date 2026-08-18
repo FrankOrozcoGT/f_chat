@@ -3,6 +3,7 @@ import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared
 import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/errors';
 import { useInviteMember } from '../api';
 import { roleOptions } from '../types';
 import type { TenantRole } from '@/features/auth/types';
@@ -50,8 +51,7 @@ export const InviteMemberModal = ({ isOpen, onClose, tenantId }: InviteMemberMod
           onClose();
         },
         onError: (error: unknown) => {
-          showToast('Error al invitar al miembro', 'error');
-          console.error(error);
+          showToast(getErrorMessage(error, 'Error al invitar al miembro'), 'error');
         },
       }
     );

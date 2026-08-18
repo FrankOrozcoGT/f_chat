@@ -42,7 +42,6 @@ export function useDiagramRender(chart: string, svgContainerRef: React.RefObject
         });
       })
       .catch((err) => {
-        console.error('[DiagramEditor] mermaid render error:', err);
         setRenderError(err?.message || String(err));
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps

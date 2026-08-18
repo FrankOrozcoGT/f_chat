@@ -29,12 +29,7 @@ export const ConversationsList = () => {
     isFetchingNextPage,
     isLoading,
     isError,
-    error,
   } = useGetConversations({ search: debouncedSearch });
-
-  if (isError) {
-    console.error('[ConversationsList] Error:', error);
-  }
 
   const lastConversationRef = useCallback(
     (node: HTMLDivElement | null) => {

@@ -49,7 +49,6 @@ export const QRCodeDisplay = ({
 
         setQrCodeImage(qrDataURL);
       } catch (err) {
-        console.error('Error generando QR:', err);
         setError(getErrorMessage(err, 'Error al generar código QR'));
       } finally {
         setIsGenerating(false);
@@ -63,20 +62,22 @@ export const QRCodeDisplay = ({
 
   // WebSocket listeners para actualizaciones en tiempo real
   useSocketEvent<PhoneQRUpdatedPayload>('phone:qr_updated', useCallback(async (data) => {
-    if (data.phoneId === phoneId) {
-      console.log('[QRCodeDisplay] QR actualizado:', data.phoneId);
+    if (data.phoneId !== phoneId) return;
+    try {
       const qrDataURL = await QRCodeLib.toDataURL(data.qrCode, {
         width: 400,
         margin: 2,
         errorCorrectionLevel: 'M',
       });
       setQrCodeImage(qrDataURL);
+      setError(null);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Error al generar código QR'));
     }
   }, [phoneId]));
 
   useSocketEvent<PhoneStatusChangedPayload>('phone:status_changed', useCallback((data) => {
     if (data.phoneId === phoneId && onStatusChange) {
-      console.log('[QRCodeDisplay] Status cambiado:', data.phoneId, data.status);
       onStatusChange(data.status);
     }
   }, [phoneId, onStatusChange]));

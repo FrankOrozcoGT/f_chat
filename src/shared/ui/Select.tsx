@@ -72,14 +72,9 @@ export const Select = <T extends string = string>({
   }, [isOpen]);
 
   const handleSelect = (optionValue: T) => {
-    console.log('🟢 Select - handleSelect called with:', optionValue, 'disabled:', disabled);
     if (!disabled) {
-      console.log('🟢 Select - Calling onChange with:', optionValue);
       onChange(optionValue);
-      console.log('🟢 Select - onChange called, closing dropdown');
       setIsOpen(false);
-    } else {
-      console.log('🔴 Select - Skipped onChange because disabled is true');
     }
   };
 

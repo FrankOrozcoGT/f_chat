@@ -323,7 +323,6 @@ export const DiagramEditor = ({
             const nodeEl = target.closest('.node');
             if (nodeEl) {
               const id = nodeEl.id?.replace(/^flowchart-/, '').replace(/-\d+$/, '');
-              console.log('[DiagramEditor] node click via delegation:', id);
               if (id) {
                 // Handle select mode for edge origin/destination
                 if (selectMode !== 'none' && selectModeEdge) {
@@ -363,7 +362,6 @@ export const DiagramEditor = ({
                 }
               }
               if (edgeKey) {
-                console.log('[DiagramEditor] edge click via delegation:', edgeKey);
                 setSelection({ type: 'edge', id: edgeKey });
                 setContextMenu({ x: e.clientX, y: e.clientY, selection: { type: 'edge', id: edgeKey } });
                 return;

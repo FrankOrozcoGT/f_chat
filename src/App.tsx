@@ -83,33 +83,13 @@ function App() {
 
     // Conectar socket
     socket.connect();
-
-    // Event listeners de conexión
-    function onConnect() {
-      console.log('[WebSocket] Connected:', socket.id);
-    }
-
-    function onDisconnect() {
-      console.log('[WebSocket] Disconnected');
-    }
-
-    function onConnectError(error: Error) {
-      console.error('[WebSocket] Connection error:', error.message);
-    }
-
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-    socket.on('connect_error', onConnectError);
   }, []);
 
   // Global HITL notification listener
   useSocketEvent<ConversationHitlPayload>('conversation:hitl', useCallback((data) => {
-    console.log('[HITL] Event received:', data);
     // Reproducir sonido de notificación
     const audio = new Audio('/sounds/hitl-notification.wav');
-    audio.play().catch(() => {
-      console.warn('[HITL] Could not play notification sound');
-    });
+    audio.play().catch(() => {});
 
     // Invalidar queries para que la UI refleje el cambio de mode
     queryClient.invalidateQueries({ queryKey: conversationKeys.lists() });
@@ -121,12 +101,10 @@ function App() {
 
   // Global phone:qr_updated & phone:status_changed listeners
   useSocketEvent<PhoneQRUpdatedPayload>('phone:qr_updated', useCallback((data) => {
-    console.log('[Phone] QR updated:', data.phoneId);
     usePhoneReconnectStore.getState().setLatestQR(data.phoneId, data.qrCode);
   }, []));
 
   useSocketEvent<PhoneStatusChangedPayload>('phone:status_changed', useCallback((data) => {
-    console.log('[Phone] Status changed:', data.phoneId, data.status);
     if (data.status === 'connected') {
       usePhoneReconnectStore.getState().clearQR();
     }
@@ -134,12 +112,10 @@ function App() {
 
   // Global Health alerts listener
   useSocketEvent<ApiDownPayload>('api:down', useCallback((data) => {
-    console.log('[Health] API down:', data);
     showToast(`${data.apiName} no está disponible: ${data.error}`, 'error');
   }, [showToast]));
 
   useSocketEvent<ApiUpPayload>('api:up', useCallback((data) => {
-    console.log('[Health] API recovered:', data);
     showToast(`${data.apiName} recuperada`, 'success');
   }, [showToast]));
 
