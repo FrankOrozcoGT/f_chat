@@ -7,6 +7,8 @@ import { useUpdateShippingLocation } from '../api/useUpdateShippingLocation';
 import { useDeleteShippingLocation } from '../api/useDeleteShippingLocation';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
+import { useCrudModalState } from '@/shared/hooks/useCrudModalState';
+import { CrudPageStates } from '@/shared/components/CrudPageStates';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
@@ -25,33 +27,24 @@ export const ShippingPage = () => {
   const deleteLocation = useDeleteShippingLocation();
   const { showToast } = useToast();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<ShippingLocation | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ShippingLocation | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const {
+    modalOpen, editing, deleteTarget, setDeleteTarget, form, setForm,
+    openCreate: openCreateBase, openEdit: openEditBase, closeModal,
+  } = useCrudModalState<ShippingLocation, typeof emptyForm>(emptyForm, (location) => ({
+    name: location.name,
+    isFreeShipping: location.isFreeShipping,
+    shippingCost: String(location.shippingCost),
+  }));
   const [errors, setErrors] = useState<{ name?: string; shippingCost?: string }>({});
 
   const openCreate = () => {
-    setEditing(null);
-    setForm(emptyForm);
     setErrors({});
-    setModalOpen(true);
+    openCreateBase();
   };
 
   const openEdit = (location: ShippingLocation) => {
-    setEditing(location);
-    setForm({
-      name: location.name,
-      isFreeShipping: location.isFreeShipping,
-      shippingCost: String(location.shippingCost),
-    });
     setErrors({});
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditing(null);
+    openEditBase(location);
   };
 
   const validate = () => {
@@ -202,43 +195,25 @@ export const ShippingPage = () => {
           </Button>
         </div>
 
-        {isLoading && (
-          <div className="flex items-center justify-center min-h-64">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 border-4 border-border-primary border-t-accent-blue rounded-full animate-spin" />
-              <p className="text-sm text-text-secondary">Cargando ubicaciones...</p>
-            </div>
+        <CrudPageStates
+          isLoading={isLoading}
+          isError={isError}
+          isEmpty={locations.length === 0}
+          loadingLabel="Cargando ubicaciones..."
+          errorMessage="Error al cargar las ubicaciones"
+          emptyState={{
+            icon: Truck,
+            title: 'Sin ubicaciones',
+            description: 'Configura las zonas de envío para tus clientes.',
+            createLabel: 'Nueva ubicación',
+          }}
+          onCreate={openCreate}
+        >
+          <MobileCards />
+          <div className="hidden md:block">
+            <Table data={locations} columns={columns} getRowKey={(l) => l.id} />
           </div>
-        )}
-
-        {isError && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-text-secondary mb-4">Error al cargar las ubicaciones</p>
-            <Button variant="secondary" onClick={() => window.location.reload()}>Reintentar</Button>
-          </div>
-        )}
-
-        {!isLoading && !isError && locations.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center">
-            <Truck size={48} className="text-text-tertiary mb-4" />
-            <h3 className="text-lg font-semibold text-text-primary mb-2">Sin ubicaciones</h3>
-            <p className="text-sm text-text-secondary mb-6 max-w-sm">
-              Configura las zonas de envío para tus clientes.
-            </p>
-            <Button onClick={openCreate}>
-              <Plus size={18} /> Nueva ubicación
-            </Button>
-          </div>
-        )}
-
-        {!isLoading && !isError && locations.length > 0 && (
-          <>
-            <MobileCards />
-            <div className="hidden md:block">
-              <Table data={locations} columns={columns} getRowKey={(l) => l.id} />
-            </div>
-          </>
-        )}
+        </CrudPageStates>
       </div>
 
       {/* Form Modal */}

@@ -8,6 +8,8 @@ import { useDeleteProduct } from '../api/useDeleteProduct';
 import { useUploadProductImage } from '../api/useUploadProductImage';
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage } from '@/shared/lib/errors';
+import { useCrudModalState } from '@/shared/hooks/useCrudModalState';
+import { CrudPageStates } from '@/shared/components/CrudPageStates';
 import { Button } from '@/shared/ui/Button';
 import { Table, type TableColumn } from '@/shared/ui/Table';
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/shared/ui/Modal';
@@ -31,34 +33,25 @@ export const ProductsPage = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Product | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const {
+    modalOpen, editing, deleteTarget, setDeleteTarget, form, setForm,
+    openCreate: openCreateBase, openEdit: openEditBase, closeModal,
+  } = useCrudModalState<Product, typeof emptyForm>(emptyForm, (product) => ({
+    name: product.name,
+    basePrice: String(product.basePrice),
+    description: product.description ?? '',
+  }));
   const [discountsProduct, setDiscountsProduct] = useState<Product | null>(null);
-  const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Partial<typeof emptyForm>>({});
 
   const openCreate = () => {
-    setEditing(null);
-    setForm(emptyForm);
     setErrors({});
-    setModalOpen(true);
+    openCreateBase();
   };
 
   const openEdit = (product: Product) => {
-    setEditing(product);
-    setForm({
-      name: product.name,
-      basePrice: String(product.basePrice),
-      description: product.description ?? '',
-    });
     setErrors({});
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditing(null);
+    openEditBase(product);
   };
 
   const validate = () => {
@@ -263,53 +256,29 @@ export const ProductsPage = () => {
           </Button>
         </div>
 
-        {/* Loading */}
-        {isLoading && (
-          <div className="flex items-center justify-center min-h-64">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 border-4 border-border-primary border-t-accent-blue rounded-full animate-spin" />
-              <p className="text-sm text-text-secondary">Cargando productos...</p>
-            </div>
+        <CrudPageStates
+          isLoading={isLoading}
+          isError={isError}
+          isEmpty={products.length === 0}
+          loadingLabel="Cargando productos..."
+          errorMessage="Error al cargar los productos"
+          emptyState={{
+            icon: Package,
+            title: 'Sin productos',
+            description: 'Agrega tu primer producto al catálogo.',
+            createLabel: 'Nuevo producto',
+          }}
+          onCreate={openCreate}
+        >
+          <MobileCards />
+          <div className="hidden md:block">
+            <Table
+              data={products}
+              columns={columns}
+              getRowKey={(p) => p.id}
+            />
           </div>
-        )}
-
-        {/* Error */}
-        {isError && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-text-secondary mb-4">Error al cargar los productos</p>
-            <Button variant="secondary" onClick={() => window.location.reload()}>
-              Reintentar
-            </Button>
-          </div>
-        )}
-
-        {/* Empty */}
-        {!isLoading && !isError && products.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center">
-            <Package size={48} className="text-text-tertiary mb-4" />
-            <h3 className="text-lg font-semibold text-text-primary mb-2">Sin productos</h3>
-            <p className="text-sm text-text-secondary mb-6 max-w-sm">
-              Agrega tu primer producto al catálogo.
-            </p>
-            <Button onClick={openCreate}>
-              <Plus size={18} /> Nuevo producto
-            </Button>
-          </div>
-        )}
-
-        {/* Data */}
-        {!isLoading && !isError && products.length > 0 && (
-          <>
-            <MobileCards />
-            <div className="hidden md:block">
-              <Table
-                data={products}
-                columns={columns}
-                getRowKey={(p) => p.id}
-              />
-            </div>
-          </>
-        )}
+        </CrudPageStates>
       </div>
 
       {/* Form Modal */}
